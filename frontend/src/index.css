@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-scale: 1;
+    --touch-min-height: 48px;
+  }
+
+  /* Font Scaling Classes */
+  html.font-scale-sm {
+    --font-scale: 0.9;
+    font-size: 15px;
+  }
+  html.font-scale-md {
+    --font-scale: 1;
+    font-size: 17px;
+  }
+  html.font-scale-lg {
+    --font-scale: 1.25;
+    font-size: 21px;
+  }
+  html.font-scale-xl {
+    --font-scale: 1.5;
+    font-size: 25px;
+  }
+
+  /* Warm Brown / Sepia Theme */
+  html.theme-warm_sepia body {
+    background-color: #F5EFEB !important;
+    color: #43281C !important;
+  }
+  html.theme-warm_sepia .elder-card {
+    background-color: #FAF6F0 !important;
+    border-color: #8C5338 !important;
+    color: #43281C !important;
+    box-shadow: 0 10px 25px -5px rgba(111, 53, 27, 0.12) !important;
+  }
+  html.theme-warm_sepia button:not(.raw-btn) {
+    background-color: #6F351B !important;
+    color: #FFFFFF !important;
+    border-color: #8C5338 !important;
+  }
+  html.theme-warm_sepia h1, html.theme-warm_sepia h2, html.theme-warm_sepia h3, html.theme-warm_sepia h4 {
+    color: #3B1F13 !important;
+  }
+
+  /* Reduced Motion Mode */
+  html.reduced-motion * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Large Touch Targets for Elder Mode */
+  html.large-buttons button,
+  html.large-buttons a.btn-touch,
+  html.large-buttons .elder-card {
+    min-height: 64px;
+  }
+}
+
+/* Tactile 3D Cards */
+.elder-card {
+  background: #FFFFFF;
+  border-radius: 1.5rem;
+  border: 2px solid #E6F0EE;
+  box-shadow: 0 10px 30px -5px rgba(13, 148, 136, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.elder-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 35px -10px rgba(13, 148, 136, 0.16), 0 8px 10px -4px rgba(0, 0, 0, 0.04);
+}
+
+.tactile-btn {
+  transition: all 0.15s ease;
+  transform: translateY(0);
+}
+
+.tactile-btn:active {
+  transform: translateY(3px);
+}
+
+/* Subtle Floating Animation */
+@keyframes gentle-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-gentle-float {
+  animation: gentle-float 4s ease-in-out infinite;
+}
+
+/* Audio Pulse Effect */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 16px rgba(13, 148, 136, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0);
+  }
+}
+
+.animate-audio-pulse {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

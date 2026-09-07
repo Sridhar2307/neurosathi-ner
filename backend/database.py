@@ -1,0 +1,435 @@
+import os
+import json
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+import hashlib
+
+from models import (
+    UserProfile, UserProfileCreate, UserProfileUpdate,
+    CaregiverLoginRequest, CaregiverLoginResponse,
+    DevicePairRequest, DevicePairResponse, PatientSessionCheckResponse,
+    Reminder, ReminderCreate, ReminderUpdate,
+    GameResult, GameResultCreate, CaregiverAlert,
+    CaregiverDashboardSummary, DifficultyLevel, GameType
+)
+from seed_data import (
+    get_initial_user, get_initial_lakshmi, get_initial_reminders,
+    get_initial_game_results, get_initial_caregiver_alerts,
+    DEMO_USER_ID, LAKSHMI_USER_ID
+)
+from ai_engine import calculate_adaptive_difficulty, generate_encouraging_message, generate_ai_recommendation
+
+# Supabase configuration (optional for live cloud sync)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+
+supabase = None
+if SUPABASE_URL and SUPABASE_ANON_KEY and "http" in SUPABASE_URL:
+    try:
+        from supabase import create_client, Client
+        supabase: Optional[Client] = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+        print("Connected to Supabase PostgreSQL.")
+    except Exception as e:
+        print(f"Supabase connection notice (falling back to hybrid local store): {e}")
+        supabase = None
+
+class HybridDatabase:
+    def __init__(self):
+        lakshmi = get_initial_lakshmi()
+        bhaben = get_initial_user()
+        self.users: Dict[str, UserProfile] = {
+            LAKSHMI_USER_ID: lakshmi,
+            DEMO_USER_ID: bhaben
+        }
+        self.devices: Dict[str, Dict[str, Any]] = {
+            "NS-DEV-LAKSHMI-01": {
+                "device_identifier": "NS-DEV-LAKSHMI-01",
+                "patient_id": LAKSHMI_USER_ID,
+                "device_name": "Lakshmi Living Room Tablet",
+                "paired_at": datetime.now().isoformat(),
+                "active": True,
+                "pin_enabled": False,
+                "hashed_pin": hashlib.sha256("1234".encode()).hexdigest()
+            }
+        }
+        self.reminders: Dict[str, Reminder] = {r.id: r for r in get_initial_reminders()}
+        # Add starter reminder for Lakshmi
+        lakshmi_rem = Reminder(
+            id="rem-lakshmi-1",
+            user_id=LAKSHMI_USER_ID,
+            title="Morning Herbal Tea & Blood Pressure Tablet",
+            category="medicine",
+            time="08:30 AM",
+            dosage_or_detail="1 tablet with fresh morning tea",
+            audio_prompt="Lakshmi, time for your morning tea and medication.",
+            is_completed=True,
+            completed_at=datetime.now().isoformat(),
+            icon_name="Pill",
+            created_at=datetime.now().isoformat()
+        )
+        self.reminders[lakshmi_rem.id] = lakshmi_rem
+        self.game_results: List[GameResult] = get_initial_game_results()
+        self.alerts: List[CaregiverAlert] = get_initial_caregiver_alerts()
+        self.activity_logs: List[Dict[str, Any]] = [
+            {"id": "log-1", "user_id": LAKSHMI_USER_ID, "action": "Device Paired for Lakshmi Devi", "category": "device", "timestamp": "08:00 AM", "status": "completed"},
+            {"id": "log-2", "user_id": LAKSHMI_USER_ID, "action": "Completed Morning Herbal Tea & BP Tablet", "category": "health", "timestamp": "08:32 AM", "status": "completed"},
+            {"id": "log-3", "user_id": DEMO_USER_ID, "action": "Played Memory Match (Easy) - Score: 95%", "category": "game", "timestamp": "10:15 AM", "status": "completed"},
+            {"id": "log-4", "user_id": DEMO_USER_ID, "action": "Drank Fresh Copper Glass Water", "category": "hydration", "timestamp": "11:02 AM", "status": "completed"},
+            {"id": "log-5", "user_id": DEMO_USER_ID, "action": "Voice Query: 'What are my afternoon tasks?'", "category": "voice", "timestamp": "01:20 PM", "status": "completed"},
+        ]
+
+    # --- User & Patient Profile Methods ---
+    def get_user(self, user_id: str) -> Optional[UserProfile]:
+        if user_id not in self.users and user_id == DEMO_USER_ID:
+            self.users[DEMO_USER_ID] = get_initial_user()
+        return self.users.get(user_id)
+
+    def get_all_users(self) -> List[UserProfile]:
+        if DEMO_USER_ID not in self.users:
+            self.users[DEMO_USER_ID] = get_initial_user()
+        return list(self.users.values())
+
+    def create_user(self, profile_in: UserProfileCreate) -> UserProfile:
+        import uuid
+        import re
+        slug = re.sub(r'[^a-zA-Z0-9]+', '-', profile_in.name.strip().lower())
+        new_id = f"patient-{slug[:16]}-{str(uuid.uuid4())[:6]}"
+        
+        new_user = UserProfile(
+            id=new_id,
+            name=profile_in.name,
+            email=profile_in.email or f"{slug[:10]}@neurosathi.in",
+            role=profile_in.role,
+            age=profile_in.age,
+            gender=profile_in.gender,
+            blood_group=profile_in.blood_group,
+            location=profile_in.location,
+            language_preference=profile_in.language_preference or "en",
+            medical_stage=profile_in.medical_stage or "Early-stage Dementia / MCI",
+            allergies=profile_in.allergies or "None reported",
+            doctor_name=profile_in.doctor_name,
+            doctor_phone=profile_in.doctor_phone,
+            doctor_hospital=profile_in.doctor_hospital,
+            emergency_contact_name=profile_in.emergency_contact_name,
+            emergency_contact_relation=profile_in.emergency_contact_relation,
+            emergency_contact_phone=profile_in.emergency_contact_phone,
+            emergency_contact_email=profile_in.emergency_contact_email,
+            emergency_contact_address=profile_in.emergency_contact_address,
+            caregiver_notes=profile_in.caregiver_notes,
+            caregiver_pin=profile_in.caregiver_pin or "1234",
+            created_at=datetime.now().isoformat(),
+            current_streak=1,
+            total_stars=10,
+            avatar_url="https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80"
+        )
+        self.users[new_id] = new_user
+
+        # Create starter default reminder for new patient
+        starter_reminder = Reminder(
+            id=f"rem-{str(uuid.uuid4())[:8]}",
+            user_id=new_id,
+            title="Drink Fresh Water",
+            category="water",
+            time="10:00 AM",
+            dosage_or_detail="1 glass of water to stay hydrated",
+            audio_prompt="Time to drink a refreshing glass of water.",
+            is_completed=False,
+            icon_name="Droplet",
+            created_at=datetime.now().isoformat()
+        )
+        self.reminders[starter_reminder.id] = starter_reminder
+
+        return new_user
+
+    def update_user(self, user_id: str, update_in: UserProfileUpdate) -> Optional[UserProfile]:
+        user = self.get_user(user_id)
+        if not user:
+            return None
+        
+        user_data = user.model_dump()
+        for field, val in update_in.model_dump(exclude_unset=True).items():
+            if val is not None:
+                user_data[field] = val
+        
+        updated_user = UserProfile(**user_data)
+        self.users[user_id] = updated_user
+        return updated_user
+
+    def pair_device(self, req: DevicePairRequest) -> DevicePairResponse:
+        patient = self.get_user(req.patient_id)
+        if not patient:
+            patient = self.get_user(LAKSHMI_USER_ID) or get_initial_lakshmi()
+        
+        hashed_pin = hashlib.sha256(req.pin.encode()).hexdigest() if req.pin else None
+        device_entry = {
+            "device_identifier": req.device_identifier,
+            "patient_id": patient.id,
+            "device_name": req.device_name or f"{patient.name}'s Tablet",
+            "paired_at": datetime.now().isoformat(),
+            "active": True,
+            "pin_enabled": bool(req.pin),
+            "hashed_pin": hashed_pin
+        }
+        self.devices[req.device_identifier] = device_entry
+        
+        # Log pairing event
+        import uuid
+        self.activity_logs.insert(0, {
+            "id": f"log-{str(uuid.uuid4())[:8]}",
+            "user_id": patient.id,
+            "action": f"Paired device '{device_entry['device_name']}'",
+            "category": "device",
+            "timestamp": datetime.now().strftime("%I:%M %p"),
+            "status": "completed"
+        })
+
+        return DevicePairResponse(
+            success=True,
+            message=f"Device paired successfully with {patient.name}.",
+            patient=patient,
+            device_identifier=req.device_identifier,
+            paired_at=device_entry["paired_at"],
+            pin_enabled=device_entry["pin_enabled"]
+        )
+
+    def get_device_session(self, device_identifier: str) -> PatientSessionCheckResponse:
+        dev = self.devices.get(device_identifier)
+        if not dev or not dev.get("active"):
+            return PatientSessionCheckResponse(paired=False)
+        
+        patient = self.get_user(dev["patient_id"])
+        return PatientSessionCheckResponse(
+            paired=True,
+            patient=patient,
+            pin_enabled=dev.get("pin_enabled", False),
+            device_name=dev.get("device_name")
+        )
+
+    def unpair_device(self, device_identifier: str) -> bool:
+        if device_identifier in self.devices:
+            self.devices[device_identifier]["active"] = False
+            del self.devices[device_identifier]
+            return True
+        return False
+
+    def reset_demo_pairing(self) -> bool:
+        self.devices = {
+            "NS-DEV-LAKSHMI-01": {
+                "device_identifier": "NS-DEV-LAKSHMI-01",
+                "patient_id": LAKSHMI_USER_ID,
+                "device_name": "Lakshmi Living Room Tablet",
+                "paired_at": datetime.now().isoformat(),
+                "active": True,
+                "pin_enabled": False,
+                "hashed_pin": hashlib.sha256("1234".encode()).hexdigest()
+            }
+        }
+        return True
+
+    def authenticate_caregiver(self, req: CaregiverLoginRequest) -> CaregiverLoginResponse:
+        all_users = self.get_all_users()
+        email_or_contact = req.email or req.contact or "caregiver@neurosathi.in"
+        
+        # Match by caregiver email or phone
+        matched = []
+        for u in all_users:
+            if email_or_contact.lower() in [
+                (u.emergency_contact_phone or '').lower(),
+                (u.emergency_contact_email or '').lower(),
+                "caregiver@neurosathi.in",
+                "demo@care.in",
+                "demo",
+                "9876543210"
+            ]:
+                matched.append(u)
+        
+        if not matched:
+            matched = all_users
+
+        # Select requested patient or default to Lakshmi
+        active_patient = None
+        if req.patient_id:
+            active_patient = next((u for u in matched if u.id == req.patient_id), None)
+        if not active_patient:
+            active_patient = next((u for u in matched if u.id == LAKSHMI_USER_ID), None)
+        if not active_patient and matched:
+            active_patient = matched[0]
+        if not active_patient:
+            active_patient = get_initial_lakshmi()
+
+        caregiver_info = {
+            "name": active_patient.emergency_contact_name or "Dr. Priya Sharma",
+            "relation": active_patient.emergency_contact_relation or "Primary Caregiver",
+            "phone": active_patient.emergency_contact_phone or "+91 98765 43210",
+            "email": active_patient.emergency_contact_email or email_or_contact,
+            "role": "caregiver"
+        }
+
+        return CaregiverLoginResponse(
+            success=True,
+            message="Caregiver authenticated successfully.",
+            caregiver=caregiver_info,
+            active_patient=active_patient,
+            all_patients=all_users
+        )
+
+    # --- Reminder Methods ---
+    def get_reminders(self, user_id: str) -> List[Reminder]:
+        return [r for r in self.reminders.values() if r.user_id == user_id]
+
+    def create_reminder(self, reminder_in: ReminderCreate) -> Reminder:
+        import uuid
+        new_id = f"rem-{str(uuid.uuid4())[:8]}"
+        now_str = datetime.now().isoformat()
+        new_reminder = Reminder(
+            id=new_id,
+            user_id=reminder_in.user_id,
+            title=reminder_in.title,
+            category=reminder_in.category,
+            time=reminder_in.time,
+            dosage_or_detail=reminder_in.dosage_or_detail,
+            audio_prompt=reminder_in.audio_prompt or f"Reminder for {reminder_in.title}",
+            is_completed=reminder_in.is_completed,
+            icon_name=reminder_in.icon_name or "Bell",
+            created_at=now_str
+        )
+        self.reminders[new_id] = new_reminder
+        
+        # Add to activity logs
+        self.activity_logs.insert(0, {
+            "id": f"log-{str(uuid.uuid4())[:8]}",
+            "user_id": reminder_in.user_id,
+            "action": f"Created Reminder: {reminder_in.title} at {reminder_in.time}",
+            "category": "reminder",
+            "timestamp": datetime.now().strftime("%I:%M %p"),
+            "status": "pending"
+        })
+        return new_reminder
+
+    def update_reminder(self, reminder_id: str, update_in: ReminderUpdate) -> Optional[Reminder]:
+        if reminder_id not in self.reminders:
+            return None
+        current = self.reminders[reminder_id]
+        updated_data = current.model_dump()
+        for field, value in update_in.model_dump(exclude_unset=True).items():
+            if value is not None:
+                updated_data[field] = value
+        
+        if update_in.is_completed is True and not updated_data.get("completed_at"):
+            updated_data["completed_at"] = datetime.now().isoformat()
+            
+        updated_reminder = Reminder(**updated_data)
+        self.reminders[reminder_id] = updated_reminder
+
+        # Log completion
+        if update_in.is_completed:
+            import uuid
+            self.activity_logs.insert(0, {
+                "id": f"log-{str(uuid.uuid4())[:8]}",
+                "user_id": updated_reminder.user_id,
+                "action": f"Completed: {updated_reminder.title}",
+                "category": "reminder_done",
+                "timestamp": datetime.now().strftime("%I:%M %p"),
+                "status": "completed"
+            })
+            # Increase stars for elder
+            if updated_reminder.user_id in self.users:
+                self.users[updated_reminder.user_id].total_stars += 2
+        return updated_reminder
+
+    def delete_reminder(self, reminder_id: str) -> bool:
+        if reminder_id in self.reminders:
+            del self.reminders[reminder_id]
+            return True
+        return False
+
+    # --- Game Results Methods ---
+    def add_game_result(self, result_in: GameResultCreate) -> GameResult:
+        import uuid
+        new_id = f"gr-{str(uuid.uuid4())[:8]}"
+        now_str = datetime.now().isoformat()
+        
+        encouragement = generate_encouraging_message(result_in.game_type, result_in.score)
+        next_diff = calculate_adaptive_difficulty(result_in.score, result_in.mistakes, result_in.difficulty)
+        
+        new_result = GameResult(
+            id=new_id,
+            user_id=result_in.user_id,
+            game_type=result_in.game_type,
+            difficulty=result_in.difficulty,
+            score=result_in.score,
+            max_score=result_in.max_score,
+            attempts=result_in.attempts,
+            duration_seconds=result_in.duration_seconds,
+            mistakes=result_in.mistakes,
+            cultural_theme=result_in.cultural_theme or "NER Heritage",
+            completed=result_in.completed,
+            timestamp=now_str,
+            encouraging_message=encouragement,
+            adaptive_next_difficulty=next_diff
+        )
+        self.game_results.insert(0, new_result)
+        
+        # Update user stars
+        if result_in.user_id in self.users:
+            earned_stars = 5 if result_in.score >= 80 else 3
+            self.users[result_in.user_id].total_stars += earned_stars
+
+        # Activity log
+        self.activity_logs.insert(0, {
+            "id": f"log-{str(uuid.uuid4())[:8]}",
+            "user_id": result_in.user_id,
+            "action": f"Played {result_in.game_type.replace('_', ' ').title()} - Score: {result_in.score}%",
+            "category": "game",
+            "timestamp": datetime.now().strftime("%I:%M %p"),
+            "status": "completed"
+        })
+
+        return new_result
+
+    def get_game_results(self, user_id: str) -> List[GameResult]:
+        return [r for r in self.game_results if r.user_id == user_id]
+
+    # --- Alerts & Caregiver Summary ---
+    def get_alerts(self, user_id: str) -> List[CaregiverAlert]:
+        return [a for a in self.alerts if a.user_id == user_id]
+
+    def get_caregiver_dashboard(self, user_id: str) -> CaregiverDashboardSummary:
+        user = self.get_user(user_id) or get_initial_user()
+        user_reminders = self.get_reminders(user_id)
+        user_games = self.get_game_results(user_id)
+        user_alerts = self.get_alerts(user_id)
+
+        completed_reminders = [r for r in user_reminders if r.is_completed]
+        adherence = int((len(completed_reminders) / max(len(user_reminders), 1)) * 100)
+        missed = len([r for r in user_reminders if not r.is_completed])
+
+        avg_score = int(sum([g.score for g in user_games]) / max(len(user_games), 1)) if user_games else 85
+        trend = "Improving" if avg_score >= 88 else ("Stable" if avg_score >= 70 else "Needs Attention")
+
+        score_history_by_game = {
+            "Memory Match": [g.score for g in user_games if g.game_type == GameType.MEMORY_MATCH][:6] or [90, 92, 95],
+            "Sequence Recall": [g.score for g in user_games if g.game_type == GameType.SEQUENCE_RECALL][:6] or [82, 85, 88],
+            "Object Recognition": [g.score for g in user_games if g.game_type == GameType.OBJECT_RECOGNITION][:6] or [90, 94, 92],
+        }
+
+        return CaregiverDashboardSummary(
+            patient_profile=user,
+            today_activity_count=len([l for l in self.activity_logs if l.get("user_id") == user_id]),
+            adherence_percentage=adherence,
+            average_cognitive_score=avg_score,
+            cognitive_trend=trend,
+            recent_game_scores=user_games[:5],
+            today_reminders=user_reminders,
+            missed_reminders_count=missed,
+            active_alerts=user_alerts,
+            recent_activity_timeline=self.activity_logs[:8],
+            score_history_by_game=score_history_by_game
+        )
+
+# Global database instance
+db = HybridDatabase()

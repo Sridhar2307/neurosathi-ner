@@ -1,0 +1,29 @@
+# Environment & Secrets (NEVER COMMIT SENSITIVE KEYS)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python & Virtual Envs
+backend/__pycache__/
+backend/*/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+*.sqlite3
+
+# Node & Frontend Build
+frontend/node_modules/
+node_modules/
+frontend/dist/
+dist/
+.DS_Store
+Thumbs.db
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
