@@ -70,7 +70,14 @@ export const AccessibilityProvider = ({ children }) => {
     setIsSpeaking(false);
   };
 
-  const t = CULTURAL_TRANSLATIONS[language] || CULTURAL_TRANSLATIONS.en;
+  const baseT = CULTURAL_TRANSLATIONS[language] || CULTURAL_TRANSLATIONS.en;
+  const t = new Proxy(baseT, {
+    get: (target, prop) => {
+      if (prop in target && target[prop] !== undefined) return target[prop];
+      return (CULTURAL_TRANSLATIONS.en && CULTURAL_TRANSLATIONS.en[prop]) || '';
+    }
+  });
+
 
   const cycleFontSize = () => {
     const sizes = ['small', 'medium', 'large', 'xlarge'];

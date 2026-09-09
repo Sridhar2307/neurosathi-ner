@@ -20,7 +20,7 @@ import {
 
 export default function LandingPage() {
   const { navigateTo } = useApp();
-  const { speakText, autoVoiceRead } = useAccessibility();
+  const { speakText, autoVoiceRead, t } = useAccessibility();
 
   const handleStartElder = () => {
     if (autoVoiceRead) speakText("Welcome to NeuroSathi Elder Mode. Starting your day!");
@@ -36,9 +36,9 @@ export default function LandingPage() {
       {/* SIH 2026 Top Banner */}
       <div className="bg-gradient-to-r from-teal-800 via-teal-900 to-slate-900 text-white py-2.5 px-4 text-center text-xs sm:text-sm font-semibold tracking-wide flex items-center justify-center gap-2 shadow-md">
         <span className="bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-bold text-[11px] uppercase">
-          Smart India Hackathon 2026
+          {t.sihBadge || 'Smart India Hackathon 2026'}
         </span>
-        <span>Problem ID: <strong>SIH26003</strong> • Team <strong>Mavericks</strong> • Space & Healthcare Tech</span>
+        <span>Problem ID: <strong>SIH26003</strong> • Team <strong>Mavericks</strong> • Space &amp; Healthcare Tech</span>
       </div>
 
       {/* Hero Section */}
@@ -51,11 +51,11 @@ export default function LandingPage() {
 
         {/* Main Title */}
         <h1 className="text-4xl sm:text-6xl font-extrabold text-teal-950 font-sans tracking-tight leading-tight max-w-5xl mx-auto mb-6">
-          AI-Powered Cognitive & Memory Assistance for <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-600">Elderly Dementia Care</span> in North Eastern India
+          AI-Powered Cognitive &amp; Memory Assistance for <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-600">Elderly Dementia Care</span> in North Eastern India
         </h1>
 
         <p className="text-lg sm:text-2xl text-slate-700 max-w-3xl mx-auto mb-10 leading-relaxed font-medium">
-          A culturally familiar, ultra-accessible cognitive gaming and daily routine companion specially tailored for elders in Assam, Manipur, Mizoram, Meghalaya, and across the North Eastern Region.
+          {t.tagline || 'A culturally familiar, ultra-accessible cognitive gaming and daily routine companion specially tailored for elders in Assam, Manipur, Mizoram, Meghalaya, and across the North Eastern Region.'}
         </p>
 
         {/* Primary Action Buttons */}
@@ -65,7 +65,7 @@ export default function LandingPage() {
             className="w-full sm:w-auto px-8 py-5 rounded-3xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xl sm:text-2xl shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition flex items-center justify-center gap-3 border-2 border-teal-500 group"
           >
             <Heart className="w-7 h-7 text-rose-300 fill-rose-300 group-hover:scale-110 transition" />
-            <span>Open Elder Mode</span>
+            <span>{t.elderMode || 'Open Elder Mode'}</span>
             <ArrowRight className="w-6 h-6 text-teal-200" />
           </button>
 
@@ -74,7 +74,7 @@ export default function LandingPage() {
             className="w-full sm:w-auto px-8 py-5 rounded-3xl bg-slate-900 hover:bg-slate-800 text-cyan-300 font-extrabold text-xl sm:text-2xl border-2 border-slate-700 hover:border-cyan-400 transition flex items-center justify-center gap-3 shadow-lg"
           >
             <ShieldCheck className="w-7 h-7 text-cyan-400" />
-            <span>Caregiver Portal</span>
+            <span>{t.caregiverMode || 'Caregiver Portal'}</span>
           </button>
         </div>
 

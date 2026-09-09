@@ -49,7 +49,7 @@ export default function Navbar() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium hidden sm:block">
-                AI Cognitive Gaming & Memory Assistance for North East Elders
+                {t.tagline || "AI Cognitive Gaming & Memory Assistance for North East Elders"}
               </p>
             </div>
           </button>
@@ -60,7 +60,7 @@ export default function Navbar() {
               className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 sm:px-6 py-2.5 rounded-2xl shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition flex items-center gap-2 text-base"
             >
               <Heart className="w-5 h-5 text-rose-300 fill-rose-300" />
-              <span>Elder Mode</span>
+              <span>{t.elderMode || "Elder Mode"}</span>
             </button>
 
             <button
@@ -68,8 +68,8 @@ export default function Navbar() {
               className="bg-slate-800 hover:bg-slate-900 text-cyan-300 font-bold px-4 sm:px-6 py-2.5 rounded-2xl border border-slate-700 hover:border-cyan-500 transition flex items-center gap-2 text-base"
             >
               <ShieldCheck className="w-5 h-5 text-cyan-400" />
-              <span className="hidden sm:inline">Caregiver Mode</span>
-              <span className="sm:hidden">Caregiver</span>
+              <span className="hidden sm:inline">{t.caregiverMode || "Caregiver Portal"}</span>
+              <span className="sm:hidden">{t.caregiver || "Caregiver"}</span>
             </button>
           </div>
         </div>
@@ -92,10 +92,10 @@ export default function Navbar() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-teal-950 font-sans tracking-tight">
-                NeuroSathi <span className="text-amber-500">NER</span>
+                {t.appName || "NeuroSathi"} <span className="text-amber-500">{t.appRegion || "NER"}</span>
               </h1>
               <p className="text-xs sm:text-sm font-semibold text-teal-700">
-                Elder Friendly Care • {userProfile?.name || 'Bhaben Kalita'}
+                {userProfile?.name || 'Bhaben Kalita'}
               </p>
             </div>
           </button>
@@ -148,8 +148,8 @@ export default function Navbar() {
               title="Speak to Voice Sathi Assistant"
             >
               <Mic className="w-5 h-5 text-white" />
-              <span className="hidden sm:inline">Voice Sathi</span>
-              <span className="sm:hidden">Voice</span>
+              <span className="hidden sm:inline">{t.voiceAssistant || "Voice Sathi"}</span>
+              <span className="sm:hidden">{t.voiceGuidance || "Voice"}</span>
             </button>
 
             {/* Switch to Caregiver View */}
@@ -158,7 +158,7 @@ export default function Navbar() {
               className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl border border-slate-300 ml-1 transition"
               title="Switch to Caregiver Clinical Portal"
             >
-              Caregiver ↗
+              {t.caregiver || "Caregiver"} ↗
             </button>
           </div>
         </div>

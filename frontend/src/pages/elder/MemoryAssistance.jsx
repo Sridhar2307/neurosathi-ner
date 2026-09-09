@@ -98,7 +98,7 @@ export default function MemoryAssistance() {
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />
-          <span>Back to Home</span>
+          <span>{t.backToHome || "Back to Home"}</span>
         </button>
 
         <button
@@ -106,7 +106,7 @@ export default function MemoryAssistance() {
           className="px-6 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-base sm:text-lg flex items-center gap-2 shadow-tactile-btn transition"
         >
           <Plus className="w-6 h-6" />
-          <span>Add Reminder</span>
+          <span>{t.addReminder || "Add Reminder"}</span>
         </button>
       </div>
 
@@ -119,11 +119,11 @@ export default function MemoryAssistance() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-amber-950 flex items-center gap-2">
-                <span>Daily Memory Reminders</span>
-                <AudioButton textToRead="Daily Reminders list. Check off medicines, fresh water, and appointments." size="sm" />
+                <span>{t.dailyRoutines || "Daily Memory Reminders"}</span>
+                <AudioButton textToRead={`${t.dailyRoutines || 'Daily Reminders list'}. ${t.dailyRoutinesSub || 'Check off medicines, fresh water, and appointments.'}`} size="sm" />
               </h1>
               <p className="text-base text-slate-600 font-semibold">
-                Clear schedule for medicines, hydration, and doctor visits.
+                {t.dailyRoutinesSub || "Clear schedule for medicines, hydration, and doctor visits."}
               </p>
             </div>
           </div>
@@ -132,10 +132,10 @@ export default function MemoryAssistance() {
         {/* Filter Pills */}
         <div className="flex items-center gap-2 flex-wrap pt-2">
           {[
-            { id: 'all', label: 'All Items' },
-            { id: 'pending', label: 'Pending Only' },
-            { id: 'completed', label: 'Completed' },
-            { id: 'medicine', label: 'Medicines 💊' }
+            { id: 'all', label: t.filterAll || 'All Items' },
+            { id: 'pending', label: t.filterPending || 'Pending Only' },
+            { id: 'completed', label: t.filterCompleted || 'Completed' },
+            { id: 'medicine', label: t.filterMedicine || 'Medicines 💊' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -156,7 +156,7 @@ export default function MemoryAssistance() {
       <div className="space-y-4">
         {filteredReminders.length === 0 ? (
           <div className="bg-white rounded-3xl p-10 text-center border-2 border-slate-200 text-slate-500 font-bold text-lg">
-            No reminders found in this filter.
+            {t.noRemindersPending || "No reminders found in this filter."}
           </div>
         ) : (
           filteredReminders.map(rem => {
@@ -218,12 +218,12 @@ export default function MemoryAssistance() {
                     }`}
                   >
                     <CheckCircle2 className="w-5 h-5" />
-                    <span>{isDone ? 'Done ✓' : 'Mark Done'}</span>
+                    <span>{isDone ? (t.completedToday || 'Done') : (t.markDone || 'Mark Done')}</span>
                   </button>
 
                   <button
                     onClick={() => handleDelete(rem.id, rem.title)}
-                    className="p-3 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition"
+                    className="p-3 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
                     title="Delete Reminder"
                   >
                     <Trash2 className="w-5 h-5" />
@@ -240,13 +240,13 @@ export default function MemoryAssistance() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-4xl max-w-md w-full p-6 sm:p-8 border-4 border-teal-400 shadow-2xl animate-gentle-float">
             <h2 className="text-2xl font-black text-teal-950 mb-4">
-              Add New Daily Reminder
+              {t.addReminder || "Add New Daily Reminder"}
             </h2>
 
             <form onSubmit={handleCreateReminder} className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">
-                  Reminder Title
+                  {t.newReminderTitle || "Reminder Title"}
                 </label>
                 <input
                   type="text"
@@ -261,7 +261,7 @@ export default function MemoryAssistance() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">
-                    Category
+                    {t.category || "Category"}
                   </label>
                   <select
                     value={newCategory}
@@ -277,7 +277,7 @@ export default function MemoryAssistance() {
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">
-                    Time
+                    {t.timeScheduled || "Time"}
                   </label>
                   <input
                     type="text"
@@ -292,7 +292,7 @@ export default function MemoryAssistance() {
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">
-                  Details / Instructions
+                  {t.medicineDosage || "Details / Instructions"}
                 </label>
                 <textarea
                   placeholder="e.g. 1 cup warm tea with 4 soaked almonds"
@@ -309,13 +309,13 @@ export default function MemoryAssistance() {
                   onClick={() => setShowAddModal(false)}
                   className="flex-1 py-3 rounded-2xl bg-slate-200 hover:bg-slate-300 font-bold text-slate-800 transition"
                 >
-                  Cancel
+                  {t.cancel || "Cancel"}
                 </button>
                 <button
                   type="submit"
                   className="flex-1 py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 font-extrabold text-white shadow-tactile-btn transition"
                 >
-                  Save Reminder
+                  {t.saveReminder || "Save Reminder"}
                 </button>
               </div>
             </form>

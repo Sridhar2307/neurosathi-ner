@@ -121,7 +121,7 @@ export default function ElderDashboard() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full">
-                  Upcoming Reminder
+                  {t.upcomingReminder || "Upcoming Reminder"}
                 </span>
                 <span className="text-sm font-bold text-amber-950 flex items-center gap-1">
                   <Clock className="w-4 h-4 text-amber-700" /> {pendingReminders[0].time}
@@ -138,7 +138,7 @@ export default function ElderDashboard() {
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <AudioButton
-              textToRead={`Next reminder: ${pendingReminders[0].title} at ${pendingReminders[0].time}. ${pendingReminders[0].dosage_or_detail}`}
+              textToRead={`${t.upcomingReminder || 'Next reminder'}: ${pendingReminders[0].title} at ${pendingReminders[0].time}. ${pendingReminders[0].dosage_or_detail}`}
               size="lg"
               className="bg-amber-200 text-amber-900 border-amber-400"
             />
@@ -147,7 +147,7 @@ export default function ElderDashboard() {
               className="flex-1 sm:flex-initial px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition"
             >
               <CheckCircle2 className="w-6 h-6" />
-              <span>Mark Done</span>
+              <span>{t.markDone || "Mark Done"}</span>
             </button>
           </div>
         </div>
@@ -165,7 +165,7 @@ export default function ElderDashboard() {
               🧠
             </div>
             <AudioButton
-              textToRead="Cognitive Mind Games. Play memory match, sequence recall, and familiar North East object recognition to keep your mind agile."
+              textToRead={`${t.startGames || 'Cognitive Games'}. ${t.startGamesSub || 'Match Assam tea leaves, listen to Bihu rhythms, and identify iconic North East artifacts.'}`}
               size="md"
             />
           </div>
@@ -180,16 +180,16 @@ export default function ElderDashboard() {
               </span>
             </div>
             <p className="text-base sm:text-lg text-slate-600 font-medium mt-2 leading-relaxed">
-              Match Assam tea leaves, listen to Bihu rhythms, and identify iconic North East artifacts.
+              {t.startGamesSub || "Match Assam tea leaves, listen to Bihu rhythms, and identify iconic North East artifacts."}
             </p>
           </div>
 
           <div className="mt-6 flex items-center justify-between pt-4 border-t border-teal-100">
             <span className="text-base font-bold text-teal-700 flex items-center gap-1 group-hover:translate-x-1 transition">
-              Tap to Play Games <ChevronRight className="w-5 h-5" />
+              {t.tapToPlay || "Tap to Play Games"} <ChevronRight className="w-5 h-5" />
             </span>
             <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-              +5 Stars Per Game
+              {t.perGameNotice || "+5 Stars Per Game"}
             </span>
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function ElderDashboard() {
               🔔
             </div>
             <AudioButton
-              textToRead={`Daily Reminders. You have completed ${completedCount} out of ${reminders.length} tasks today.`}
+              textToRead={`${t.viewReminders || 'Daily Reminders'}. ${completedCount} completed.`}
               size="md"
             />
           </div>
@@ -215,20 +215,20 @@ export default function ElderDashboard() {
                 {t.viewReminders || "Daily Reminders"}
               </h2>
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
-                {pendingReminders.length} Pending
+                {pendingReminders.length} {t.pendingTasks || "Pending"}
               </span>
             </div>
             <p className="text-base sm:text-lg text-slate-600 font-medium mt-2 leading-relaxed">
-              Never miss your morning blood pressure tablet, fresh hydration, or evening walk.
+              {t.viewRemindersSub || "Never miss your morning blood pressure tablet, fresh hydration, or evening walk."}
             </p>
           </div>
 
           <div className="mt-6 flex items-center justify-between pt-4 border-t border-amber-100">
             <span className="text-base font-bold text-amber-700 flex items-center gap-1 group-hover:translate-x-1 transition">
-              View Schedule <ChevronRight className="w-5 h-5" />
+              {t.viewSchedule || "View Schedule"} <ChevronRight className="w-5 h-5" />
             </span>
             <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              {completedCount} Completed Today
+              {completedCount} {t.completedToday || "Completed Today"}
             </span>
           </div>
         </div>
@@ -243,7 +243,7 @@ export default function ElderDashboard() {
               ❤️
             </div>
             <AudioButton
-              textToRead="Memory Support & Heritage. Recall familiar places like Loktak Lake, Living Root Bridges, and traditional crafts."
+              textToRead={`${t.memorySupportCard || 'Memory Support & Heritage'}. ${t.memorySupportSub || 'Recall familiar places like Loktak Lake, Living Root Bridges, and traditional crafts.'}`}
               size="md"
             />
           </div>
@@ -251,20 +251,20 @@ export default function ElderDashboard() {
           <div className="mt-6">
             <div className="flex items-center gap-2">
               <h2 className="text-2xl sm:text-3xl font-black text-rose-950 font-sans">
-                {t.memorySupport || "Memory Support"}
+                {t.memorySupportCard || "Memory Support"}
               </h2>
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
                 Heritage Recall
               </span>
             </div>
             <p className="text-base sm:text-lg text-slate-600 font-medium mt-2 leading-relaxed">
-              Gentle photo-based reminiscing with traditional North East symbols and stories.
+              {t.memorySupportSub || "Recall familiar places like Loktak Lake, Living Root Bridges, and traditional crafts."}
             </p>
           </div>
 
           <div className="mt-6 flex items-center justify-between pt-4 border-t border-rose-100">
             <span className="text-base font-bold text-rose-700 flex items-center gap-1 group-hover:translate-x-1 transition">
-              Explore Familiar Stories <ChevronRight className="w-5 h-5" />
+              {t.exploreMemories || "Explore Memories"} <ChevronRight className="w-5 h-5" />
             </span>
           </div>
         </div>
@@ -282,7 +282,7 @@ export default function ElderDashboard() {
               🎤
             </div>
             <AudioButton
-              textToRead="Voice Assistant Sathi. Just speak to ask about your medicines, start a game, or call your caregiver."
+              textToRead={`${t.voiceAssistant || 'Voice Assistant'}. ${t.voiceAssistantSubtitle || 'Speak to ask about medicines or start games.'}`}
               size="md"
             />
           </div>
@@ -297,13 +297,13 @@ export default function ElderDashboard() {
               </span>
             </div>
             <p className="text-base sm:text-lg text-slate-600 font-medium mt-2 leading-relaxed">
-              No typing needed! Just speak in English, Assamese, Bengali, or Hindi.
+              {t.voiceAssistantSubtitle || "Speak in English, Assamese, Bengali, Manipuri, Mizo, or Hindi."}
             </p>
           </div>
 
           <div className="mt-6 flex items-center justify-between pt-4 border-t border-indigo-100">
             <span className="text-base font-bold text-indigo-700 flex items-center gap-1 group-hover:translate-x-1 transition">
-              Tap to Speak Now <ChevronRight className="w-5 h-5" />
+              {t.tapToPlay || "Tap to Speak Now"} <ChevronRight className="w-5 h-5" />
             </span>
           </div>
         </div>
@@ -320,10 +320,10 @@ export default function ElderDashboard() {
           </div>
           <div>
             <h2 className="text-2xl sm:text-3xl font-black text-purple-950 font-sans">
-              {t.progress || "My Stars & Daily Progress"}
+              {t.starsCard || "My Stars & Daily Progress"}
             </h2>
             <p className="text-base sm:text-lg text-slate-600 font-medium mt-1">
-              You've earned <strong>{userProfile?.total_stars || 56} stars</strong>! Consistent daily exercises keep your memory bright.
+              {t.starsCardSub || "Celebrate daily cognitive progress and earn colorful North East cultural badges."}
             </p>
           </div>
         </div>
@@ -331,7 +331,7 @@ export default function ElderDashboard() {
         <button
           className="px-6 py-3 rounded-2xl bg-purple-600 text-white font-bold text-base hover:bg-purple-700 transition shrink-0 shadow-md"
         >
-          View Stars ↗
+          {t.viewBadges || "View Badges"} ↗
         </button>
       </div>
 
@@ -343,7 +343,7 @@ export default function ElderDashboard() {
           </div>
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-rose-700">
-              Emergency & Caregiver Contact
+              {t.caregiverCard || "Emergency & Caregiver Contact"}
             </span>
             <h3 className="text-xl font-black text-slate-900">
               {userProfile?.emergency_contact_name || 'Priya Sharma (Daughter)'}
@@ -360,7 +360,7 @@ export default function ElderDashboard() {
           className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-md transition"
         >
           <PhoneCall className="w-5 h-5" />
-          <span>Call Caregiver</span>
+          <span>{t.callNow || "Call Caregiver"}</span>
         </a>
       </div>
     </div>

@@ -20,7 +20,7 @@ import {
 
 export default function GameSequenceRecall() {
   const { navigateTo, refreshUserData } = useApp();
-  const { speakText, autoVoiceRead } = useAccessibility();
+  const { speakText, autoVoiceRead, t } = useAccessibility();
 
   const [sequence, setSequence] = useState([]);
   const [playerIndex, setPlayerIndex] = useState(0);
@@ -162,7 +162,7 @@ export default function GameSequenceRecall() {
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />
-          <span>Back to Mind Games</span>
+          <span>{t.backToGames || "Back to Mind Games"}</span>
         </button>
 
         <button
@@ -170,7 +170,7 @@ export default function GameSequenceRecall() {
           className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-300 transition"
         >
           <RotateCcw className="w-4 h-4" />
-          <span>Restart</span>
+          <span>{t.restart || "Restart"}</span>
         </button>
       </div>
 
@@ -181,16 +181,16 @@ export default function GameSequenceRecall() {
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-extrabold text-amber-950 font-sans flex items-center justify-center gap-3">
-          <span>NER Rhythm & Sequence Recall</span>
-          <AudioButton textToRead="Rhythm and Sequence Recall. Watch and listen to the instruments, then tap them in the same order." size="md" />
+          <span>{t.sequenceRecall || "NER Rhythm & Sequence Recall"}</span>
+          <AudioButton textToRead={`${t.sequenceRecall || 'Rhythm and Sequence Recall'}. ${t.sequenceRecallDesc || 'Watch and listen to the instruments.'}`} size="md" />
         </h1>
 
         <div className="inline-block bg-amber-50 px-5 py-2 rounded-full border-2 border-amber-300 text-amber-950 font-bold text-base sm:text-lg">
-          {statusMessage}
+          {isPlayingSequence ? (t.listenPattern || "Listen Carefully to the Rhythms...") : (t.yourTurn || "Your Turn! Tap the Instruments in Order")}
         </div>
 
         <div className="flex justify-center items-center gap-6 pt-2 text-sm font-bold text-slate-600">
-          <span>Round: <strong className="text-amber-800 text-base">{round} of {totalRoundsToWin}</strong></span>
+          <span>{t.round || "Round"}: <strong className="text-amber-800 text-base">{round} of {totalRoundsToWin}</strong></span>
           <span>Sequence Length: <strong className="text-amber-800 text-base">{sequence.length}</strong></span>
         </div>
       </div>
@@ -225,7 +225,7 @@ export default function GameSequenceRecall() {
       {/* Sequence Playing Overlay State */}
       {isPlayingSequence && (
         <div className="text-center font-bold text-amber-800 animate-pulse text-base">
-          🎵 Listening to rhythm pattern...
+          🎵 {t.listenPattern || "Listening to rhythm pattern..."}
         </div>
       )}
 
@@ -238,20 +238,20 @@ export default function GameSequenceRecall() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-black text-amber-950 font-sans">
-              Brilliant Memory!
+              {t.congratsSequence || "Spectacular Rhythm Memory!"}
             </h2>
 
             <p className="text-lg text-slate-700 font-medium mt-2">
-              {gameResult?.encouraging_message || "You recalled the North East rhythmic sequence accurately!"}
+              {gameResult?.encouraging_message || (t.congratsSequenceSub || "Your ears and working memory reproduced the musical sequence perfectly.")}
             </p>
 
             <div className="bg-amber-50 rounded-2xl p-5 border-2 border-amber-200 my-6 text-left space-y-2">
               <div className="flex items-center justify-between text-lg font-bold text-amber-950">
-                <span>Final Score:</span>
+                <span>{t.score || "Final Score"}:</span>
                 <span className="text-2xl font-black text-amber-700">{gameResult?.score || 90} / 100</span>
               </div>
               <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
-                <span>Stars Earned:</span>
+                <span>{t.stars || "Stars Earned"}:</span>
                 <span className="text-amber-600 font-bold">+5 Stars ⭐</span>
               </div>
             </div>
@@ -261,14 +261,14 @@ export default function GameSequenceRecall() {
                 onClick={startNewGame}
                 className="flex-1 py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-lg shadow-tactile-amber transition"
               >
-                Play Again
+                {t.playAgain || "Play Again"}
               </button>
 
               <button
                 onClick={() => navigateTo('elder', 'games_hub')}
                 className="flex-1 py-4 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-lg transition"
               >
-                Other Games
+                {t.mindGames || "Other Games"}
               </button>
             </div>
           </div>

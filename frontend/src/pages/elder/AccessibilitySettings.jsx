@@ -28,7 +28,8 @@ export default function AccessibilitySettings() {
     language,
     setLanguage,
     availableLanguages,
-    speakText
+    speakText,
+    t
   } = useAccessibility();
 
   const handleSetFont = (sz) => {
@@ -55,7 +56,7 @@ export default function AccessibilitySettings() {
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />
-          <span>Back to Home</span>
+          <span>{t.backToHome || 'Back to Home'}</span>
         </button>
       </div>
 
@@ -63,11 +64,11 @@ export default function AccessibilitySettings() {
       <div className="bg-white rounded-3xl p-6 sm:p-8 border-3 border-teal-200 shadow-sm flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-teal-950 font-sans tracking-tight flex items-center gap-3">
-            <span>Accessibility & Comfort Center</span>
-            <AudioButton textToRead="Accessibility Center. Customize your text size, contrast themes, and voice reader settings." size="lg" />
+            <span>{t.settingsTitle || 'Accessibility & Comfort Center'}</span>
+            <AudioButton textToRead={`${t.settingsTitle}. ${t.settingsSubtitle}`} size="lg" />
           </h1>
           <p className="text-base sm:text-lg text-slate-600 font-semibold mt-1">
-            Personalize your screen for maximum comfort and visual clarity.
+            {t.settingsSubtitle || 'Personalize your screen for maximum comfort and visual clarity.'}
           </p>
         </div>
       </div>
@@ -76,19 +77,19 @@ export default function AccessibilitySettings() {
       <div className="elder-card p-6 sm:p-8 bg-white border-3 border-teal-100 shadow-soft-3d space-y-4">
         <div className="flex items-center gap-3">
           <Type className="w-8 h-8 text-amber-500" />
-          <h2 className="text-2xl font-black text-slate-900">Text Size / Typography Scale</h2>
+          <h2 className="text-2xl font-black text-slate-900">{t.textSizeHeading || 'Text Size / Typography Scale'}</h2>
         </div>
 
         <p className="text-base text-slate-600 font-medium">
-          Make all texts and buttons bigger for effortless reading without straining eyes.
+          {t.settingsSubtitle || 'Make all texts and buttons bigger for effortless reading without straining eyes.'}
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
           {[
-            { id: 'small', label: 'Small', example: '16px' },
-            { id: 'medium', label: 'Medium', example: '18px' },
-            { id: 'large', label: 'Large (Default)', example: '22px' },
-            { id: 'xlarge', label: 'Extra Large', example: '26px' }
+            { id: 'small', label: t.small || 'Small', example: '16px' },
+            { id: 'medium', label: t.medium || 'Medium', example: '18px' },
+            { id: 'large', label: `${t.large || 'Large'} (${t.defaultTheme || 'Default'})`, example: '22px' },
+            { id: 'xlarge', label: t.xlarge || 'Extra Large', example: '26px' }
           ].map(sz => (
             <button
               key={sz.id}
@@ -110,17 +111,17 @@ export default function AccessibilitySettings() {
       <div className="elder-card p-6 sm:p-8 bg-white border-3 border-teal-100 shadow-soft-3d space-y-4">
         <div className="flex items-center gap-3">
           <Eye className="w-8 h-8 text-cyan-500" />
-          <h2 className="text-2xl font-black text-slate-900">High Contrast Modes</h2>
+          <h2 className="text-2xl font-black text-slate-900">{t.themeHeading || 'High Contrast Modes'}</h2>
         </div>
 
         <p className="text-base text-slate-600 font-medium">
-          Choose a soothing palette tailored for cataracts, low vision, or night-time comfort.
+          {t.themeHeading}: {t.defaultTheme} &amp; {t.warmBrown}.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           {[
-            { id: 'standard', title: 'Default Theme (Soft Healing Teal)', desc: 'Soothing organic healthcare palette with healing teal and warm amber highlights.' },
-            { id: 'warm_sepia', title: 'Warm Brown Theme (Sepia Paper)', desc: 'High-contrast earthy brown tone with creamy parchment background easy on sensitive eyes.' }
+            { id: 'standard', title: `${t.defaultTheme || 'Default'} (${t.softHealingTeal || 'Soft Healing Teal'})`, desc: t.defaultThemeDesc || 'Soothing organic healthcare palette with healing teal and warm amber highlights.' },
+            { id: 'warm_sepia', title: `${t.warmBrown || 'Warm Brown'} (${t.sepiaPaper || 'Sepia Paper'})`, desc: t.warmBrownDesc || 'High-contrast earthy brown tone with creamy parchment background easy on sensitive eyes.' }
           ].map(th => (
             <button
               key={th.id}
@@ -145,11 +146,11 @@ export default function AccessibilitySettings() {
       <div className="elder-card p-6 sm:p-8 bg-white border-3 border-teal-100 shadow-soft-3d space-y-4">
         <div className="flex items-center gap-3">
           <Globe className="w-8 h-8 text-teal-600" />
-          <h2 className="text-2xl font-black text-slate-900">Regional Language / আঞ্চলিক ভাষা</h2>
+          <h2 className="text-2xl font-black text-slate-900">{t.languageHeading || 'Regional Language'}</h2>
         </div>
 
         <p className="text-base text-slate-600 font-medium">
-          Select your native North Eastern language for familiar prompts, audio narration, and game guidance.
+          {t.voiceAssistantSubtitle || 'Select your native North Eastern language for familiar prompts, audio narration, and game guidance.'}
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
@@ -174,15 +175,15 @@ export default function AccessibilitySettings() {
       <div className="elder-card p-6 sm:p-8 bg-white border-3 border-teal-100 shadow-soft-3d space-y-6">
         <div className="flex items-center gap-3">
           <Volume2 className="w-8 h-8 text-teal-600" />
-          <h2 className="text-2xl font-black text-slate-900">Voice & Motion Preferences</h2>
+          <h2 className="text-2xl font-black text-slate-900">{t.voiceNarrationHeading || 'Voice & Motion Preferences'}</h2>
         </div>
 
         <div className="space-y-4">
           {/* Voice Guidance */}
           <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-200">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Automatic Voice Read Aloud</h3>
-              <p className="text-sm font-semibold text-slate-500">Speaks out titles, cards, and game prompts automatically.</p>
+              <h3 className="text-lg font-bold text-slate-900">{t.autoVoiceTitle || 'Automatic Voice Read Aloud'}</h3>
+              <p className="text-sm font-semibold text-slate-500">{t.autoVoiceDesc || 'Speaks out titles, cards, and game prompts automatically.'}</p>
             </div>
             <button
               onClick={() => {
@@ -194,15 +195,15 @@ export default function AccessibilitySettings() {
                 autoVoiceRead ? 'bg-teal-600 text-white' : 'bg-slate-300 text-slate-700'
               }`}
             >
-              {autoVoiceRead ? 'ON' : 'OFF'}
+              {autoVoiceRead ? (t.on || 'ON') : (t.off || 'OFF')}
             </button>
           </div>
 
           {/* Large Touch Targets */}
           <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-200">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Extra Large Touch Targets</h3>
-              <p className="text-sm font-semibold text-slate-500">Enlarges clickable buttons to 60px minimum for tremor-safe tapping.</p>
+              <h3 className="text-lg font-bold text-slate-900">{t.largeTouchTitle || 'Extra Large Touch Targets'}</h3>
+              <p className="text-sm font-semibold text-slate-500">{t.largeTouchDesc || 'Enlarges clickable buttons to 60px minimum for tremor-safe tapping.'}</p>
             </div>
             <button
               onClick={() => {
@@ -214,15 +215,15 @@ export default function AccessibilitySettings() {
                 largeButtons ? 'bg-teal-600 text-white' : 'bg-slate-300 text-slate-700'
               }`}
             >
-              {largeButtons ? 'ON' : 'OFF'}
+              {largeButtons ? (t.on || 'ON') : (t.off || 'OFF')}
             </button>
           </div>
 
           {/* Reduced Motion */}
           <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-200">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Reduced Motion Mode</h3>
-              <p className="text-sm font-semibold text-slate-500">Disables floating cards and animations to prevent dizziness.</p>
+              <h3 className="text-lg font-bold text-slate-900">{t.reducedMotionTitle || 'Reduced Motion Mode'}</h3>
+              <p className="text-sm font-semibold text-slate-500">{t.reducedMotionDesc || 'Disables floating cards and animations to prevent dizziness.'}</p>
             </div>
             <button
               onClick={() => {
@@ -234,7 +235,7 @@ export default function AccessibilitySettings() {
                 reducedMotion ? 'bg-teal-600 text-white' : 'bg-slate-300 text-slate-700'
               }`}
             >
-              {reducedMotion ? 'ON' : 'OFF'}
+              {reducedMotion ? (t.on || 'ON') : (t.off || 'OFF')}
             </button>
           </div>
         </div>

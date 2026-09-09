@@ -16,7 +16,8 @@ export default function AccessibilityBar() {
     availableLanguages,
     speakText,
     cycleFontSize,
-    cycleTheme
+    cycleTheme,
+    t
   } = useAccessibility();
 
   const { isOnline } = useApp();
@@ -33,7 +34,7 @@ export default function AccessibilityBar() {
           aria-label="Text Size"
         >
           <Type className="w-4 h-4 text-amber-400" />
-          <span>Text: <strong className="text-amber-300 uppercase">{fontSize}</strong></span>
+          <span>{t.textSize || 'Text'}: <strong className="text-amber-300 uppercase">{fontSize}</strong></span>
         </button>
 
         {/* Contrast Theme Button */}
@@ -44,7 +45,7 @@ export default function AccessibilityBar() {
           aria-label="Contrast Mode"
         >
           <Eye className="w-4 h-4 text-amber-400" />
-          <span>Theme: <strong className="text-amber-300 font-bold">{theme === 'warm_sepia' ? 'Warm Brown' : 'Default'}</strong></span>
+          <span>{t.theme || 'Theme'}: <strong className="text-amber-300 font-bold">{theme === 'warm_sepia' ? (t.warmBrown || 'Warm Brown') : (t.defaultTheme || 'Default')}</strong></span>
         </button>
 
         {/* Voice Read Aloud Toggle */}
@@ -60,7 +61,7 @@ export default function AccessibilityBar() {
           title="Toggle Automatic Voice Guidance"
         >
           {autoVoiceRead ? <Volume2 className="w-4 h-4 text-teal-400" /> : <VolumeX className="w-4 h-4" />}
-          <span>Voice: <strong>{autoVoiceRead ? 'ON' : 'OFF'}</strong></span>
+          <span>{t.voiceGuidance || 'Voice'}: <strong>{autoVoiceRead ? (t.on || 'ON') : (t.off || 'OFF')}</strong></span>
         </button>
       </div>
 
@@ -95,7 +96,7 @@ export default function AccessibilityBar() {
           title={isOnline ? "Connected to Cloud & AI Engine" : "Offline-First Mode Active (Auto Sync)"}
         >
           {isOnline ? <Wifi className="w-3 h-3 text-emerald-400" /> : <WifiOff className="w-3 h-3 text-amber-400" />}
-          <span className="hidden sm:inline">{isOnline ? 'Cloud Synced' : 'Offline Ready'}</span>
+          <span className="hidden sm:inline">{isOnline ? (t.cloudSynced || 'Cloud Synced') : (t.offlineReady || 'Offline Ready')}</span>
         </div>
       </div>
     </aside>

@@ -34,7 +34,7 @@ export default function ElderProgress() {
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />
-          <span>Back to Home</span>
+          <span>{t.backToHome || "Back to Home"}</span>
         </button>
       </div>
 
@@ -46,10 +46,10 @@ export default function ElderProgress() {
 
         <div>
           <h1 className="text-3xl sm:text-5xl font-black font-sans tracking-tight">
-            {t.progress || "My Stars & Daily Progress"}
+            {t.progressTitle || "My Stars & Cognitive Progress"}
           </h1>
           <p className="text-lg sm:text-xl text-purple-200 font-medium max-w-xl mx-auto mt-2">
-            Every game you play and reminder you complete keeps your mind sharp and active!
+            {t.progressSubtitle || "Every game you play and reminder you complete keeps your mind sharp and active!"}
           </p>
         </div>
 
@@ -60,15 +60,15 @@ export default function ElderProgress() {
               <Award className="w-8 h-8 fill-amber-400" />
               <span className="text-4xl font-black">{totalStars}</span>
             </div>
-            <span className="text-sm font-bold text-purple-200 uppercase tracking-wider">Total Stars</span>
+            <span className="text-sm font-bold text-purple-200 uppercase tracking-wider">{t.stars || "Total Stars"}</span>
           </div>
 
           <div className="bg-purple-950/80 p-5 rounded-3xl border-2 border-purple-400 shadow-inner">
             <div className="flex items-center justify-center gap-2 text-orange-400 mb-1">
               <Flame className="w-8 h-8 fill-orange-400" />
-              <span className="text-4xl font-black">{streak} Days</span>
+              <span className="text-4xl font-black">{streak}</span>
             </div>
-            <span className="text-sm font-bold text-purple-200 uppercase tracking-wider">Active Streak</span>
+            <span className="text-sm font-bold text-purple-200 uppercase tracking-wider">{t.streak || "Active Streak"}</span>
           </div>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default function ElderProgress() {
       {/* Badges Earned */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border-3 border-teal-100 shadow-sm space-y-4">
         <h2 className="text-2xl font-black text-teal-950 flex items-center gap-2">
-          <span>Cognitive Milestone Badges</span>
+          <span>{t.badgesEarned || "Cognitive Milestone Badges"}</span>
           <AudioButton textToRead="Milestone Badges. You have earned the Heritage Champion, Focus Master, and Morning Routine badges." size="sm" />
         </h2>
 
@@ -104,7 +104,7 @@ export default function ElderProgress() {
       {/* Recent Game Activity Log */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border-3 border-teal-100 shadow-sm space-y-4">
         <h2 className="text-2xl font-black text-teal-950">
-          Recent Mind Game History
+          {t.recentPerformance || "Recent Mind Game History"}
         </h2>
 
         <div className="space-y-3">

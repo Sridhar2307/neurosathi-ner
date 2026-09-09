@@ -170,12 +170,12 @@ export default function GameMemoryMatch() {
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />
-          <span>Back to Mind Games</span>
+          <span>{t.backToGames || "Back to Mind Games"}</span>
         </button>
 
         {/* Difficulty Selector */}
         <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border-2 border-teal-200 shadow-sm">
-          <span className="text-xs font-bold text-slate-500 uppercase px-2">Level:</span>
+          <span className="text-xs font-bold text-slate-500 uppercase px-2">{t.difficulty || "Level"}:</span>
           {['easy', 'medium', 'hard'].map(lvl => (
             <button
               key={lvl}
@@ -186,7 +186,7 @@ export default function GameMemoryMatch() {
                   : 'text-teal-950 hover:bg-teal-50'
               }`}
             >
-              {lvl} ({lvl === 'easy' ? '4 pairs' : lvl === 'medium' ? '6 pairs' : '8 pairs'})
+              {lvl === 'easy' ? (t.easy || 'Gentle') : lvl === 'medium' ? (t.medium || 'Standard') : (t.hard || 'Challenging')}
             </button>
           ))}
         </div>
@@ -200,11 +200,11 @@ export default function GameMemoryMatch() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-teal-950 flex items-center gap-2">
-              <span>Heritage Memory Match</span>
-              <AudioButton textToRead="Heritage Memory Match. Tap cards to find matching North East symbols." size="sm" />
+              <span>{t.heritageMatch || "Heritage Memory Match"}</span>
+              <AudioButton textToRead={`${t.heritageMatch || 'Heritage Memory Match'}. ${t.tapToFlip || 'Tap cards to find pairs'}.`} size="sm" />
             </h1>
             <p className="text-sm sm:text-base font-semibold text-slate-600">
-              {t.tapToFlip || "Tap cards to find pairs"} • {matchedIds.length} of {pairCount} pairs matched
+              {t.tapToFlip || "Tap cards to find pairs"} • {matchedIds.length} / {pairCount} {t.pairsFound || "pairs matched"}
             </p>
           </div>
         </div>
@@ -212,18 +212,18 @@ export default function GameMemoryMatch() {
         <div className="flex items-center gap-4 text-slate-800 font-bold text-base sm:text-lg">
           <div className="flex items-center gap-1.5 bg-teal-50 px-3.5 py-1.5 rounded-xl border border-teal-200 text-teal-950">
             <Clock className="w-5 h-5 text-teal-600" />
-            <span>{seconds}s</span>
+            <span>{seconds}s {t.time || "Time"}</span>
           </div>
 
           <div className="flex items-center gap-1.5 bg-amber-50 px-3.5 py-1.5 rounded-xl border border-amber-200 text-amber-950">
             <RotateCcw className="w-5 h-5 text-amber-600" />
-            <span>{moves} Turns</span>
+            <span>{moves} {t.moves || "Turns"}</span>
           </div>
 
           <button
             onClick={initializeGame}
             className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition"
-            title="Restart Game"
+            title={t.restart || "Restart Game"}
           >
             <RotateCcw className="w-5 h-5" />
           </button>
@@ -269,7 +269,7 @@ export default function GameMemoryMatch() {
                     🌿
                   </div>
                   <span className="text-xs font-extrabold text-teal-100 uppercase tracking-wider block">
-                    TAP CARD
+                    {t.tapToPlay || "TAP CARD"}
                   </span>
                 </div>
               )}
@@ -287,29 +287,29 @@ export default function GameMemoryMatch() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-black text-teal-950 font-sans">
-              Shandar! Magnificent!
+              {t.congratsMatch || "Wonderful Memory Recall!"}
             </h2>
 
             <p className="text-lg text-slate-700 font-medium mt-2">
-              {gameResult?.encouraging_message || "You matched all North East heritage pairs effortlessly!"}
+              {gameResult?.encouraging_message || (t.congratsMatchSub || "You matched all North East cultural cards with great focus.")}
             </p>
 
             {/* Score Breakdown Box */}
             <div className="bg-emerald-50 rounded-2xl p-5 border-2 border-emerald-200 my-6 text-left space-y-2.5">
               <div className="flex items-center justify-between text-lg font-bold text-emerald-950">
-                <span>Final Cognitive Score:</span>
+                <span>{t.score || "Score"}:</span>
                 <span className="text-2xl font-black text-emerald-700">{gameResult?.score || 95} / 100</span>
               </div>
               <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
-                <span>Time Taken:</span>
-                <span>{seconds} seconds</span>
+                <span>{t.time || "Time"}:</span>
+                <span>{seconds}s</span>
               </div>
               <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
-                <span>Stars Earned:</span>
+                <span>{t.stars || "Stars Earned"}:</span>
                 <span className="text-amber-600 font-bold">+5 Stars ⭐</span>
               </div>
               <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
-                <span>Adaptive Next Level:</span>
+                <span>{t.difficulty || "Level"}:</span>
                 <span className="capitalize font-bold text-teal-800">{gameResult?.adaptive_next_difficulty || difficulty}</span>
               </div>
             </div>
@@ -320,14 +320,14 @@ export default function GameMemoryMatch() {
                 className="flex-1 py-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-tactile-btn transition"
               >
                 <RotateCcw className="w-5 h-5" />
-                <span>Play Again</span>
+                <span>{t.playAgain || "Play Again"}</span>
               </button>
 
               <button
                 onClick={() => navigateTo('elder', 'games_hub')}
                 className="flex-1 py-4 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-lg transition"
               >
-                <span>Other Games</span>
+                <span>{t.mindGames || "Other Games"}</span>
               </button>
             </div>
           </div>

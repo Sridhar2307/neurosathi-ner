@@ -20,7 +20,7 @@ import {
 
 export default function GameObjectRecognition() {
   const { navigateTo, refreshUserData } = useApp();
-  const { speakText, autoVoiceRead } = useAccessibility();
+  const { speakText, autoVoiceRead, t } = useAccessibility();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -101,11 +101,11 @@ export default function GameObjectRecognition() {
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />
-          <span>Back to Mind Games</span>
+          <span>{t.backToGames || "Back to Mind Games"}</span>
         </button>
 
         <span className="text-sm sm:text-base font-bold text-rose-900 bg-rose-100 px-4 py-2 rounded-2xl border border-rose-300">
-          Memory {currentIndex + 1} of {NER_OBJECT_RECOGNITION_STORIES.length}
+          {t.question || "Memory"} {currentIndex + 1} / {NER_OBJECT_RECOGNITION_STORIES.length}
         </span>
       </div>
 
@@ -149,12 +149,12 @@ export default function GameObjectRecognition() {
                 className="flex items-center gap-2 text-sm font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-4 py-2 rounded-xl border border-amber-200 transition"
               >
                 <HelpCircle className="w-4 h-4" />
-                <span>{showHint ? "Hide Gentle Clue" : "Need a Gentle Clue?"}</span>
+                <span>{showHint ? (t.hint || "Hide Gentle Clue") : (t.hint || "Need a Gentle Clue?")}</span>
               </button>
 
               {showHint && (
                 <div className="mt-3 p-4 bg-amber-50 rounded-2xl border-2 border-amber-200 text-amber-950 font-medium text-base animate-fadeIn">
-                  💡 <strong>Clue:</strong> {currentStory.hint}
+                  💡 <strong>{t.hint || "Clue"}:</strong> {currentStory.hint}
                 </div>
               )}
             </div>
@@ -196,7 +196,7 @@ export default function GameObjectRecognition() {
             <div className="bg-white rounded-3xl p-6 border-3 border-teal-200 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 animate-fadeIn">
               <div className="space-y-1 text-left">
                 <p className="text-base sm:text-lg font-bold text-teal-950">
-                  {selectedOption === currentStory.correctAnswer ? "✨ Shandar! Correct identification." : `✨ The familiar item is ${currentStory.correctAnswer}.`}
+                  {selectedOption === currentStory.correctAnswer ? (t.correct || "✨ Shandar! Correct identification.") : `✨ The familiar item is ${currentStory.correctAnswer}.`}
                 </p>
                 <p className="text-sm font-semibold text-slate-600">
                   {currentStory.culturalFact}
@@ -207,7 +207,7 @@ export default function GameObjectRecognition() {
                 onClick={handleNextStory}
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-tactile-btn transition shrink-0"
               >
-                <span>{currentIndex + 1 < NER_OBJECT_RECOGNITION_STORIES.length ? "Next Memory" : "View Results"}</span>
+                <span>{currentIndex + 1 < NER_OBJECT_RECOGNITION_STORIES.length ? (t.nextQuestion || "Next Memory") : (t.viewSchedule || "View Results")}</span>
                 <ChevronRight className="w-6 h-6" />
               </button>
             </div>
@@ -221,20 +221,20 @@ export default function GameObjectRecognition() {
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-black text-rose-950 font-sans">
-            Heartfelt Memories!
+            {t.quizComplete || "Heartfelt Memories!"}
           </h2>
 
           <p className="text-lg text-slate-700 font-medium">
-            {gameResult?.encouraging_message || "You recognized all familiar North East objects with remarkable grace!"}
+            {gameResult?.encouraging_message || (t.quizCompleteSub || "You recognized all familiar North East objects with remarkable grace!")}
           </p>
 
           <div className="bg-rose-50 rounded-2xl p-5 border-2 border-rose-200 text-left space-y-2">
             <div className="flex items-center justify-between text-lg font-bold text-rose-950">
-              <span>Score:</span>
+              <span>{t.score || "Score"}:</span>
               <span className="text-2xl font-black text-rose-700">{score} / 100</span>
             </div>
             <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
-              <span>Stars Earned:</span>
+              <span>{t.stars || "Stars Earned"}:</span>
               <span className="text-amber-600 font-bold">+5 Stars ⭐</span>
             </div>
           </div>
@@ -244,14 +244,14 @@ export default function GameObjectRecognition() {
               onClick={handleRestart}
               className="flex-1 py-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-lg shadow-md transition"
             >
-              Play Again
+              {t.playAgain || "Play Again"}
             </button>
 
             <button
               onClick={() => navigateTo('elder', 'games_hub')}
               className="flex-1 py-4 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-lg transition"
             >
-              Other Games
+              {t.mindGames || "Other Games"}
             </button>
           </div>
         </div>
