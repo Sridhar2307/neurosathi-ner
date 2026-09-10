@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { api } from '../../services/api';
 import AudioButton from '../../components/AudioButton';
+import { speechService } from '../../services/speechService';
 import {
   Brain,
   Bell,
@@ -17,11 +18,13 @@ import {
   ChevronRight,
   Clock,
   RotateCcw,
-  Moon
+  Moon,
+  Volume2,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function ElderDashboard() {
-  const { navigateTo, setIsVoiceAssistantOpen, userProfile, refreshUserData } = useApp();
+  const { navigateTo, setIsVoiceAssistantOpen, userProfile, refreshUserData, triggerReminderAlert, showToast } = useApp();
   const { speakText, autoVoiceRead, t } = useAccessibility();
 
   const [reminders, setReminders] = useState([]);
@@ -129,37 +132,64 @@ export default function ElderDashboard() {
         </div>
       </div>
 
-      {/* Up Next / Urgent Reminder Alert Box (if any) */}
+      {/* Up Next / Urgent High-Alert Reminder Box */}
       {pendingReminders.length > 0 && (
-        <div className="bg-amber-50 border-4 border-amber-300 rounded-3xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-red-50 via-rose-50 to-red-100/90 border-4 border-red-500 rounded-3xl p-5 sm:p-6 shadow-xl shadow-red-500/15 ring-4 ring-red-400/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-amber-400 text-amber-950 flex items-center justify-center font-bold text-2xl shrink-0 shadow-sm">
+            <div className="w-16 h-16 rounded-3xl bg-red-600 text-white flex items-center justify-center font-bold text-3xl shrink-0 shadow-lg ring-4 ring-red-300 animate-pulse">
               🔔
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full">
-                  {t.upcomingReminder || "Upcoming Reminder"}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-black uppercase tracking-wider bg-red-600 text-white px-3 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-1">
+                  🚨 HIGH ALERT REMINDER
                 </span>
-                <span className="text-sm font-bold text-amber-950 flex items-center gap-1">
-                  <Clock className="w-4 h-4 text-amber-700" /> {pendingReminders[0].time}
+                <span className="text-sm font-black text-red-950 flex items-center gap-1">
+                  <Clock className="w-4 h-4 text-red-700" /> {pendingReminders[0].time}
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-amber-950 mt-1">
+              <h2 className="text-2xl sm:text-3xl font-black text-red-950 mt-1">
                 {pendingReminders[0].title}
               </h2>
-              <p className="text-base text-amber-900 font-medium">
+              <p className="text-base sm:text-lg text-red-900 font-semibold mt-0.5">
                 {pendingReminders[0].dosage_or_detail}
               </p>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            {/* High Alert Audio Trigger Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                speechService.playHighAlertSound(3);
+                showToast(`🔊 Playing High Alert Sound for: ${pendingReminders[0].title}`, 3000, 'alert');
+              }}
+              className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-base flex items-center justify-center gap-2 shadow-md active:scale-95 transition"
+              title="Play High Alert Sound"
+            >
+              <Volume2 className="w-5 h-5 animate-bounce" />
+              <span>High Alert Sound</span>
+            </button>
+
+            {/* Trigger Red Popup Modal */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerReminderAlert(pendingReminders[0]);
+              }}
+              className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-white hover:bg-red-50 text-red-700 border-2 border-red-400 font-black text-base flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition"
+              title="Open Full Red Notification Pop-up"
+            >
+              <span>View Alert Pop-up</span>
+            </button>
+
             <AudioButton
               textToRead={`${t.upcomingReminder || 'Next reminder'}: ${pendingReminders[0].title} at ${pendingReminders[0].time}. ${pendingReminders[0].dosage_or_detail}`}
               size="lg"
-              className="bg-amber-200 text-amber-900 border-amber-400 w-full sm:w-auto"
+              className="bg-red-100 text-red-900 border-red-300 w-full sm:w-auto"
             />
+
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={(e) => handleCompleteQuickReminder(e, pendingReminders[0])}

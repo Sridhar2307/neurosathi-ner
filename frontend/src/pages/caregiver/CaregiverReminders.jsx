@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
+import { speechService } from '../../services/speechService';
 import {
   ArrowLeft,
   Plus,
@@ -11,11 +12,13 @@ import {
   CheckCircle2,
   XCircle,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Bell,
+  Volume2
 } from 'lucide-react';
 
 export default function CaregiverReminders() {
-  const { navigateTo } = useApp();
+  const { navigateTo, triggerReminderAlert, showToast } = useApp();
   const [reminders, setReminders] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
@@ -74,13 +77,33 @@ export default function CaregiverReminders() {
           <span>Back to Overview</span>
         </button>
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm flex items-center gap-2 transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Scheduled Reminder</span>
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => {
+              const sample = reminders[0] || {
+                title: "Blood Pressure Tablet (Amlodipine)",
+                category: "medicine",
+                time: "08:30 AM",
+                dosage_or_detail: "1 tablet after breakfast with water"
+              };
+              triggerReminderAlert(sample);
+              showToast("🚨 High-Alert Alarm & Red Pop-up triggered", 3500, 'reminder');
+            }}
+            className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-red-600/30 active:scale-95 transition"
+            title="Preview how the high alert sound and red modal pop-up appear on the Elder's screen"
+          >
+            <Bell className="w-4 h-4 animate-bounce" />
+            <span>Test Elder High-Alert Sound & Red Pop-up</span>
+          </button>
+
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm flex items-center gap-2 transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Scheduled Reminder</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 space-y-2">
@@ -121,6 +144,18 @@ export default function CaregiverReminders() {
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  speechService.playHighAlertSound(3);
+                  triggerReminderAlert(r);
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-red-950/60 text-red-300 hover:bg-red-900 border border-red-800 text-xs font-bold flex items-center gap-1 transition"
+                title="Test High Alert Sound & Red Pop-up for this reminder"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>Alert</span>
+              </button>
+
               <button
                 onClick={() => handleToggle(r)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition border ${

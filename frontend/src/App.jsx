@@ -3,6 +3,7 @@ import { useApp } from './context/AppContext';
 import AccessibilityBar from './components/AccessibilityBar';
 import Navbar from './components/Navbar';
 import VoiceAssistantModal from './components/VoiceAssistantModal';
+import ReminderAlertModal from './components/ReminderAlertModal';
 
 // Landing Page
 import LandingPage from './pages/LandingPage';
@@ -94,10 +95,24 @@ export default function App() {
       {/* Voice Assistant Modal Popup */}
       <VoiceAssistantModal />
 
-      {/* Toast Notification */}
+      {/* High Alert Reminder Modal Popup */}
+      <ReminderAlertModal />
+
+      {/* Notification Pop-up (Vivid Red for Reminders & Alerts) */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl border border-slate-700 text-base font-bold animate-fadeIn">
-          {toastMessage}
+        <div
+          className={`fixed bottom-6 right-6 z-50 px-6 py-4 rounded-3xl shadow-2xl text-base font-black animate-fadeIn flex items-center gap-3 border-2 ${
+            (typeof toastMessage === 'object' && (toastMessage.type === 'reminder' || toastMessage.type === 'alert'))
+              ? 'bg-red-600 text-white border-red-400 ring-4 ring-red-400/40 shadow-red-600/50'
+              : 'bg-slate-900 text-white border-slate-700'
+          }`}
+        >
+          {(typeof toastMessage === 'object' && (toastMessage.type === 'reminder' || toastMessage.type === 'alert')) && (
+            <span className="w-8 h-8 rounded-full bg-white text-red-600 flex items-center justify-center text-base shrink-0 animate-bounce">
+              🔔
+            </span>
+          )}
+          <span>{typeof toastMessage === 'object' ? toastMessage.message : toastMessage}</span>
         </div>
       )}
 

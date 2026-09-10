@@ -13,7 +13,8 @@ export const AppProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [isOnline, setIsOnline] = useState(true);
   const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null); // string or { message, type }
+  const [activeReminderAlert, setActiveReminderAlert] = useState(null);
 
   // Caregiver session — stores login info + patient list
   const [caregiverSession, setCaregiverSessionRaw] = useState(() => {
@@ -64,11 +65,19 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('ns_appMode', appMode);
   }, [appMode, activePatientId]);
 
-  const showToast = (msg, duration = 3000) => {
-    setToastMessage(msg);
+  const showToast = (msg, duration = 3000, type = 'normal') => {
+    setToastMessage(typeof msg === 'object' ? msg : { message: msg, type });
     setTimeout(() => {
       setToastMessage(null);
     }, duration);
+  };
+
+  const triggerReminderAlert = (reminder) => {
+    setActiveReminderAlert(reminder);
+  };
+
+  const closeReminderAlert = () => {
+    setActiveReminderAlert(null);
   };
 
   const navigateTo = (mode, view = 'dashboard') => {
@@ -93,6 +102,9 @@ export const AppProvider = ({ children }) => {
         setIsVoiceAssistantOpen,
         toastMessage,
         showToast,
+        activeReminderAlert,
+        triggerReminderAlert,
+        closeReminderAlert,
         caregiverSession,
         setCaregiverSession,
         activePatient,

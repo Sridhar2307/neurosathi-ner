@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { api } from '../../services/api';
+import { speechService } from '../../services/speechService';
 import AudioButton from '../../components/AudioButton';
 import {
   ArrowLeft,
@@ -17,11 +18,12 @@ import {
   Sun,
   Moon,
   Volume2,
-  RotateCcw
+  RotateCcw,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function MemoryAssistance() {
-  const { navigateTo, refreshUserData } = useApp();
+  const { navigateTo, refreshUserData, triggerReminderAlert, showToast } = useApp();
   const { speakText, autoVoiceRead, t } = useAccessibility();
 
   const [reminders, setReminders] = useState([]);
@@ -114,13 +116,34 @@ export default function MemoryAssistance() {
           <span>{t.backToHome || "Back to Home"}</span>
         </button>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-6 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-base sm:text-lg flex items-center gap-2 shadow-tactile-btn transition"
-        >
-          <Plus className="w-6 h-6" />
-          <span>{t.addReminder || "Add Reminder"}</span>
-        </button>
+        <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto">
+          {/* Test High Alert Button */}
+          <button
+            onClick={() => {
+              const targetRem = reminders.find(r => !r.is_completed) || reminders[0] || {
+                title: "Blood Pressure Tablet (Amlodipine)",
+                category: "medicine",
+                time: "10:00 AM",
+                dosage_or_detail: "1 tablet after food with a warm cup of water"
+              };
+              triggerReminderAlert(targetRem);
+              showToast("🚨 Testing High Alert Sound & Red Pop-up Notification", 3000, 'reminder');
+            }}
+            className="px-5 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-base flex items-center gap-2 shadow-md active:scale-95 transition"
+            title="Test High Alert Sound and Red Notification Pop-up"
+          >
+            <Bell className="w-5 h-5 animate-bounce" />
+            <span>Test High Alert Sound & Pop-up</span>
+          </button>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-6 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-base sm:text-lg flex items-center gap-2 shadow-tactile-btn transition"
+          >
+            <Plus className="w-6 h-6" />
+            <span>{t.addReminder || "Add Reminder"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Title & Filter Tabs */}
@@ -224,6 +247,17 @@ export default function MemoryAssistance() {
 
                   {!isDone && (
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          speechService.playHighAlertSound(3);
+                          triggerReminderAlert(rem);
+                        }}
+                        className="px-3.5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm flex items-center gap-1.5 transition shadow-sm"
+                        title="Trigger High Alert Sound & Red Pop-up"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Alert</span>
+                      </button>
                       <button
                         onClick={() => handleSnoozeReminder(rem, 30)}
                         className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm flex items-center gap-1.5 transition"

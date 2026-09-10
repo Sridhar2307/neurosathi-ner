@@ -220,6 +220,54 @@ class SpeechService {
   playErrorSound() {
     this.playTone(220, 'sawtooth', 0.2);
   }
+
+  /**
+   * High-Alert Alarm Sound for Elderly Reminders
+   * Emits an urgent, high-visibility dual-frequency alarm chime (880Hz & 1046.5Hz)
+   * designed specifically for elderly audibility across ambient noise.
+   */
+  playHighAlertSound(repeats = 3) {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      if (!this.audioCtx) {
+        this.audioCtx = new AudioContext();
+      }
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+
+      for (let i = 0; i < repeats; i++) {
+        const startOffset = i * 0.42;
+
+        // Tone 1: 880 Hz (A5)
+        const osc1 = this.audioCtx.createOscillator();
+        const gain1 = this.audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(880, this.audioCtx.currentTime + startOffset);
+        gain1.gain.setValueAtTime(0.75, this.audioCtx.currentTime + startOffset);
+        gain1.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + startOffset + 0.18);
+        osc1.connect(gain1);
+        gain1.connect(this.audioCtx.destination);
+        osc1.start(this.audioCtx.currentTime + startOffset);
+        osc1.stop(this.audioCtx.currentTime + startOffset + 0.18);
+
+        // Tone 2: 1046.5 Hz (C6 high alert chime)
+        const osc2 = this.audioCtx.createOscillator();
+        const gain2 = this.audioCtx.createGain();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(1046.5, this.audioCtx.currentTime + startOffset + 0.18);
+        gain2.gain.setValueAtTime(0.8, this.audioCtx.currentTime + startOffset + 0.18);
+        gain2.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + startOffset + 0.38);
+        osc2.connect(gain2);
+        gain2.connect(this.audioCtx.destination);
+        osc2.start(this.audioCtx.currentTime + startOffset + 0.18);
+        osc2.stop(this.audioCtx.currentTime + startOffset + 0.38);
+      }
+    } catch (e) {
+      console.warn("High Alert Sound Error:", e);
+    }
+  }
 }
 
 export const speechService = new SpeechService();
