@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { api, DEMO_USER_ID } from '../services/api';
+import { isReminderDueNow } from '../services/reminderScheduler';
 
 const AppContext = createContext();
 
@@ -15,6 +16,9 @@ export const AppProvider = ({ children }) => {
   const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null); // string or { message, type }
   const [activeReminderAlert, setActiveReminderAlert] = useState(null);
+
+  // Set of reminders already triggered today so we don't spam
+  const triggeredRemindersRef = useRef(new Set());
 
   // Caregiver session — stores login info + patient list
   const [caregiverSession, setCaregiverSessionRaw] = useState(() => {
@@ -64,6 +68,40 @@ export const AppProvider = ({ children }) => {
     refreshUserData();
     localStorage.setItem('ns_appMode', appMode);
   }, [appMode, activePatientId]);
+
+  // Real-time Reminder Scheduler: Checks every 5 seconds if any scheduled reminder is due
+  useEffect(() => {
+    const checkScheduledReminders = async () => {
+      // Don't interrupt if an alert popup is already open
+      if (activeReminderAlert) return;
+
+      try {
+        const reminders = await api.getReminders(activePatientId);
+        const pending = (reminders || []).filter(r => !r.is_completed);
+        const todayStr = new Date().toDateString();
+
+        for (const rem of pending) {
+          if (!rem.time) continue;
+
+          // Check if due right now (at current minute)
+          if (isReminderDueNow(rem.time, 1)) {
+            const triggerKey = `${rem.id}_${rem.time}_${todayStr}`;
+            if (!triggeredRemindersRef.current.has(triggerKey)) {
+              triggeredRemindersRef.current.add(triggerKey);
+              setActiveReminderAlert(rem);
+              break; // Pop up one reminder at a time
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Reminder scheduler check error:", err);
+      }
+    };
+
+    checkScheduledReminders();
+    const interval = setInterval(checkScheduledReminders, 5000);
+    return () => clearInterval(interval);
+  }, [activePatientId, activeReminderAlert]);
 
   const showToast = (msg, duration = 3000, type = 'normal') => {
     setToastMessage(typeof msg === 'object' ? msg : { message: msg, type });

@@ -75,10 +75,11 @@ export default function ReminderAlertModal() {
   const handleSnooze = async (minutes = 10) => {
     try {
       if (activeReminderAlert.id) {
-        await api.snoozeReminder(activeReminderAlert.id, minutes);
+        const snoozed = await api.snoozeReminder(activeReminderAlert.id, minutes);
+        const newTime = snoozed?.time || `${minutes} minutes later`;
+        speakText(`Reminder snoozed until ${newTime}.`);
+        showToast(`⏰ Snoozed until ${newTime}`, 4000, 'reminder');
       }
-      speakText(`Reminder snoozed for ${minutes} minutes.`);
-      showToast(`⏰ Snoozed for ${minutes} mins`, 3000, 'reminder');
       refreshUserData();
     } catch (e) {
       console.error(e);

@@ -3,6 +3,11 @@ import { useApp } from '../../context/AppContext';
 import { useAccessibility } from '../../context/AccessibilityContext';
 import { api } from '../../services/api';
 import { speechService } from '../../services/speechService';
+import {
+  convert24To12Hour,
+  convert12To24Hour,
+  getCurrentTime12Hour
+} from '../../services/reminderScheduler';
 import AudioButton from '../../components/AudioButton';
 import {
   ArrowLeft,
@@ -33,7 +38,7 @@ export default function MemoryAssistance() {
   // New reminder form
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('medicine');
-  const [newTime, setNewTime] = useState('10:00 AM');
+  const [newTime, setNewTime] = useState(() => getCurrentTime12Hour(1));
   const [newDetail, setNewDetail] = useState('');
 
   const loadReminders = async () => {
@@ -65,15 +70,21 @@ export default function MemoryAssistance() {
   };
 
   const handleSnoozeReminder = async (rem, minutes) => {
-    await api.snoozeReminder(rem.id, minutes);
+    const updated = await api.snoozeReminder(rem.id, minutes);
     await loadReminders();
-    speakText(`Reminder snoozed for ${minutes} minutes.`);
+    refreshUserData();
+    const newTimeDisplay = updated?.time || `${minutes}m later`;
+    speakText(`Reminder snoozed until ${newTimeDisplay}.`);
+    showToast(`⏰ Snoozed to ${newTimeDisplay}`, 3500, 'reminder');
   };
 
   const handleTakeLaterReminder = async (rem) => {
-    await api.takeLaterReminder(rem.id);
+    const updated = await api.takeLaterReminder(rem.id);
     await loadReminders();
-    speakText(`Reminder moved to evening.`);
+    refreshUserData();
+    const newTimeDisplay = updated?.time || "08:00 PM";
+    speakText(`Reminder moved to ${newTimeDisplay} tonight.`);
+    showToast(`🌙 Rescheduled to ${newTimeDisplay} tonight`, 3500, 'reminder');
   };
 
   const handleCreateReminder = async (e) => {
@@ -85,7 +96,7 @@ export default function MemoryAssistance() {
       category: newCategory,
       time: newTime,
       dosage_or_detail: newDetail || "Daily routine reminder",
-      audio_prompt: `Reminder for ${newTitle} at ${newTime}`,
+      audio_prompt: `Reminder for ${newTitle} scheduled for ${newTime}`,
       icon_name: newCategory === 'medicine' ? 'Pill' : (newCategory === 'water' ? 'Droplet' : 'Bell')
     });
 
@@ -94,7 +105,8 @@ export default function MemoryAssistance() {
     setNewDetail('');
     await loadReminders();
     refreshUserData();
-    speakText(`New reminder for ${newTitle} has been saved.`);
+    speakText(`New reminder for ${newTitle} scheduled for ${newTime}.`);
+    showToast(`✓ Scheduled for ${newTime}. High alert will pop up at this time!`, 4000, 'reminder');
   };
 
   const filteredReminders = reminders.filter(r => {
@@ -344,17 +356,58 @@ export default function MemoryAssistance() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">
-                    {t.timeScheduled || "Time"}
+                  <label className="block text-sm font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>{t.timeScheduled || "Scheduled Time"}</span>
+                    <span className="text-xs font-black text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                      {newTime}
+                    </span>
                   </label>
                   <input
-                    type="text"
+                    type="time"
                     required
-                    placeholder="e.g. 04:00 PM"
-                    value={newTime}
-                    onChange={(e) => setNewTime(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl border-2 border-slate-300 focus:border-teal-500 font-semibold text-sm"
+                    value={convert12To24Hour(newTime)}
+                    onChange={(e) => setNewTime(convert24To12Hour(e.target.value))}
+                    className="w-full px-4 py-2.5 rounded-2xl border-2 border-slate-300 focus:border-teal-500 font-bold text-base bg-white"
                   />
+                  {/* Quick Preset / Test Time Buttons */}
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setNewTime(getCurrentTime12Hour(1))}
+                      className="text-xs font-black px-2.5 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 border border-red-300 transition"
+                      title="Set for 1 minute from now to test high alert immediately"
+                    >
+                      ⚡ +1m (Test Now)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewTime(getCurrentTime12Hour(5))}
+                      className="text-xs font-bold px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                    >
+                      +5m
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewTime("08:30 AM")}
+                      className="text-xs font-bold px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200"
+                    >
+                      08:30 AM
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewTime("01:30 PM")}
+                      className="text-xs font-bold px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200"
+                    >
+                      01:30 PM
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewTime("08:00 PM")}
+                      className="text-xs font-bold px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200"
+                    >
+                      08:00 PM
+                    </button>
+                  </div>
                 </div>
               </div>
 

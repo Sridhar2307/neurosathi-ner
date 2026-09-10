@@ -364,7 +364,7 @@ export const api = {
     return localReminders[index];
   },
 
-  // Snooze reminder - remind again after specified minutes
+  // Snooze reminder - updates time to now + specified minutes
   async snoozeReminder(id, minutes, userId = DEMO_USER_ID) {
     const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
     const localReminders = getLocal(key, []);
@@ -373,28 +373,29 @@ export const api = {
       const reminder = localReminders[index];
       const snoozeTime = new Date();
       snoozeTime.setMinutes(snoozeTime.getMinutes() + minutes);
-      
-      // Create a snoozed copy
-      const snoozedReminder = {
+
+      const updatedTime = snoozeTime.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      const updatedReminder = {
         ...reminder,
-        id: `rem-${Date.now().toString(36)}-snooze`,
-        time: snoozeTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        time: updatedTime,
         snoozed_until: snoozeTime.toISOString(),
-        original_id: reminder.id,
+        is_completed: false,
         is_snoozed: true
       };
-      
-      localReminders.push(snoozedReminder);
-      // Mark original as snoozed
-      localReminders[index] = { ...reminder, snoozed_until: snoozeTime.toISOString() };
+
+      localReminders[index] = updatedReminder;
       setLocal(key, localReminders);
-      
-      return snoozedReminder;
+      return updatedReminder;
     }
     return null;
   },
 
-  // Mark as "take later" - moves to end of day
+  // Mark as "take later" - updates time to 08:00 PM tonight
   async takeLaterReminder(id, userId = DEMO_USER_ID) {
     const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
     const localReminders = getLocal(key, []);
@@ -402,22 +403,18 @@ export const api = {
     if (index !== -1) {
       const reminder = localReminders[index];
       const laterTime = new Date();
-      laterTime.setHours(20, 0, 0, 0); // 8 PM
-      
-      const laterReminder = {
+      laterTime.setHours(20, 0, 0, 0); // 8:00 PM
+
+      const updatedReminder = {
         ...reminder,
-        id: `rem-${Date.now().toString(36)}-later`,
-        time: laterTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-        taken_later: true,
-        original_id: reminder.id,
-        is_take_later: true
+        time: "08:00 PM",
+        is_completed: false,
+        taken_later: true
       };
-      
-      localReminders.push(laterReminder);
-      localReminders[index] = { ...reminder, taken_later: true };
+
+      localReminders[index] = updatedReminder;
       setLocal(key, localReminders);
-      
-      return laterReminder;
+      return updatedReminder;
     }
     return null;
   },

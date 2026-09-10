@@ -67,18 +67,24 @@ export default function ElderDashboard() {
 
   const handleSnoozeReminder = async (e, rem, minutes) => {
     e.stopPropagation();
-    await api.snoozeReminder(rem.id, minutes);
+    const snoozed = await api.snoozeReminder(rem.id, minutes);
     const updated = await api.getReminders();
     setReminders(updated);
-    speakText(`Reminder snoozed for ${minutes} minutes.`);
+    refreshUserData();
+    const newTime = snoozed?.time || `${minutes}m later`;
+    speakText(`Reminder snoozed until ${newTime}.`);
+    showToast(`⏰ Snoozed to ${newTime}`, 3500, 'reminder');
   };
 
   const handleTakeLaterReminder = async (e, rem) => {
     e.stopPropagation();
-    await api.takeLaterReminder(rem.id);
+    const later = await api.takeLaterReminder(rem.id);
     const updated = await api.getReminders();
     setReminders(updated);
-    speakText(`Reminder moved to evening.`);
+    refreshUserData();
+    const newTime = later?.time || "08:00 PM";
+    speakText(`Reminder moved to ${newTime} tonight.`);
+    showToast(`🌙 Rescheduled to ${newTime} tonight`, 3500, 'reminder');
   };
 
   return (

@@ -3,6 +3,11 @@ import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { speechService } from '../../services/speechService';
 import {
+  convert24To12Hour,
+  convert12To24Hour,
+  getCurrentTime12Hour
+} from '../../services/reminderScheduler';
+import {
   ArrowLeft,
   Plus,
   Trash2,
@@ -24,7 +29,7 @@ export default function CaregiverReminders() {
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('medicine');
-  const [time, setTime] = useState('08:00 AM');
+  const [time, setTime] = useState(() => getCurrentTime12Hour(1));
   const [detail, setDetail] = useState('');
 
   const loadData = async () => {
@@ -53,6 +58,7 @@ export default function CaregiverReminders() {
     setDetail('');
     setShowModal(false);
     await loadData();
+    showToast(`✓ Scheduled for ${time}. High alert will ring on elder's device!`, 4000, 'reminder');
   };
 
   const handleToggle = async (r) => {
@@ -230,17 +236,58 @@ export default function CaregiverReminders() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Schedule Time
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
+                    <span>Schedule Time</span>
+                    <span className="text-xs font-black text-cyan-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-700">
+                      {time}
+                    </span>
                   </label>
                   <input
-                    type="text"
+                    type="time"
                     required
-                    placeholder="e.g. 08:30 AM"
-                    value={time}
-                    onChange={e => setTime(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white font-medium text-sm focus:border-cyan-500 focus:outline-none"
+                    value={convert12To24Hour(time)}
+                    onChange={e => setTime(convert24To12Hour(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-bold text-sm focus:border-cyan-500 focus:outline-none"
                   />
+                  {/* Quick Preset / Test Time Buttons */}
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setTime(getCurrentTime12Hour(1))}
+                      className="text-[11px] font-black px-2 py-0.5 rounded bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-700 transition"
+                      title="Schedule 1 min from now to test alert"
+                    >
+                      ⚡ +1m (Test Now)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTime(getCurrentTime12Hour(5))}
+                      className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300"
+                    >
+                      +5m
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTime("08:30 AM")}
+                      className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300"
+                    >
+                      08:30 AM
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTime("01:30 PM")}
+                      className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300"
+                    >
+                      01:30 PM
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTime("08:00 PM")}
+                      className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300"
+                    >
+                      08:00 PM
+                    </button>
+                  </div>
                 </div>
               </div>
 
