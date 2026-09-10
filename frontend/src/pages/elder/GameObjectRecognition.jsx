@@ -28,8 +28,18 @@ export default function GameObjectRecognition() {
   const [score, setScore] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [gameResult, setGameResult] = useState(null);
+  const [difficulty, setDifficulty] = useState('easy');
 
   const currentStory = NER_OBJECT_RECOGNITION_STORIES[currentIndex];
+
+  // Load saved difficulty on mount
+  useEffect(() => {
+    const loadDifficulty = async () => {
+      const saved = await api.getSavedDifficulty("demo-user-123", "object_recognition");
+      setDifficulty(saved);
+    };
+    loadDifficulty();
+  }, []);
 
   useEffect(() => {
     if (autoVoiceRead && currentStory) {
@@ -68,7 +78,7 @@ export default function GameObjectRecognition() {
       const res = await api.recordGameResult({
         user_id: "demo-user-123",
         game_type: "object_recognition",
-        difficulty: "easy",
+        difficulty: difficulty,
         score: finalScore,
         max_score: 100,
         attempts: 1,
@@ -95,7 +105,7 @@ export default function GameObjectRecognition() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
       {/* Top Back Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <button
           onClick={() => navigateTo('elder', 'games_hub')}
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
@@ -103,6 +113,24 @@ export default function GameObjectRecognition() {
           <ArrowLeft className="w-5 h-5 text-teal-700" />
           <span>{t.backToGames || "Back to Mind Games"}</span>
         </button>
+
+        {/* Difficulty Selector */}
+        <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border-2 border-rose-200 shadow-sm">
+          <span className="text-xs font-bold text-slate-500 uppercase px-2">{t.difficulty || "Level"}:</span>
+          {['easy', 'medium', 'hard'].map(lvl => (
+            <button
+              key={lvl}
+              onClick={() => setDifficulty(lvl)}
+              className={`px-4 py-1.5 rounded-xl font-bold text-sm capitalize transition ${
+                difficulty === lvl
+                  ? 'bg-rose-600 text-white shadow-sm'
+                  : 'text-rose-950 hover:bg-rose-50'
+              }`}
+            >
+              {lvl === 'easy' ? (t.easy || 'Gentle') : lvl === 'medium' ? (t.medium || 'Standard') : (t.hard || 'Challenging')}
+            </button>
+          ))}
+        </div>
 
         <span className="text-sm sm:text-base font-bold text-rose-900 bg-rose-100 px-4 py-2 rounded-2xl border border-rose-300">
           {t.question || "Memory"} {currentIndex + 1} / {NER_OBJECT_RECOGNITION_STORIES.length}

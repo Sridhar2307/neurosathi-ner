@@ -14,7 +14,12 @@ import {
   Award,
   PhoneCall,
   CheckCircle2,
-  HelpCircle
+  HelpCircle,
+  Home,
+  Brain,
+  Settings,
+  Sunrise,
+  HeartPulse
 } from 'lucide-react';
 
 export const VOICE_I18N = {
@@ -31,12 +36,17 @@ export const VOICE_I18N = {
     chipGame: '"Start Memory Match"',
     chipProgress: '"What is my progress?"',
     chipCaregiver: '"Call Caregiver"',
+    chipDailyLife: '"Start Daily Routine Game"',
+    chipHome: '"Go Home"',
+    chipGames: '"Open Games"',
+    chipSettings: '"Open Settings"',
     greeting: "How can I help you today? You can speak or tap any option below.",
     remindersPending: (count, title, time) => `You have ${count} pending items today. Next is: ${title} scheduled for ${time}.`,
     remindersCompleted: "All your routine reminders for today are completed! Wonderful job.",
     startMemoryMatch: "Starting the North East Heritage Memory Match game now. Enjoy matching the regional cards!",
     startSequence: "Starting the Rhythm and Sequence Recall game. Listen to the gentle beats!",
     startObject: "Opening North East Object and Story Recall game. Let's look at familiar memories!",
+    startDailyLife: "Starting the Daily Life Sequencing game. Let's arrange familiar routines!",
     progress: (stars, streak) => `You have earned ${stars} stars and are on a ${streak}-day cognitive streak. You are doing fantastic!`,
     callCaregiver: (name, phone) => `Connecting to your caregiver ${name} at ${phone}.`,
     contrastUpdated: "Display contrast updated for your comfort.",
@@ -56,12 +66,17 @@ export const VOICE_I18N = {
     chipGame: '"মেমৰি মেচ আৰম্ভ কৰক"',
     chipProgress: '"মোৰ প্ৰগতি কিমান?"',
     chipCaregiver: '"পৰিয়ালক কল কৰক"',
+    chipDailyLife: '"দৈনন্দিন ক্ৰম আৰম্ভ কৰক"',
+    chipHome: '"ঘৰলৈ যাওক"',
+    chipGames: '"খেলখোলা খোলক"',
+    chipSettings: '"সেটিংস খোলক"',
     greeting: "নমস্কাৰ! মই আজি আপোনাক কেনেকৈ সহায় কৰিব পাৰোঁ? কওক বা তলৰ বিকল্প বাচনী কৰক।",
     remindersPending: (count, title, time) => `আজি আপোনাৰ ${count} টা কাম বাকী আছে। পৰৱৰ্তীটো হ'ল ${time} বজাত ${title}।`,
     remindersCompleted: "আজিৰ সকলো কাম আৰু ঔষধ খোৱা সম্পূৰ্ণ হৈছে! বহুত ভাল কাম কৰিছে।",
     startMemoryMatch: "উত্তৰ-পূব ঐতিহ্য মেমৰি মেচ খেল আৰম্ভ কৰা হৈছে। ছবিবোৰ মিলাওক!",
     startSequence: "ছন্দ আৰু ক্ৰমিক সোঁৱৰণ খেল আৰম্ভ কৰা হৈছে। সুমধুৰ ছন্দ শুনক!",
     startObject: "উত্তৰ-পূব চিনাকী বস্তু আৰু সাধু সোঁৱৰণ খেল খোলা হৈছে। স্মৃতিবোৰ চাওঁ আহক!",
+    startDailyLife: "দৈনন্দিন ক্ৰম সজ্জা খেল আৰম্ভ কৰা হৈছে। পৰিচিত ক্ৰমবোৰ সজ্জা কৰক!",
     progress: (stars, streak) => `আপুনি ${stars} টা তৰা লাভ কৰিছে আৰু ${streak} দিনীয়া ধাৰাবাহিকতাত আছে। চমৎকার!`,
     callCaregiver: (name, phone) => `আপোনাৰ যত্নলোৱা ${name} লৈ ${phone} নম্বৰত যোগাযোগ কৰা হৈছে।`,
     contrastUpdated: "আপোনাৰ সুবিধাৰ বাবে ডিস্প্লে কন্ট্রাস্ট সলনি কৰা হৈছে।",
@@ -81,12 +96,17 @@ export const VOICE_I18N = {
     chipGame: '"মেমরি ম্যাচ শুরু করুন"',
     chipProgress: '"আমার উন্নতি কতদূর?"',
     chipCaregiver: '"কেয়ারগিভারকে কল করুন"',
+    chipDailyLife: '"দৈনন্দিন রুটিন খেলা শুরু করুন"',
+    chipHome: '"বাড়িতে যান"',
+    chipGames: '"খেলা খুলুন"',
+    chipSettings: '"সেটিংস খুলুন"',
     greeting: "নমস্কার! আজ আপনাকে কীভাবে সাহায্য করতে পারি? কথা বলুন অথবা নিচের বোতাম চাপুন।",
     remindersPending: (count, title, time) => `আজ আপনার ${count}টি কাজ বাকি আছে। পরবর্তীটি হল ${time} টায় ${title}।`,
     remindersCompleted: "আজকের সমস্ত রুটিন এবং ওষুধ সম্পূর্ণ হয়েছে! চমৎকার কাজ।",
     startMemoryMatch: "নর্থ ইস্ট হেরিটেজ মেমরি ম্যাচ খেলা শুরু করা হচ্ছে। কার্ডগুলো মেলান!",
     startSequence: "রিদম এবং সিকোয়েন্স রিকল খেলা শুরু করা হচ্ছে। সুর শুনুন!",
     startObject: "নর্থ ইস্ট পরিচিত বস্তু এবং স্মৃতিকথা খেলা শুরু হচ্ছে। আসুন স্মৃতিগুলো দেখি!",
+    startDailyLife: "দৈনন্দিন রুটিন সিকোয়েন্সিং খেলা শুরু করা হচ্ছে। পরিচিত রুটিনগুলো সাজান!",
     progress: (stars, streak) => `আপনি ${stars}টি তারা অর্জন করেছেন এবং ${streak} দিনের স্ট্রিকে আছেন। দারুণ!`,
     callCaregiver: (name, phone) => `আপনার কেয়ারগিভার ${name}-এর সাথে ${phone} নম্বরে সংযোগ করা হচ্ছে।`,
     contrastUpdated: "আপনার সুবিধার জন্য ডিসপ্লে কনট্রাস্ট পরিবর্তন করা হয়েছে।",
@@ -106,37 +126,47 @@ export const VOICE_I18N = {
     chipGame: '"मेमोरी मैच शुरू करें"',
     chipProgress: '"मेरी प्रगति क्या है?"',
     chipCaregiver: '"केयरगिवर को कॉल करें"',
+    chipDailyLife: '"दैनिक रूटीन खेल शुरू करें"',
+    chipHome: '"होम पर जाएं"',
+    chipGames: '"गेम्स खोलें"',
+    chipSettings: '"सेटिंग्स खोलें"',
     greeting: "नमस्ते! मैं आज आपकी कैसे सहायता कर सकता हूँ? बोलिए या नीचे दिए गए विकल्पों को चुनिए।",
     remindersPending: (count, title, time) => `आज आपके ${count} रिमाइंडर बाकी हैं। अगला रिमाइंडर ${time} बजे ${title} का है।`,
     remindersCompleted: "आज की आपकी सभी दवाएं और काम पूरे हो चुके हैं! बहुत बढ़िया।",
     startMemoryMatch: "नॉर्थ ईस्ट हेरिटेज मेमोरी मैच खेल शुरू किया जा रहा है। आनंद लें!",
     startSequence: "रिदम और सीक्वेंस रिकॉल खेल शुरू किया जा रहा है। मधुर धुनें सुनें!",
     startObject: "नॉर्थ ईस्ट वस्तु और कहानी खेल खुल रहा है। आइए यादें ताज़ा करें!",
+    startDailyLife: "दैनिक जीवन सिक्वेंसिंग खेल शुरू किया जा रहा है। परिचित रूटीन को क्रमबद्ध करें!",
     progress: (stars, streak) => `आपने ${stars} सितारे अर्जित किए हैं और आप ${streak} दिन की स्ट्रीक पर हैं। बहुत बढ़िया!`,
     callCaregiver: (name, phone) => `आपके केयरगिवर ${name} से ${phone} पर संपर्क किया जा रहा है।`,
     contrastUpdated: "डिस्प्ले कंट्रास्ट आपकी सुविधा के अनुसार बदल दिया गया है।",
     textSizeUpdated: "अक्षर का आकार बदल दिया गया है।",
     fallback: (raw) => `मैंने सुना: "${raw}". आइए मैं आपको आपके खेल या रिमाइंडर पर ले चलता हूँ।`
   },
-  mni: {
+mni: {
     headerTitle: "ভইচ সাথী",
     headerSub: "অহল ওজরশিংগী খোন্থোক তেংবাংবী",
-    listening: "🔴 অদোমগী খোন্থোক তারি...",
+    listening: "🔴 অদোমগী খোन्थোক তারি...",
     tapToSpeak: "ৱারী শাননবগীদমক মাইক্ৰোফোন নমবীয়ু",
-    listeningPrompt: "অদোমগী খোন্থোক তারি...",
+    listeningPrompt: "অদোমগী খোन्थোক তারি...",
     cantHear: "ময়েক শেংনা তাদে। চানবীদুনা মখাগী বোতাম অমদা নম্বীয়ু।",
     cantHearShort: "মখাগী বোতাম অমদা নম্বীয়ু।",
-    orTapCommand: "নত্রগা খোন্থোক্কী কমান্দ অমদা নম্বীয়ু:",
+    orTapCommand: "নত্রগা খোन्थোক্কী কমান্দ অমদা নম্বীয়ু:",
     chipReminders: '"নীংশিংবা পারি"',
     chipGame: '"মেমরি মেচ শানসি"',
     chipProgress: '"ঐগী থৌজাল চাউখৎপা"',
     chipCaregiver: '"কেয়ারগিভরদা ফোন তৌবীয়ু"',
+    chipDailyLife: '"দৈনন্দিন রুটিন খেলা শানসি"',
+    chipHome: '"ইমগী খানা"',
+    chipGames: '"খেলদা খোললু"',
+    chipSettings: '"সেটিংসদা খোললু"',
     greeting: "খুরুমজরি! ঙসি ঐহাক্না করম্না তেংবাংগদগে? ৱারী শানবীয়ু নত্রগা মখাদা লৈবা ওক্সনশিং নমবীয়ু।",
     remindersPending: (count, title, time) => `ঙসি অদোমগী নীংশিংবা ${count} লৈরি। মথংগী অসি ${time} দা ${title} নি।`,
     remindersCompleted: "ঙসিগী থবক অমসুং হিদাক পুম্নমক লোইশিনখ্রে! য়াম্না ফরে।",
     startMemoryMatch: "নোর্থ ইস্ট হেরিতেজ মেমরি মেচ শানবা হৌরে। কার্দশিং অসিবু চান্নহনবীয়ু!",
-    startSequence: "রিদম অমসুং সিক্বেন্স রিকল শানবা হৌরে। নুংঙাইরবা ঈশৈ তাবীয়ু!",
+    startSequence: "রিদম অমসুং সিক्वেন্স রিকল শানবা হৌরে। নুংঙাইরবা ঈশৈ তাবীয়ু!",
     startObject: "নোর্থ ইস্ট অচুম্বা পোৎলম অমসুং ৱারী নীংশিংবা শানবা হৌরে।",
+    startDailyLife: "দৈনন্দিন জীবন সিকোয়েন্সিং শানবা হৌরে। নূরবা থবকদা অমুশিংবা সংযোজন!",
     progress: (stars, streak) => `অদোম্না থৌজালগী ${stars} তারা ফংলে অমসুং নুমিৎ ${streak} নিগী লেপ্তনা শানরি।`,
     callCaregiver: (name, phone) => `অদোমগী ঙাকশেনবা ${name} দা ${phone} দা কন্নেক্ত তৌরি।`,
     contrastUpdated: "অদোমগী সুবিধারদমক দিস্তপ্লে কন্ট্রাস্ট শেমদোক্লে।",
@@ -156,12 +186,17 @@ export const VOICE_I18N = {
     chipGame: '"Memory Match khel tan rawh"',
     chipProgress: '"Ka hmasawnna en rawh"',
     chipCaregiver: '"Enkawltu be rawh"',
+    chipDailyLife: '"Ni hmun Routine khel tan rawh"',
+    chipHome: '"Inn ah kal rawh"',
+    chipGames: '"Khelte hmaw rawh"',
+    chipSettings: '"Settings hmaw rawh"',
     greeting: "Chibai! Vawiin chu engtin nge ka puih theih ang che? Ṭawng la emaw hnuai lam hi hmet rawh.",
     remindersPending: (count, title, time) => `Vawiin atan hriattirna ${count} i la nei. A dawt leh chu ${time} a ${title} a ni.`,
     remindersCompleted: "Vawiin atan i thil tih tur zawng zawng i zo ta! A va tha em.",
     startMemoryMatch: "North East Heritage Memory Match infiamna tan a ni e. Hlim takin khel rawh!",
     startSequence: "Rhythm and Sequence Recall infiamna tan a ni e. Rimawi ngaihthlak nuam tak chu ngaithla rawh!",
     startObject: "North East Object and Story Recall infiamna hawn a ni e. I thil hriat than te i thlir ho ang u!",
+    startDailyLife: "Daily Life Sequencing infiamna a ni e. I hre theihna routine te i rawn hriat ho ang u!",
     progress: (stars, streak) => `Arsi ${stars} i hlawhchhuak tawh a, ni ${streak} chhung i khel tluantling ta. A ropui e!`,
     callCaregiver: (name, phone) => `I enkawltu ${name} chu ${phone} ah biak pawh a ni.`,
     contrastUpdated: "I hmuh chian theih nan a rawng tihdanglam a ni e.",
@@ -271,6 +306,23 @@ export default function VoiceAssistantModal() {
       return;
     }
 
+    // 4b. Daily Life Sequencing Game
+    if (
+      text.includes('daily') || text.includes('routine') || text.includes('life sequence') || text.includes('activity') ||
+      text.includes('দৈনন্দিন') || text.includes('ক্ৰম') || text.includes('ৰুটিন') || text.includes('জীবন') ||
+      text.includes('দৈনন্দিন') || text.includes('日常') || text.includes('ni hmun') || text.includes('thil tih') ||
+      text.includes('दैनिक') || text.includes('रूटीन') || text.includes('जीवन') || text.includes('activity')
+    ) {
+      const msg = dict.startDailyLife;
+      setResponseMessage(msg);
+      speakText(msg);
+      setTimeout(() => {
+        navigateTo('elder', 'game_daily_life');
+        setIsVoiceAssistantOpen(false);
+      }, 2500);
+      return;
+    }
+
     // 5. Progress / Stars
     if (
       text.includes('progress') || text.includes('star') || text.includes('streak') || text.includes('score') ||
@@ -318,6 +370,54 @@ export default function VoiceAssistantModal() {
       const msg = dict.textSizeUpdated;
       setResponseMessage(msg);
       speakText(msg);
+      return;
+    }
+
+    // 9. Navigation - Home
+    if (
+      text.includes('home') || text.includes('go home') || text.includes('main') || text.includes('dashboard') ||
+      text.includes('ঘৰ') || text.includes('মূল') || text.includes('বাড়ি') || text.includes('হোম') ||
+      text.includes('inn') || text.includes('ghar') || text.includes('main page')
+    ) {
+      const msg = "Going to home screen.";
+      setResponseMessage(msg);
+      speakText(msg);
+      setTimeout(() => {
+        navigateTo('elder', 'dashboard');
+        setIsVoiceAssistantOpen(false);
+      }, 1500);
+      return;
+    }
+
+    // 10. Navigation - Games Hub
+    if (
+      text.includes('games') || text.includes('open games') || text.includes('mind games') || text.includes('play games') ||
+      text.includes('খেল') || text.includes('খেলখোলা') || text.includes('গেমস') || text.includes('মগজুৰ খেল') ||
+      text.includes('khelte') || text.includes('खेल') || text.includes('গেম')
+    ) {
+      const msg = "Opening Mind Games hub.";
+      setResponseMessage(msg);
+      speakText(msg);
+      setTimeout(() => {
+        navigateTo('elder', 'games_hub');
+        setIsVoiceAssistantOpen(false);
+      }, 1500);
+      return;
+    }
+
+    // 11. Navigation - Settings
+    if (
+      text.includes('settings') || text.includes('accessibility') || text.includes('preferences') ||
+      text.includes('সেটিংস') || text.includes('সুবিধা') || text.includes('পছন্দ') ||
+      text.includes('settings') || text.includes('सेटिंग्स') || text.includes('সেটিংস')
+    ) {
+      const msg = "Opening Accessibility Settings.";
+      setResponseMessage(msg);
+      speakText(msg);
+      setTimeout(() => {
+        navigateTo('elder', 'accessibility');
+        setIsVoiceAssistantOpen(false);
+      }, 1500);
       return;
     }
 
@@ -426,7 +526,7 @@ export default function VoiceAssistantModal() {
             <span>{dict.orTapCommand}</span>
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             <button
               onClick={() => processCommand("reminder")}
               className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-left font-bold text-teal-900 transition hover:border-teal-400 shadow-sm"
@@ -444,6 +544,14 @@ export default function VoiceAssistantModal() {
             </button>
 
             <button
+              onClick={() => processCommand("daily life")}
+              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-green-50 border-2 border-green-200 text-left font-bold text-green-950 transition hover:border-green-400 shadow-sm"
+            >
+              <Sunrise className="w-6 h-6 text-green-600 shrink-0" />
+              <span className="text-base">{dict.chipDailyLife}</span>
+            </button>
+
+            <button
               onClick={() => processCommand("progress")}
               className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-purple-50 border-2 border-purple-200 text-left font-bold text-purple-950 transition hover:border-purple-400 shadow-sm"
             >
@@ -457,6 +565,30 @@ export default function VoiceAssistantModal() {
             >
               <PhoneCall className="w-6 h-6 text-rose-600 shrink-0" />
               <span className="text-base">{dict.chipCaregiver}</span>
+            </button>
+
+            <button
+              onClick={() => processCommand("home")}
+              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 text-left font-bold text-slate-950 transition hover:border-slate-400 shadow-sm"
+            >
+              <Home className="w-6 h-6 text-slate-600 shrink-0" />
+              <span className="text-base">{dict.chipHome}</span>
+            </button>
+
+            <button
+              onClick={() => processCommand("games")}
+              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-left font-bold text-teal-950 transition hover:border-teal-400 shadow-sm"
+            >
+              <Brain className="w-6 h-6 text-teal-600 shrink-0" />
+              <span className="text-base">{dict.chipGames}</span>
+            </button>
+
+            <button
+              onClick={() => processCommand("settings")}
+              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-amber-50 border-2 border-amber-200 text-left font-bold text-amber-950 transition hover:border-amber-400 shadow-sm"
+            >
+              <Settings className="w-6 h-6 text-amber-600 shrink-0" />
+              <span className="text-base">{dict.chipSettings}</span>
             </button>
           </div>
         </div>

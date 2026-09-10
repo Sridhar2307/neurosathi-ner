@@ -16,7 +16,8 @@ import {
   Bell,
   Sun,
   Moon,
-  Volume2
+  Volume2,
+  RotateCcw
 } from 'lucide-react';
 
 export default function MemoryAssistance() {
@@ -59,6 +60,18 @@ export default function MemoryAssistance() {
     await api.deleteReminder(id);
     await loadReminders();
     speakText(`Deleted reminder ${title}`);
+  };
+
+  const handleSnoozeReminder = async (rem, minutes) => {
+    await api.snoozeReminder(rem.id, minutes);
+    await loadReminders();
+    speakText(`Reminder snoozed for ${minutes} minutes.`);
+  };
+
+  const handleTakeLaterReminder = async (rem) => {
+    await api.takeLaterReminder(rem.id);
+    await loadReminders();
+    speakText(`Reminder moved to evening.`);
   };
 
   const handleCreateReminder = async (e) => {
@@ -208,6 +221,27 @@ export default function MemoryAssistance() {
                     textToRead={`Reminder: ${rem.title} at ${rem.time}. ${rem.dosage_or_detail || ''}`}
                     size="md"
                   />
+
+                  {!isDone && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleSnoozeReminder(rem, 30)}
+                        className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm flex items-center gap-1.5 transition"
+                        title="Snooze 30 minutes"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span className="hidden sm:inline">30m</span>
+                      </button>
+                      <button
+                        onClick={() => handleTakeLaterReminder(rem)}
+                        className="px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm flex items-center gap-1.5 transition"
+                        title="Take later tonight"
+                      >
+                        <Moon className="w-4 h-4" />
+                        <span className="hidden sm:inline">Later</span>
+                      </button>
+                    </div>
+                  )}
 
                   <button
                     onClick={() => handleToggleComplete(rem)}

@@ -31,36 +31,44 @@ export default function GameSequenceRecall() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameResult, setGameResult] = useState(null);
   const [statusMessage, setStatusMessage] = useState('Watch and listen to the rhythm pattern.');
+  const [difficulty, setDifficulty] = useState('easy');
 
   const totalRoundsToWin = 4; // 3 items -> 4 items -> 5 items -> 6 items
+
+  // Load saved difficulty on mount
+  useEffect(() => {
+    const loadDifficulty = async () => {
+      const saved = await api.getSavedDifficulty("demo-user-123", "sequence_recall");
+      setDifficulty(saved);
+      // Adjust starting round based on difficulty
+      if (saved === 'medium') setRound(2);
+      else if (saved === 'hard') setRound(3);
+    };
+    loadDifficulty();
+  }, []);
 
   const startNewGame = () => {
     setIsGameOver(false);
     setGameResult(null);
     setMistakes(0);
-    setRound(1);
     setPlayerIndex(0);
 
-    // Initial sequence of 3 items
-    const initialSeq = [
-      NER_SEQUENCE_ITEMS[Math.floor(Math.random() * NER_SEQUENCE_ITEMS.length)].id,
-      NER_SEQUENCE_ITEMS[Math.floor(Math.random() * NER_SEQUENCE_ITEMS.length)].id,
+    // Initial sequence length based on difficulty
+    const startLength = difficulty === 'easy' ? 3 : (difficulty === 'medium' ? 4 : 5);
+    const initialSeq = Array.from({ length: startLength }, () =>
       NER_SEQUENCE_ITEMS[Math.floor(Math.random() * NER_SEQUENCE_ITEMS.length)].id
-    ];
+    );
     setSequence(initialSeq);
+    setRound(1);
 
     if (autoVoiceRead) {
-      speakText("Listen closely to the rhythm sequence, then tap the same drums and bells.");
+      speakText(`Listen closely to the rhythm sequence on ${difficulty} level, then tap the same drums and bells.`);
     }
 
     setTimeout(() => {
       playSequenceToUser(initialSeq);
     }, 1000);
   };
-
-  useEffect(() => {
-    startNewGame();
-  }, []);
 
   const playSequenceToUser = async (seq) => {
     setIsPlayingSequence(true);
@@ -138,7 +146,7 @@ export default function GameSequenceRecall() {
     const result = await api.recordGameResult({
       user_id: "demo-user-123",
       game_type: "sequence_recall",
-      difficulty: round >= 4 ? "medium" : "easy",
+      difficulty: difficulty,
       score: calculatedScore,
       max_score: 100,
       attempts: mistakes + 1,
@@ -156,7 +164,7 @@ export default function GameSequenceRecall() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
       {/* Top Back Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <button
           onClick={() => navigateTo('elder', 'games_hub')}
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
@@ -164,6 +172,24 @@ export default function GameSequenceRecall() {
           <ArrowLeft className="w-5 h-5 text-teal-700" />
           <span>{t.backToGames || "Back to Mind Games"}</span>
         </button>
+
+        {/* Difficulty Selector */}
+        <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border-2 border-amber-200 shadow-sm">
+          <span className="text-xs font-bold text-slate-500 uppercase px-2">{t.difficulty || "Level"}:</span>
+          {['easy', 'medium', 'hard'].map(lvl => (
+            <button
+              key={lvl}
+              onClick={() => setDifficulty(lvl)}
+              className={`px-4 py-1.5 rounded-xl font-bold text-sm capitalize transition ${
+                difficulty === lvl
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-amber-950 hover:bg-amber-50'
+              }`}
+            >
+              {lvl === 'easy' ? (t.easy || 'Gentle') : lvl === 'medium' ? (t.medium || 'Standard') : (t.hard || 'Challenging')}
+            </button>
+          ))}
+        </div>
 
         <button
           onClick={startNewGame}

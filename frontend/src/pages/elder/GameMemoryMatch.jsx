@@ -74,6 +74,15 @@ export default function GameMemoryMatch() {
     };
   }, [difficulty]);
 
+  // Load saved difficulty on mount
+  useEffect(() => {
+    const loadDifficulty = async () => {
+      const saved = await api.getSavedDifficulty("demo-user-123", "memory_match");
+      setDifficulty(saved);
+    };
+    loadDifficulty();
+  }, []);
+
   // Timer
   useEffect(() => {
     if (!isGameOver) {

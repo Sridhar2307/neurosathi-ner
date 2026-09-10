@@ -13,7 +13,9 @@ import {
   Music,
   Compass,
   CheckCircle2,
-  TrendingUp
+  TrendingUp,
+  Sunrise,
+  HeartPulse
 } from 'lucide-react';
 
 export default function GamesHub() {
@@ -95,7 +97,7 @@ export default function GamesHub() {
             />
             <button
               onClick={() => {
-                const targetView = recommendation.recommended_game === 'memory_match' ? 'game_memory' : (recommendation.recommended_game === 'sequence_recall' ? 'game_sequence' : 'game_object');
+                const targetView = recommendation.recommended_game === 'memory_match' ? 'game_memory' : (recommendation.recommended_game === 'sequence_recall' ? 'game_sequence' : (recommendation.recommended_game === 'daily_life_sequence' ? 'game_daily_life' : 'game_object'));
                 handleLaunchGame(targetView, recommendation.recommended_game_name);
               }}
               className="px-6 py-4 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-extrabold text-lg flex items-center gap-2 shadow-tactile-amber active:shadow-tactile-amber-pressed transform active:translate-y-1 transition"
@@ -107,8 +109,8 @@ export default function GamesHub() {
         </div>
       )}
 
-      {/* 3 Playable Games Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+      {/* 4 Playable Games Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
         {/* Game 1: Memory Match */}
         <div className="elder-card p-6 sm:p-7 bg-white border-3 border-teal-200 hover:border-teal-500 flex flex-col justify-between shadow-soft-3d group">
           <div>
@@ -249,6 +251,54 @@ export default function GamesHub() {
             >
               <Compass className="w-5 h-5" />
               <span>{t.tapToPlay || "Start Story Game"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Game 4: Daily Life Sequencing */}
+        <div className="elder-card p-6 sm:p-7 bg-white border-3 border-green-200 hover:border-green-500 flex flex-col justify-between shadow-soft-3d group">
+          <div>
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-green-100 text-green-800 flex items-center justify-center text-3xl shadow-sm group-hover:scale-105 transition">
+                🌅
+              </div>
+              <span className="text-xs font-black uppercase tracking-wider bg-green-100 text-green-900 px-3 py-1 rounded-full border border-green-300">
+                Procedural Memory
+              </span>
+            </div>
+
+            <h3 className="text-2xl font-black text-green-950 mb-2">
+              {t.dailyLifeTitle || "Daily Life Sequencing"}
+            </h3>
+
+            <p className="text-slate-600 text-base font-medium mb-4 leading-relaxed">
+              {t.dailyLifeDesc || "Arrange steps of familiar routines: morning tea, wearing mekhela, evening prayer, medicine schedule."}
+            </p>
+
+            <div className="bg-green-50/70 p-3.5 rounded-2xl border border-green-100 text-sm font-semibold text-green-900 mb-6 space-y-1">
+              <div className="flex items-center justify-between">
+                <span>Routines:</span>
+                <strong className="text-green-700">5 Cultural ADLs</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Focus:</span>
+                <strong className="text-green-700">Executive function & independence</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <AudioButton
+              textToRead={`${t.dailyLifeTitle || 'Daily Life Sequencing'}. ${t.dailyLifeDesc || 'Arrange the steps of familiar North East daily routines in the correct order.'}`}
+              size="md"
+              className="w-full bg-green-100 text-green-900 border-green-300"
+            />
+            <button
+              onClick={() => handleLaunchGame('game_daily_life', 'Daily Life Sequencing')}
+              className="w-full py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-md transition"
+            >
+              <Sunrise className="w-5 h-5" />
+              <span>{t.tapToPlay || "Start Routine Game"}</span>
             </button>
           </div>
         </div>

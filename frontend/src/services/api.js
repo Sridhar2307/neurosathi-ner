@@ -19,6 +19,7 @@ const STORAGE_KEYS = {
   OFFLINE_QUEUE: 'neurosathi_sync_queue',
   CAREGIVER_SESSION: 'ns_caregiver_session',
   PATIENTS: 'ns_all_patients',
+  GAME_DIFFICULTY: 'neurosathi_game_difficulty',
 };
 
 const DEFAULT_PROFILE = {
@@ -191,6 +192,19 @@ function setLocal(key, val) {
   }
 }
 
+// Difficulty persistence per game per user
+function difficultyKey(userId, gameType) {
+  return `${STORAGE_KEYS.GAME_DIFFICULTY}_${userId}_${gameType}`;
+}
+
+function getSavedDifficulty(userId, gameType) {
+  return getLocal(difficultyKey(userId, gameType), 'easy');
+}
+
+function saveDifficulty(userId, gameType, difficulty) {
+  setLocal(difficultyKey(userId, gameType), difficulty);
+}
+
 // Initialise storage with defaults if empty
 if (!localStorage.getItem(STORAGE_KEYS.REMINDERS)) setLocal(STORAGE_KEYS.REMINDERS, DEFAULT_REMINDERS);
 if (!localStorage.getItem(STORAGE_KEYS.GAME_RESULTS)) setLocal(STORAGE_KEYS.GAME_RESULTS, DEFAULT_GAME_RESULTS);
@@ -229,14 +243,30 @@ export const api = {
     const uid = reminderData.user_id || DEMO_USER_ID;
     const key = patientKey(STORAGE_KEYS.REMINDERS, uid);
     const localReminders = getLocal(key, []);
-    const newRem = {
+    
+    // Handle recurring reminders
+    const isRecurring = reminderData.recurrence && reminderData.recurrence !== 'none';
+    const baseReminder = {
       ...reminderData,
       id: `rem-${Date.now().toString(36)}`,
       user_id: uid,
       is_completed: false,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      recurrence: reminderData.recurrence || 'none',
+      recurrence_days: reminderData.recurrence_days || [],
+      original_time: reminderData.time,
+      snoozed_until: null,
+      taken_later: false
     };
-    localReminders.push(newRem);
+    
+    localReminders.push(baseReminder);
+    
+    // If recurring, create future instances
+    if (isRecurring) {
+      const futureReminders = generateRecurringReminders(baseReminder);
+      localReminders.push(...futureReminders);
+    }
+    
     setLocal(key, localReminders);
 
     try {
@@ -248,7 +278,51 @@ export const api = {
       });
       if (res.ok) return await res.json();
     } catch (e) {}
-    return newRem;
+    return baseReminder;
+  },
+
+  // Generate recurring reminder instances for the next 30 days
+  generateRecurringReminders: (baseReminder) => {
+    const reminders = [];
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 30); // Generate 30 days ahead
+    
+    const baseTime = baseReminder.time; // e.g., "08:30 AM"
+    const recurrence = baseReminder.recurrence;
+    const recurrenceDays = baseReminder.recurrence_days; // [0,1,2,3,4,5,6] for Sun-Sat
+    
+    let currentDate = new Date(startDate);
+    currentDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
+    
+    while (currentDate <= endDate) {
+      let shouldCreate = false;
+      
+      if (recurrence === 'daily') {
+        shouldCreate = true;
+      } else if (recurrence === 'weekly' && recurrenceDays.includes(currentDate.getDay())) {
+        shouldCreate = true;
+      } else if (recurrence === 'weekdays' && currentDate.getDay() >= 1 && currentDate.getDay() <= 5) {
+        shouldCreate = true;
+      } else if (recurrence === 'weekends' && (currentDate.getDay() === 0 || currentDate.getDay() === 6)) {
+        shouldCreate = true;
+      }
+      
+      if (shouldCreate) {
+        reminders.push({
+          ...baseReminder,
+          id: `rem-${Date.now().toString(36)}-${currentDate.getTime()}`,
+          time: baseTime,
+          date: currentDate.toISOString().split('T')[0],
+          is_recurring_instance: true,
+          parent_id: baseReminder.id
+        });
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return reminders;
   },
 
   async updateReminder(id, updates, userId = DEMO_USER_ID) {
@@ -263,6 +337,17 @@ export const api = {
         const profile = getLocal(profileKey, DEFAULT_PROFILE);
         profile.total_stars = (profile.total_stars || 0) + 2;
         setLocal(profileKey, profile);
+        
+        // If this is a recurring instance, create the next occurrence
+        if (localReminders[index].is_recurring_instance && localReminders[index].parent_id) {
+          const parentReminder = localReminders.find(r => r.id === localReminders[index].parent_id);
+          if (parentReminder) {
+            const nextInstance = createNextRecurringInstance(parentReminder, localReminders[index]);
+            if (nextInstance) {
+              localReminders.push(nextInstance);
+            }
+          }
+        }
       }
       setLocal(key, localReminders);
     }
@@ -277,6 +362,106 @@ export const api = {
       if (res.ok) return await res.json();
     } catch (e) {}
     return localReminders[index];
+  },
+
+  // Snooze reminder - remind again after specified minutes
+  async snoozeReminder(id, minutes, userId = DEMO_USER_ID) {
+    const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
+    const localReminders = getLocal(key, []);
+    const index = localReminders.findIndex(r => r.id === id);
+    if (index !== -1) {
+      const reminder = localReminders[index];
+      const snoozeTime = new Date();
+      snoozeTime.setMinutes(snoozeTime.getMinutes() + minutes);
+      
+      // Create a snoozed copy
+      const snoozedReminder = {
+        ...reminder,
+        id: `rem-${Date.now().toString(36)}-snooze`,
+        time: snoozeTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        snoozed_until: snoozeTime.toISOString(),
+        original_id: reminder.id,
+        is_snoozed: true
+      };
+      
+      localReminders.push(snoozedReminder);
+      // Mark original as snoozed
+      localReminders[index] = { ...reminder, snoozed_until: snoozeTime.toISOString() };
+      setLocal(key, localReminders);
+      
+      return snoozedReminder;
+    }
+    return null;
+  },
+
+  // Mark as "take later" - moves to end of day
+  async takeLaterReminder(id, userId = DEMO_USER_ID) {
+    const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
+    const localReminders = getLocal(key, []);
+    const index = localReminders.findIndex(r => r.id === id);
+    if (index !== -1) {
+      const reminder = localReminders[index];
+      const laterTime = new Date();
+      laterTime.setHours(20, 0, 0, 0); // 8 PM
+      
+      const laterReminder = {
+        ...reminder,
+        id: `rem-${Date.now().toString(36)}-later`,
+        time: laterTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        taken_later: true,
+        original_id: reminder.id,
+        is_take_later: true
+      };
+      
+      localReminders.push(laterReminder);
+      localReminders[index] = { ...reminder, taken_later: true };
+      setLocal(key, localReminders);
+      
+      return laterReminder;
+    }
+    return null;
+  },
+
+  // Create next recurring instance after completion
+  createNextRecurringInstance: (parentReminder, completedInstance) => {
+    const completedDate = new Date(completedInstance.date || Date.now());
+    let nextDate = new Date(completedDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+    
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 30);
+    
+    // Find next valid date based on recurrence pattern
+    while (nextDate <= endDate) {
+      let shouldCreate = false;
+      
+      if (parentReminder.recurrence === 'daily') {
+        shouldCreate = true;
+      } else if (parentReminder.recurrence === 'weekly' && parentReminder.recurrence_days.includes(nextDate.getDay())) {
+        shouldCreate = true;
+      } else if (parentReminder.recurrence === 'weekdays' && nextDate.getDay() >= 1 && nextDate.getDay() <= 5) {
+        shouldCreate = true;
+      } else if (parentReminder.recurrence === 'weekends' && (nextDate.getDay() === 0 || nextDate.getDay() === 6)) {
+        shouldCreate = true;
+      }
+      
+      if (shouldCreate) {
+        return {
+          ...parentReminder,
+          id: `rem-${Date.now().toString(36)}-${nextDate.getTime()}`,
+          time: parentReminder.original_time || parentReminder.time,
+          date: nextDate.toISOString().split('T')[0],
+          is_recurring_instance: true,
+          parent_id: parentReminder.id,
+          is_completed: false,
+          completed_at: null
+        };
+      }
+      
+      nextDate.setDate(nextDate.getDate() + 1);
+    }
+    
+    return null;
   },
 
   async deleteReminder(id, userId = DEMO_USER_ID) {
@@ -297,14 +482,22 @@ export const api = {
   // Games
   async recordGameResult(resultData) {
     const localResults = getLocal(STORAGE_KEYS.GAME_RESULTS, DEFAULT_GAME_RESULTS);
+    const userId = resultData.user_id || DEMO_USER_ID;
+    const gameType = resultData.game_type;
     
-    // Calculate adaptive difficulty heuristic locally
-    let nextDiff = resultData.difficulty || 'easy';
+    // Get saved difficulty for this game type
+    const savedDifficulty = getSavedDifficulty(userId, gameType);
+    
+    // Calculate adaptive difficulty heuristic locally - start from saved difficulty
+    let nextDiff = resultData.difficulty || savedDifficulty || 'easy';
     if (resultData.score >= 85 && (resultData.mistakes || 0) <= 2) {
       nextDiff = nextDiff === 'easy' ? 'medium' : 'hard';
     } else if (resultData.score < 60) {
       nextDiff = nextDiff === 'hard' ? 'medium' : 'easy';
     }
+
+    // Save the new difficulty for next time
+    saveDifficulty(userId, gameType, nextDiff);
 
     const encouragement = resultData.score >= 90
       ? "Shandar! Exceptional memory recall and focus! You did brilliantly."
@@ -313,7 +506,7 @@ export const api = {
     const newResult = {
       ...resultData,
       id: `gr-${Date.now().toString(36)}`,
-      user_id: resultData.user_id || DEMO_USER_ID,
+      user_id: userId,
       timestamp: new Date().toISOString(),
       encouraging_message: encouragement,
       adaptive_next_difficulty: nextDiff
@@ -338,6 +531,11 @@ export const api = {
     } catch (e) {}
 
     return newResult;
+  },
+
+  // Get saved difficulty for a game type
+  async getSavedDifficulty(userId = DEMO_USER_ID, gameType) {
+    return getSavedDifficulty(userId, gameType);
   },
 
   async getGameResults(userId = DEMO_USER_ID) {

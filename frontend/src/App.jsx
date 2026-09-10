@@ -13,6 +13,7 @@ import GamesHub from './pages/elder/GamesHub';
 import GameMemoryMatch from './pages/elder/GameMemoryMatch';
 import GameSequenceRecall from './pages/elder/GameSequenceRecall';
 import GameObjectRecognition from './pages/elder/GameObjectRecognition';
+import GameDailyLifeSequence from './pages/elder/GameDailyLifeSequence';
 import MemoryAssistance from './pages/elder/MemoryAssistance';
 import ElderProgress from './pages/elder/ElderProgress';
 import AccessibilitySettings from './pages/elder/AccessibilitySettings';
@@ -44,6 +45,8 @@ export default function App() {
           return <GameSequenceRecall />;
         case 'game_object':
           return <GameObjectRecognition />;
+        case 'game_daily_life':
+          return <GameDailyLifeSequence />;
         case 'reminders':
           return <MemoryAssistance />;
         case 'progress':

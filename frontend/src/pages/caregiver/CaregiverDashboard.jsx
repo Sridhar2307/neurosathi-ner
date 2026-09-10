@@ -9,7 +9,8 @@ import {
   ShieldCheck, User, Heart, Brain, Bell, AlertTriangle, Sparkles,
   TrendingUp, Activity, CheckCircle2, Plus,
   ChevronDown, ChevronUp, Stethoscope, MapPin, Droplets, FileText,
-  LogOut, Users, Edit3, Phone, Mail, X
+  LogOut, Users, Edit3, Phone, Mail, X,
+  Download, FileSpreadsheet, FileType, Printer
 } from 'lucide-react';
 
 // ── Tiny helper ──────────────────────────────────────────────────────────────
@@ -26,6 +27,82 @@ function DetailRow({ icon: Icon, label, value, color = 'text-slate-200' }) {
       </div>
     </div>
   );
+}
+
+// ── Export Helpers ─────────────────────────────────────────────────────────────
+function exportToCSV(data, filename) {
+  const headers = Object.keys(data[0] || {});
+  const rows = data.map(obj => headers.map(h => `"${obj[h] ?? ''}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${filename}.csv`;
+  link.click();
+}
+
+function exportToJSON(data, filename) {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${filename}.json`;
+  link.click();
+}
+
+function generateReport(patient, data) {
+  const report = {
+    patient: {
+      name: patient.name,
+      age: patient.age,
+      gender: patient.gender,
+      location: patient.location,
+      medical_stage: patient.medical_stage,
+      blood_group: patient.blood_group,
+      doctor_name: patient.doctor_name,
+      doctor_phone: patient.doctor_phone,
+      doctor_hospital: patient.doctor_hospital,
+      emergency_contact_name: patient.emergency_contact_name,
+      emergency_contact_relation: patient.emergency_contact_relation,
+      emergency_contact_phone: patient.emergency_contact_phone,
+      emergency_contact_email: patient.emergency_contact_email,
+      caregiver_notes: patient.caregiver_notes
+    },
+    summary: {
+      cognitive_score: `${data.average_cognitive_score}%`,
+      medication_adherence: `${data.adherence_percentage}%`,
+      daily_interactions: data.today_activity_count,
+      total_stars: patient.total_stars,
+      current_streak: `${patient.current_streak} days`,
+      missed_reminders: data.missed_reminders_count,
+      active_alerts: data.active_alerts?.length || 0
+    },
+    recent_game_scores: data.recent_game_scores?.map(g => ({
+      game: g.game_type.replace('_', ' '),
+      score: `${g.score}%`,
+      difficulty: g.difficulty,
+      date: new Date(g.timestamp).toLocaleDateString(),
+      duration: `${g.duration_seconds}s`
+    })) || [],
+    reminders_today: data.today_reminders?.map(r => ({
+      title: r.title,
+      category: r.category,
+      time: r.time,
+      status: r.is_completed ? 'Completed' : 'Pending',
+      detail: r.dosage_or_detail
+    })) || [],
+    alerts: data.active_alerts?.map(a => ({
+      type: a.alert_type,
+      severity: a.severity,
+      message: a.message,
+      date: new Date(a.timestamp).toLocaleDateString(),
+      time: new Date(a.timestamp).toLocaleTimeString(),
+      resolved: a.is_resolved
+    })) || [],
+    score_history: data.score_history_by_game || {},
+    generated_at: new Date().toISOString()
+  };
+  return report;
 }
 
 // ── Edit Patient Modal ────────────────────────────────────────────────────────
@@ -190,6 +267,7 @@ export default function CaregiverDashboard() {
   const [showPatientDetails, setShowPatientDetails] = useState(false);
   const [showPatientSwitcher, setShowPatientSwitcher] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Patient shown in dashboard (from session or fallback)
   const patient = activePatient || data?.patient_profile || userProfile;
@@ -221,6 +299,156 @@ export default function CaregiverDashboard() {
     const dash = await api.getCaregiverDashboard(activePatientId);
     setData(dash);
     showToast('Patient details updated successfully ✓');
+  };
+
+  // Export Handlers
+  const handleExportCSV = () => {
+    if (!data || !patient) return;
+    
+    // Export game scores as CSV
+    const gameScores = data.recent_game_scores?.map(g => ({
+      Game: g.game_type.replace('_', ' '),
+      Score: `${g.score}%`,
+      Difficulty: g.difficulty,
+      Date: new Date(g.timestamp).toLocaleDateString(),
+      Duration_Seconds: g.duration_seconds,
+      Mistakes: g.mistakes
+    })) || [];
+    
+    if (gameScores.length > 0) {
+      exportToCSV(gameScores, `${patient.name}_cognitive_scores_${new Date().toISOString().split('T')[0]}`);
+    }
+    
+    // Export reminders as CSV
+    const reminders = data.today_reminders?.map(r => ({
+      Title: r.title,
+      Category: r.category,
+      Time: r.time,
+      Status: r.is_completed ? 'Completed' : 'Pending',
+      Detail: r.dosage_or_detail,
+      Date: new Date().toLocaleDateString()
+    })) || [];
+    
+    if (reminders.length > 0) {
+      setTimeout(() => {
+        exportToCSV(reminders, `${patient.name}_reminders_${new Date().toISOString().split('T')[0]}`);
+      }, 100);
+    }
+    
+    setShowExportMenu(false);
+    showToast('CSV reports downloaded ✓');
+  };
+
+  const handleExportJSON = () => {
+    if (!data || !patient) return;
+    
+    const report = generateReport(patient, data);
+    exportToJSON(report, `${patient.name}_full_report_${new Date().toISOString().split('T')[0]}`);
+    
+    setShowExportMenu(false);
+    showToast('Complete JSON report downloaded ✓');
+  };
+
+  const handlePrintReport = () => {
+    if (!data || !patient) return;
+    
+    const report = generateReport(patient, data);
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>NeuroSathi NER - Clinical Report for ${patient.name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+            h1 { color: #0d9488; border-bottom: 2px solid #0d9488; padding-bottom: 10px; }
+            h2 { color: #0f766e; margin-top: 30px; }
+            h3 { color: #14b8a6; }
+            .section { margin-bottom: 20px; }
+            .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+            .label { font-weight: bold; color: #6b7280; }
+            .value { color: #111827; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { padding: 8px; text-align: left; border: 1px solid #d1d5db; }
+            th { background: #f0fdfa; color: #0d9488; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <h1>NeuroSathi NER - Clinical Cognitive Report</h1>
+          <div class="section">
+            <h2>Patient Information</h2>
+            <div class="row"><span class="label">Name:</span><span class="value">${report.patient.name}</span></div>
+            <div class="row"><span class="label">Age:</span><span class="value">${report.patient.age}</span></div>
+            <div class="row"><span class="label">Gender:</span><span class="value">${report.patient.gender}</span></div>
+            <div class="row"><span class="label">Location:</span><span class="value">${report.patient.location}</span></div>
+            <div class="row"><span class="label">Medical Stage:</span><span class="value">${report.patient.medical_stage}</span></div>
+            <div class="row"><span class="label">Blood Group:</span><span class="value">${report.patient.blood_group || 'N/A'}</span></div>
+            <div class="row"><span class="label">Doctor:</span><span class="value">${report.patient.doctor_name || 'N/A'} (${report.patient.doctor_phone || 'N/A'})</span></div>
+            <div class="row"><span class="label">Hospital:</span><span class="value">${report.patient.doctor_hospital || 'N/A'}</span></div>
+            <div class="row"><span class="label">Emergency Contact:</span><span class="value">${report.patient.emergency_contact_name} (${report.patient.emergency_contact_relation || ''}) - ${report.patient.emergency_contact_phone}</span></div>
+          </div>
+          
+          <div class="section">
+            <h2>Clinical Summary</h2>
+            <div class="row"><span class="label">Cognitive Score:</span><span class="value">${report.summary.cognitive_score}</span></div>
+            <div class="row"><span class="label">Medication Adherence:</span><span class="value">${report.summary.medication_adherence}</span></div>
+            <div class="row"><span class="label">Daily Interactions:</span><span class="value">${report.summary.daily_interactions}</span></div>
+            <div class="row"><span class="label">Total Stars:</span><span class="value">${report.summary.total_stars}</span></div>
+            <div class="row"><span class="label">Current Streak:</span><span class="value">${report.summary.current_streak}</span></div>
+            <div class="row"><span class="label">Missed Reminders:</span><span class="value">${report.summary.missed_reminders}</span></div>
+            <div class="row"><span class="label">Active Alerts:</span><span class="value">${report.summary.active_alerts}</span></div>
+          </div>
+          
+          <div class="section">
+            <h2>Recent Game Scores</h2>
+            <table>
+              <thead><tr><th>Game</th><th>Score</th><th>Difficulty</th><th>Date</th><th>Duration</th></tr></thead>
+              <tbody>
+                ${report.recent_game_scores.map(g => `
+                  <tr><td>${g.game}</td><td>${g.score}</td><td>${g.difficulty}</td><td>${g.date}</td><td>${g.duration}</td></tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="section">
+            <h2>Today's Reminders</h2>
+            <table>
+              <thead><tr><th>Title</th><th>Category</th><th>Time</th><th>Status</th><th>Detail</th></tr></thead>
+              <tbody>
+                ${report.reminders_today.map(r => `
+                  <tr><td>${r.title}</td><td>${r.category}</td><td>${r.time}</td><td>${r.status}</td><td>${r.detail}</td></tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="section">
+            <h2>Active Alerts</h2>
+            <table>
+              <thead><tr><th>Type</th><th>Severity</th><th>Message</th><th>Date</th><th>Resolved</th></tr></thead>
+              <tbody>
+                ${report.alerts.map(a => `
+                  <tr><td>${a.type}</td><td>${a.severity}</td><td>${a.message}</td><td>${a.date} ${a.time}</td><td>${a.resolved ? 'Yes' : 'No'}</td></tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="footer">
+            Report generated on ${new Date(report.generated_at).toLocaleString()}<br>
+            NeuroSathi NER - SIH 2026 | Team Mavericks<br>
+            This report is for cognitive stimulation tracking purposes only, not for clinical diagnosis.
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 500);
+    
+    setShowExportMenu(false);
+    showToast('Print dialog opened ✓');
   };
 
   if (loading || !data) {
@@ -357,6 +585,43 @@ export default function CaregiverDashboard() {
                 <Heart className="w-4 h-4 fill-current" />
                 <span>Elder View</span>
               </button>
+
+              {/* Export Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="px-3.5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-sm flex items-center gap-2 transition border border-slate-600"
+                >
+                  <Download className="w-4 h-4 text-amber-400" />
+                  <span className="hidden sm:inline">Export</span>
+                  {showExportMenu ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+                {showExportMenu && (
+                  <div className="absolute right-0 top-full mt-2 z-30 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl min-w-[200px] overflow-hidden">
+                    <button
+                      onClick={handleExportCSV}
+                      className="w-full text-left px-4 py-3 text-sm font-semibold transition flex items-center gap-2 text-slate-200 hover:bg-slate-700"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 text-green-400" />
+                      <span>Download CSV Reports</span>
+                    </button>
+                    <button
+                      onClick={handleExportJSON}
+                      className="w-full text-left px-4 py-3 text-sm font-semibold transition flex items-center gap-2 text-slate-200 hover:bg-slate-700 border-t border-slate-700"
+                    >
+                      <FileType className="w-4 h-4 text-blue-400" />
+                      <span>Download Full JSON Report</span>
+                    </button>
+                    <button
+                      onClick={handlePrintReport}
+                      className="w-full text-left px-4 py-3 text-sm font-semibold transition flex items-center gap-2 text-slate-200 hover:bg-slate-700 border-t border-slate-700"
+                    >
+                      <Printer className="w-4 h-4 text-cyan-400" />
+                      <span>Print Clinical Report</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <button
                 onClick={caregiverLogout}

@@ -15,7 +15,9 @@ import {
   Calendar,
   Sparkles,
   ChevronRight,
-  Clock
+  Clock,
+  RotateCcw,
+  Moon
 } from 'lucide-react';
 
 export default function ElderDashboard() {
@@ -58,6 +60,22 @@ export default function ElderDashboard() {
     setReminders(updated);
     refreshUserData();
     speakText(`Great job! You completed ${rem.title}.`);
+  };
+
+  const handleSnoozeReminder = async (e, rem, minutes) => {
+    e.stopPropagation();
+    await api.snoozeReminder(rem.id, minutes);
+    const updated = await api.getReminders();
+    setReminders(updated);
+    speakText(`Reminder snoozed for ${minutes} minutes.`);
+  };
+
+  const handleTakeLaterReminder = async (e, rem) => {
+    e.stopPropagation();
+    await api.takeLaterReminder(rem.id);
+    const updated = await api.getReminders();
+    setReminders(updated);
+    speakText(`Reminder moved to evening.`);
   };
 
   return (
@@ -136,19 +154,35 @@ export default function ElderDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <AudioButton
               textToRead={`${t.upcomingReminder || 'Next reminder'}: ${pendingReminders[0].title} at ${pendingReminders[0].time}. ${pendingReminders[0].dosage_or_detail}`}
               size="lg"
-              className="bg-amber-200 text-amber-900 border-amber-400"
+              className="bg-amber-200 text-amber-900 border-amber-400 w-full sm:w-auto"
             />
-            <button
-              onClick={(e) => handleCompleteQuickReminder(e, pendingReminders[0])}
-              className="flex-1 sm:flex-initial px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition"
-            >
-              <CheckCircle2 className="w-6 h-6" />
-              <span>{t.markDone || "Mark Done"}</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={(e) => handleCompleteQuickReminder(e, pendingReminders[0])}
+                className="flex-1 sm:flex-initial px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition"
+              >
+                <CheckCircle2 className="w-5 h-5" />
+                <span>{t.markDone || "Mark Done"}</span>
+              </button>
+              <button
+                onClick={(e) => handleSnoozeReminder(e, pendingReminders[0], 30)}
+                className="flex-1 sm:flex-initial px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-lg flex items-center justify-center gap-2 transition"
+              >
+                <RotateCcw className="w-5 h-5" />
+                <span>{t.snooze30 || "Snooze 30m"}</span>
+              </button>
+              <button
+                onClick={(e) => handleTakeLaterReminder(e, pendingReminders[0])}
+                className="flex-1 sm:flex-initial px-5 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold text-lg flex items-center justify-center gap-2 transition"
+              >
+                <Moon className="w-5 h-5" />
+                <span>{t.takeLater || "Take Later"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
