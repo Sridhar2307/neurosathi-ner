@@ -33,7 +33,7 @@ export default function Navbar() {
       <header className="bg-white/95 backdrop-blur-md border-b border-emerald-100 sticky top-[41px] z-40 px-4 sm:px-8 py-3.5 transition-all shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <button
-            onClick={() => handleNavClick('landing', 'landing', 'Welcome to NeuroSathi NER')}
+            onClick={() => handleNavClick('landing', 'landing', t.appName ? `${t.appName} ${t.appRegion}` : 'Welcome to NeuroSathi')}
             className="flex items-center gap-3 text-left group"
           >
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-400 p-2 shadow-md flex items-center justify-center transform group-hover:scale-105 transition">
@@ -56,7 +56,7 @@ export default function Navbar() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => handleNavClick('elder', 'dashboard', 'Opening Elder Dashboard')}
+              onClick={() => handleNavClick('elder', 'dashboard', t.navToElder || t.elderMode)}
               className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 sm:px-6 py-2.5 rounded-2xl shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition flex items-center gap-2 text-base"
             >
               <Heart className="w-5 h-5 text-rose-300 fill-rose-300" />
@@ -64,7 +64,7 @@ export default function Navbar() {
             </button>
 
             <button
-              onClick={() => handleNavClick('caregiver', 'dashboard', 'Opening Caregiver Portal')}
+              onClick={() => handleNavClick('caregiver', 'dashboard', t.navToCaregiver || t.caregiverMode)}
               className="bg-slate-800 hover:bg-slate-900 text-cyan-300 font-bold px-4 sm:px-6 py-2.5 rounded-2xl border border-slate-700 hover:border-cyan-500 transition flex items-center gap-2 text-base"
             >
               <ShieldCheck className="w-5 h-5 text-cyan-400" />
