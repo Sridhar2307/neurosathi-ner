@@ -159,7 +159,31 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchTitle: "Extra Large Touch Targets",
     largeTouchDesc: "Enlarges clickable buttons to 60px minimum for tremor-safe tapping.",
     reducedMotionTitle: "Reduced Motion Mode",
-    reducedMotionDesc: "Disables floating cards and animations to prevent dizziness."
+    reducedMotionDesc: "Disables floating cards and animations to prevent dizziness.",
+
+    // Navigation Voice Prompts
+    navToHome: "Navigating to Home screen.",
+    navToGames: "Opening Mind Games. We have engaging cultural games ready for you.",
+    navToReminders: "Opening Daily Reminders schedule.",
+    navToProgress: "Opening Stars and Progress report.",
+    navToSettings: "Opening Accessibility and Display settings.",
+    voiceListening: "Voice Sathi is listening. How can I assist you today?",
+    langChanged: "Language changed to English. Good Day!",
+
+    // High Alert Reminder Pop-up & Actions
+    highAlertReminder: "HIGH ALERT REMINDER",
+    attentionRequired: "Attention Required",
+    highAlertActive: "High-Audibility Alarm Active",
+    replayAlertSound: "Replay High Alert Sound",
+    voiceRead: "Voice Read",
+    markDoneBtn: "Mark as Taken / Done",
+    snooze10m: "Snooze (10 mins)",
+    snooze30m: "Snooze 30m",
+    takeLater: "Take Later",
+    dismissAlert: "Dismiss alert for now",
+    testHighAlertBtn: "Test High Alert Sound & Pop-up",
+    highAlertSoundBtn: "High Alert Sound",
+    viewAlertPopupBtn: "View Alert Pop-up"
   },
 
   as: {
@@ -316,7 +340,31 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchTitle: "অতি ডাঙৰ স্পর্শ বুটাম",
     largeTouchDesc: "সহজে স্পৰ্শ কৰিব পৰাকৈ বুটামবোৰ যথেষ্ট ডাঙৰ কৰে।",
     reducedMotionTitle: "কম এনিমেচন ম'ড",
-    reducedMotionDesc: "মূৰ ঘূৰোৱা ৰোধ কৰিবলৈ এনিমেচন বন্ধ কৰে।"
+    reducedMotionDesc: "মূৰ ঘূৰোৱা ৰোধ কৰিবলৈ এনিমেচন বন্ধ কৰে।",
+
+    // Navigation Voice Prompts
+    navToHome: "গৃহ পৃষ্ঠালৈ যোৱা হৈছে।",
+    navToGames: "মগজুৰ খেল খোলি থকা হৈছে। আপোনাৰ বাবে সুন্দৰ খেল প্ৰস্তুত আছে।",
+    navToReminders: "দৈনিক সোঁৱৰণী সূচী খোলি থকা হৈছে।",
+    navToProgress: "তৰা আৰু প্ৰগতিৰ তালিকা খোলি থকা হৈছে।",
+    navToSettings: "সুবিধা আৰু প্ৰদৰ্শন ছেটিংছ খোলি থকা হৈছে।",
+    voiceListening: "ভইচ সাথী শুনি আছে। আজি আপোনাক কেনেকৈ সহায় কৰিব পাৰোঁ?",
+    langChanged: "অসমীয়া ভাষা বাছনি কৰা হ'ল। নমস্কাৰ!",
+
+    // High Alert Reminder Pop-up & Actions
+    highAlertReminder: "জৰুৰী সোঁৱৰণী সতৰ্কবাৰ্তা",
+    attentionRequired: "মনোযোগৰ প্ৰয়োজন",
+    highAlertActive: "উচ্চ সতৰ্কবাৰ্তা ধ্বনি সক্ৰিয়",
+    replayAlertSound: "সতৰ্ক ধ্বনি পুনৰ বজাওক",
+    voiceRead: "পঢ়ি শুনক",
+    markDoneBtn: "কৰা হ'ল / ঔষধ খোৱা হ'ল",
+    snooze10m: "১০ মিনিট পিছুৱাওক",
+    snooze30m: "৩০ মিনিট পিছুৱাওক",
+    takeLater: "সন্ধিয়া ল'ব",
+    dismissAlert: "বৰ্তমানৰ বাবে বন্ধ কৰক",
+    testHighAlertBtn: "সতৰ্ক ধ্বনি আৰু পপ-আপ পৰীক্ষা",
+    highAlertSoundBtn: "সতৰ্ক ধ্বনি",
+    viewAlertPopupBtn: "সতৰ্ক পপ-আপ চাওক"
   },
 
   bn: {
@@ -473,7 +521,31 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchTitle: "বড় স্পর্শ বাটন",
     largeTouchDesc: "সহজে চাপার সুবিধার জন্য বাটনগুলো বড় মাপের রাখা হয়।",
     reducedMotionTitle: "কম মোশন মোড",
-    reducedMotionDesc: "মাথা ঘোরা রোধে অ্যানিমেশন সীমিত রাখা হয়।"
+    reducedMotionDesc: "মাথা ঘোরা রোধে অ্যানিমেশন সীমিত রাখা হয়।",
+
+    // Navigation Voice Prompts
+    navToHome: "হোম পেজে যাওয়া হচ্ছে।",
+    navToGames: "মননের খেলা খোলা হচ্ছে। আপনার জন্য ঐতিহ্যবাহী খেলা প্রস্তুত।",
+    navToReminders: "দৈনিক অনুস্মারক তালিকা খোলা হচ্ছে।",
+    navToProgress: "তারা এবং অগ্রগতির বিবরণ খোলা হচ্ছে।",
+    navToSettings: "অ্যাক্সেসিবিলিটি সেটিংস খোলা হচ্ছে।",
+    voiceListening: "ভয়েস সাথী শুনছে। আজ আপনাকে কীভাবে সাহায্য করতে পারি?",
+    langChanged: "বাংলা ভাষা নির্বাচন করা হয়েছে। নমস্কার!",
+
+    // High Alert Reminder Pop-up & Actions
+    highAlertReminder: "জরুরী অনুস্মারক সতর্কতা",
+    attentionRequired: "মনোযোগের প্রয়োজন",
+    highAlertActive: "উচ্চ সতর্কতা অ্যালার্ম সক্রিয়",
+    replayAlertSound: "সতর্ক ধ্বনি পুনরায় বাজান",
+    voiceRead: "পড়ে শুনুন",
+    markDoneBtn: "সম্পন্ন হয়েছে / গ্রহণ করা হয়েছে",
+    snooze10m: "১০ মিনিট স্থগিত রাখুন",
+    snooze30m: "৩০ মিনিট স্থগিত",
+    takeLater: "পরে গ্রহণ করুন",
+    dismissAlert: "আপাতত বন্ধ করুন",
+    testHighAlertBtn: "সতর্ক ধ্বনি ও পপ-আপ পরীক্ষা",
+    highAlertSoundBtn: "উচ্চ সতর্ক ধ্বনি",
+    viewAlertPopupBtn: "সতর্ক পপ-আপ দেখুন"
   },
 
   hi: {
@@ -630,7 +702,31 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchTitle: "अतिरिक्त बड़े टच बटन",
     largeTouchDesc: "हाथ कांपने पर भी आसानी से छूने के लिए बड़े बटन।",
     reducedMotionTitle: "कम गति मोड",
-    reducedMotionDesc: "चक्कर से बचने के लिए तैरती एनिमेशन बंद करता है।"
+    reducedMotionDesc: "चक्कर से बचने के लिए तैरती एनिमेशन बंद करता है।",
+
+    // Navigation Voice Prompts
+    navToHome: "होम स्क्रीन पर जा रहे हैं।",
+    navToGames: "माइंड गेम्स खोले जा रहे हैं। आपके लिए सुंदर खेल तैयार हैं।",
+    navToReminders: "दैनिक रिमाइंडर सूची खोली जा रही है।",
+    navToProgress: "सितारे और प्रगति रिपोर्ट खोली जा रही है।",
+    navToSettings: "सुगमता और डिस्प्ले सेटिंग्स खोली जा रही हैं।",
+    voiceListening: "वॉइस साथी सुन रहा है। आज मैं आपकी क्या मदद कर सकता हूँ?",
+    langChanged: "हिन्दी भाषा चुनी गई है। नमस्ते!",
+
+    // High Alert Reminder Pop-up & Actions
+    highAlertReminder: "हाई अलर्ट रिमाइंडर चेतावनी",
+    attentionRequired: "ध्यान देने की आवश्यकता है",
+    highAlertActive: "हाई अलर्ट अलार्म सक्रिय है",
+    replayAlertSound: "अलर्ट ध्वनि फिर से बजाएं",
+    voiceRead: "बोलकर सुनें",
+    markDoneBtn: "पूरा हुआ / दवा ली गई",
+    snooze10m: "१० मिनट बाद याद दिलाएं",
+    snooze30m: "३० मिनट बाद",
+    takeLater: "शाम को लेंगे",
+    dismissAlert: "अभी के लिए हटाएं",
+    testHighAlertBtn: "हाई अलर्ट साउंड और पॉप-अप टेस्ट",
+    highAlertSoundBtn: "हाई अलर्ट साउंड",
+    viewAlertPopupBtn: "अलर्ट पॉप-अप देखें"
   },
 
   mni: {
@@ -787,7 +883,31 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchTitle: "অচৌবা নমফম বুটাম",
     largeTouchDesc: "খুত খনবদা খুদোংচানবা অচৌবা বুটাম।",
     reducedMotionTitle: "মোশন কমহনবা",
-    reducedMotionDesc: "মিৎ তুমশিনবদা নকহন্দনবা খোংজেল কমহনবা।"
+    reducedMotionDesc: "মিৎ তুমশিনবদা নকহন্দনবা খোংজেল কমহনবা।",
+
+    // Navigation Voice Prompts
+    navToHome: "য়ুমগী মফমদা চৎলে।",
+    navToGames: "ৱাখলগী খেল খোল্লে। অদোমগীদমক খেল শেম-শাদুনা লৈরে।",
+    navToReminders: "নোংমগী নীংশিংবা পরিং খোল্লে।",
+    navToProgress: "থৱানমিচাক অমসুং প্রগতি খোল্লে।",
+    navToSettings: "খুন্নাই অমসুং প্রদরশন সেতিংস খোল্লে।",
+    voiceListening: "ভোইস সাথীনা তাবীরি। ঙসি অদোমদা করম্না মতেং পাংগে?",
+    langChanged: "মৈতৈলোন্ লোন খনখ্রে। খুরুমজরি!",
+
+    // High Alert Reminder Pop-up & Actions
+    highAlertReminder: "অকনবা নীংশিংবা চেকশিনৱা",
+    attentionRequired: "মিৎয়েং চংবা দরকার ওই",
+    highAlertActive: "অকনবা খোল্লাউ সক্ৰিয় ওইরি",
+    replayAlertSound: "চেকশিনবা খোল্লাউ অমুক্কা তানবীয়ু",
+    voiceRead: "তাবেনবা",
+    markDoneBtn: "লোইরে / হিদাক চারে",
+    snooze10m: "মিনিত ১০ তুংদা",
+    snooze30m: "মিনিত ৩০ তুংদা",
+    takeLater: "নুমিদাংদা লৌরগে",
+    dismissAlert: "হৌজিক্কীদি থমবীয়ু",
+    testHighAlertBtn: "চেকশিন খোল্লাউ অমসুং পপ-অপ তেস্ত",
+    highAlertSoundBtn: "অকনবা খোল্লাউ",
+    viewAlertPopupBtn: "চেকশিন পপ-অপ য়েংবীয়ু"
   },
 
   lus: {
@@ -944,6 +1064,30 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchTitle: "Hmeh lian deuh",
     largeTouchDesc: "Kut khur pawhin hmeh theih tura hmehna lian.",
     reducedMotionTitle: "Che reng tlemna",
-    reducedMotionDesc: "Mit ti kham lo tura che kual tlemte tura siam."
+    reducedMotionDesc: "Mit ti kham lo tura che kual tlemte tura siam.",
+
+    // Navigation Voice Prompts
+    navToHome: "In lamah kan kal mek e.",
+    navToGames: "Rilru chawhphurna infiamna hawng mek e.",
+    navToReminders: "Ni tin hriattirna hawng mek e.",
+    navToProgress: "I hmasawnna leh arsi hmuhte hawng mek e.",
+    navToSettings: "Hman awlsamna leh display settings hawng mek e.",
+    voiceListening: "Voice Sathi-in a ngaithla mek e. Engtin nge ka puih theih ang che?",
+    langChanged: "Mizo ṭawng thlan a ni e. Chibai!",
+
+    // High Alert Reminder Pop-up & Actions
+    highAlertReminder: "HRIATTIRNA PAWIMAWH BIK",
+    attentionRequired: "Ngaihsak Ngai A Ni",
+    highAlertActive: "Aw ring tak a ri mek",
+    replayAlertSound: "Ri hi play nawn leh rawh",
+    voiceRead: "Chhiar ri rawh",
+    markDoneBtn: "Zo tawh / Damdawi ei tawh",
+    snooze10m: "Minute 10 hnuah",
+    snooze30m: "Minute 30 hnuah",
+    takeLater: "Zanah ti mai ang",
+    dismissAlert: "Tih tawp rih rawh",
+    testHighAlertBtn: "Aw ring leh Pop-up enchhinna",
+    highAlertSoundBtn: "Aw ring tak ri",
+    viewAlertPopupBtn: "Hriattirna Pop-up en rawh"
   }
 };

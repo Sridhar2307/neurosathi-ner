@@ -11,7 +11,7 @@ import {
 
 export default function ElderProgress() {
   const { navigateTo, userProfile } = useApp();
-  const { t } = useAccessibility();
+  const { t, speakText } = useAccessibility();
   const [games, setGames] = useState([]);
 
   useEffect(() => {
@@ -30,7 +30,10 @@ export default function ElderProgress() {
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigateTo('elder', 'dashboard')}
+          onClick={() => {
+            speakText(t.navToHome || t.home);
+            navigateTo('elder', 'dashboard');
+          }}
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />

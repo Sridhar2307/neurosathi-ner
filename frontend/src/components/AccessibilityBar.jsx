@@ -12,7 +12,7 @@ export default function AccessibilityBar() {
     autoVoiceRead,
     setAutoVoiceRead,
     language,
-    setLanguage,
+    changeLanguage,
     availableLanguages,
     speakText,
     cycleFontSize,
@@ -53,7 +53,7 @@ export default function AccessibilityBar() {
           onClick={() => {
             const next = !autoVoiceRead;
             setAutoVoiceRead(next);
-            if (next) speakText("Voice guidance is turned on.");
+            if (next) speakText(t.voiceGuidance ? `${t.voiceGuidance} ${t.on}` : "Voice guidance is turned on.");
           }}
           className={`flex items-center gap-1.5 px-3 py-1 rounded-full border transition text-xs sm:text-sm font-semibold ${
             autoVoiceRead ? 'bg-teal-900 text-teal-200 border-teal-500' : 'bg-slate-800 text-slate-400 border-slate-600'
@@ -72,11 +72,7 @@ export default function AccessibilityBar() {
           <Globe className="w-3.5 h-3.5 text-slate-400" />
           <select
             value={language}
-            onChange={(e) => {
-              setLanguage(e.target.value);
-              const langObj = availableLanguages.find(l => l.code === e.target.value);
-              if (langObj) speakText(`${langObj.name} selected. ${langObj.greeting}`);
-            }}
+            onChange={(e) => changeLanguage(e.target.value)}
             className="bg-transparent text-xs sm:text-sm text-white focus:outline-none cursor-pointer font-medium"
             aria-label="Select Language"
           >

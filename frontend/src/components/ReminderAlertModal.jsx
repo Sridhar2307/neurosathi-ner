@@ -33,7 +33,7 @@ export default function ReminderAlertModal() {
       // 2. Speak reminder details after alarm tone starts
       const timeoutId = setTimeout(() => {
         const textToRead = activeReminderAlert.audio_prompt ||
-          `Urgent reminder: Time to take ${activeReminderAlert.title}. ${activeReminderAlert.dosage_or_detail || ''}`;
+          `${t.highAlertReminder || 'High Alert'}. ${activeReminderAlert.title}. ${activeReminderAlert.dosage_or_detail || ''}`;
         speakText(textToRead);
       }, 1200);
 
@@ -42,7 +42,7 @@ export default function ReminderAlertModal() {
         stopSpeaking();
       };
     }
-  }, [activeReminderAlert]);
+  }, [activeReminderAlert, t]);
 
   if (!activeReminderAlert) return null;
 
@@ -52,7 +52,7 @@ export default function ReminderAlertModal() {
 
   const handleReadAloud = () => {
     const textToRead = activeReminderAlert.audio_prompt ||
-      `Reminder for ${activeReminderAlert.title}. ${activeReminderAlert.dosage_or_detail || ''}`;
+      `${t.highAlertReminder || 'Reminder'}: ${activeReminderAlert.title}. ${activeReminderAlert.dosage_or_detail || ''}`;
     speakText(textToRead);
   };
 
@@ -62,8 +62,8 @@ export default function ReminderAlertModal() {
         await api.updateReminder(activeReminderAlert.id, { is_completed: true });
       }
       speechService.playSuccessChime();
-      speakText(`Marked ${activeReminderAlert.title} as completed. Excellent job!`);
-      showToast(`✓ Completed: ${activeReminderAlert.title}`, 4000, 'reminder');
+      speakText(`${activeReminderAlert.title} - ${t.done || 'Done'}`);
+      showToast(`✓ ${activeReminderAlert.title} - ${t.done || 'Done'}`, 4000, 'reminder');
       refreshUserData();
     } catch (e) {
       console.error(e);
@@ -76,9 +76,9 @@ export default function ReminderAlertModal() {
     try {
       if (activeReminderAlert.id) {
         const snoozed = await api.snoozeReminder(activeReminderAlert.id, minutes);
-        const newTime = snoozed?.time || `${minutes} minutes later`;
-        speakText(`Reminder snoozed until ${newTime}.`);
-        showToast(`⏰ Snoozed until ${newTime}`, 4000, 'reminder');
+        const newTime = snoozed?.time || `${minutes}m`;
+        speakText(`${t.snooze10m || 'Snooze'}: ${activeReminderAlert.title}`);
+        showToast(`⏰ ${t.snooze10m || 'Snooze'}: ${activeReminderAlert.title} (${newTime})`, 4000, 'reminder');
       }
       refreshUserData();
     } catch (e) {
@@ -110,14 +110,14 @@ export default function ReminderAlertModal() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="bg-white text-red-700 text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
-                  🚨 HIGH ALERT REMINDER
+                  🚨 {t.highAlertReminder || "HIGH ALERT REMINDER"}
                 </span>
                 <span className="text-xs font-bold text-red-100 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" /> {activeReminderAlert.time || 'Due Now'}
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5">
-                Attention Required
+                {t.attentionRequired || "Attention Required"}
               </h2>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function ReminderAlertModal() {
           <button
             onClick={closeReminderAlert}
             className="w-11 h-11 rounded-2xl bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition border border-white/30"
-            title="Dismiss Alert"
+            title={t.dismissAlert || "Dismiss Alert"}
             aria-label="Close"
           >
             <X className="w-6 h-6" />
@@ -168,7 +168,7 @@ export default function ReminderAlertModal() {
           <div className="flex flex-wrap items-center justify-between gap-3 bg-red-100/70 border-2 border-red-300 p-3.5 rounded-2xl">
             <span className="text-xs sm:text-sm font-black text-red-900 uppercase tracking-wide flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping"></span>
-              High-Audibility Alarm Active
+              {t.highAlertActive || "High-Audibility Alarm Active"}
             </span>
 
             <div className="flex items-center gap-2">
@@ -178,14 +178,14 @@ export default function ReminderAlertModal() {
                 className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-md active:scale-95 transition"
               >
                 <Volume2 className="w-4 h-4" />
-                <span>Replay High Alert Sound</span>
+                <span>{t.replayAlertSound || "Replay High Alert Sound"}</span>
               </button>
               <button
                 type="button"
                 onClick={handleReadAloud}
                 className="px-3.5 py-2 rounded-xl bg-white hover:bg-red-50 text-red-800 border border-red-300 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm active:scale-95 transition"
               >
-                <span>Voice Read</span>
+                <span>{t.voiceRead || "Voice Read"}</span>
               </button>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function ReminderAlertModal() {
               className="w-full py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-lg sm:text-xl flex items-center justify-center gap-2.5 shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition"
             >
               <CheckCircle2 className="w-6 h-6" />
-              <span>{t.markDone || "Mark as Taken / Done"}</span>
+              <span>{t.markDoneBtn || t.markDone || "Mark as Taken / Done"}</span>
             </button>
 
             <button
@@ -205,7 +205,7 @@ export default function ReminderAlertModal() {
               className="w-full py-4 px-6 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-lg sm:text-xl flex items-center justify-center gap-2.5 shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition"
             >
               <RotateCcw className="w-6 h-6" />
-              <span>Snooze (10 mins)</span>
+              <span>{t.snooze10m || "Snooze (10 mins)"}</span>
             </button>
           </div>
 
@@ -214,7 +214,7 @@ export default function ReminderAlertModal() {
               onClick={closeReminderAlert}
               className="text-sm font-bold text-red-800 hover:text-red-950 underline underline-offset-4 transition"
             >
-              Dismiss alert for now
+              {t.dismissAlert || "Dismiss alert for now"}
             </button>
           </div>
 

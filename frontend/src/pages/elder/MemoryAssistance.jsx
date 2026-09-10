@@ -121,7 +121,10 @@ export default function MemoryAssistance() {
       {/* Top Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <button
-          onClick={() => navigateTo('elder', 'dashboard')}
+          onClick={() => {
+            speakText(t.navToHome || t.home);
+            navigateTo('elder', 'dashboard');
+          }}
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />
@@ -145,7 +148,7 @@ export default function MemoryAssistance() {
             title="Test High Alert Sound and Red Notification Pop-up"
           >
             <Bell className="w-5 h-5 animate-bounce" />
-            <span>Test High Alert Sound & Pop-up</span>
+            <span>{t.testHighAlertBtn || "Test High Alert Sound & Pop-up"}</span>
           </button>
 
           <button
@@ -268,7 +271,7 @@ export default function MemoryAssistance() {
                         title="Trigger High Alert Sound & Red Pop-up"
                       >
                         <Volume2 className="w-4 h-4" />
-                        <span className="hidden sm:inline">Alert</span>
+                        <span className="hidden sm:inline">{t.highAlertSoundBtn || 'Alert'}</span>
                       </button>
                       <button
                         onClick={() => handleSnoozeReminder(rem, 30)}
@@ -276,7 +279,7 @@ export default function MemoryAssistance() {
                         title="Snooze 30 minutes"
                       >
                         <RotateCcw className="w-4 h-4" />
-                        <span className="hidden sm:inline">30m</span>
+                        <span className="hidden sm:inline">{t.snooze30m || '30m'}</span>
                       </button>
                       <button
                         onClick={() => handleTakeLaterReminder(rem)}
@@ -284,7 +287,7 @@ export default function MemoryAssistance() {
                         title="Take later tonight"
                       >
                         <Moon className="w-4 h-4" />
-                        <span className="hidden sm:inline">Later</span>
+                        <span className="hidden sm:inline">{t.takeLater || 'Later'}</span>
                       </button>
                     </div>
                   )}

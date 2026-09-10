@@ -22,7 +22,7 @@ export default function Navbar() {
 
   const handleNavClick = (mode, view, audioPrompt) => {
     navigateTo(mode, view);
-    if (autoVoiceRead && audioPrompt) {
+    if (audioPrompt) {
       speakText(audioPrompt);
     }
   };
@@ -103,7 +103,7 @@ export default function Navbar() {
           {/* Navigation Actions for Elder */}
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <button
-              onClick={() => handleNavClick('elder', 'dashboard', 'Home Screen')}
+              onClick={() => handleNavClick('elder', 'dashboard', t.navToHome || t.home)}
               className={`px-4 py-2.5 rounded-2xl font-bold text-base sm:text-lg flex items-center gap-2 transition ${
                 currentView === 'dashboard'
                   ? 'bg-teal-700 text-white shadow-md'
@@ -115,7 +115,7 @@ export default function Navbar() {
             </button>
 
             <button
-              onClick={() => handleNavClick('elder', 'games_hub', 'Cognitive Mind Games')}
+              onClick={() => handleNavClick('elder', 'games_hub', t.navToGames || t.mindGames)}
               className={`px-4 py-2.5 rounded-2xl font-bold text-base sm:text-lg flex items-center gap-2 transition ${
                 currentView.startsWith('game') || currentView === 'games_hub'
                   ? 'bg-teal-700 text-white shadow-md'
@@ -127,7 +127,7 @@ export default function Navbar() {
             </button>
 
             <button
-              onClick={() => handleNavClick('elder', 'reminders', 'My Reminders')}
+              onClick={() => handleNavClick('elder', 'reminders', t.navToReminders || t.reminders)}
               className={`px-4 py-2.5 rounded-2xl font-bold text-base sm:text-lg flex items-center gap-2 transition ${
                 currentView === 'reminders'
                   ? 'bg-teal-700 text-white shadow-md'
@@ -142,7 +142,7 @@ export default function Navbar() {
             <button
               onClick={() => {
                 setIsVoiceAssistantOpen(true);
-                speakText("Voice Sathi is listening. How can I assist you today?");
+                speakText(t.voiceListening || "Voice Sathi is listening. How can I assist you today?");
               }}
               className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-4 sm:px-5 py-2.5 rounded-2xl shadow-tactile-amber active:shadow-tactile-amber-pressed transform active:translate-y-1 transition flex items-center gap-2 text-base sm:text-lg animate-gentle-float"
               title="Speak to Voice Sathi Assistant"
@@ -154,7 +154,7 @@ export default function Navbar() {
 
             {/* Switch to Caregiver View */}
             <button
-              onClick={() => handleNavClick('caregiver', 'dashboard', 'Switching to Caregiver Mode')}
+              onClick={() => handleNavClick('caregiver', 'dashboard', t.caregiverMode || t.caregiver)}
               className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl border border-slate-300 ml-1 transition"
               title="Switch to Caregiver Clinical Portal"
             >

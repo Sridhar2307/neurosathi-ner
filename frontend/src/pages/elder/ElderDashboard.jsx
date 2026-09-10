@@ -20,12 +20,13 @@ import {
   RotateCcw,
   Moon,
   Volume2,
-  AlertTriangle
+  AlertTriangle,
+  Globe
 } from 'lucide-react';
 
 export default function ElderDashboard() {
   const { navigateTo, setIsVoiceAssistantOpen, userProfile, refreshUserData, triggerReminderAlert, showToast } = useApp();
-  const { speakText, autoVoiceRead, t } = useAccessibility();
+  const { speakText, autoVoiceRead, t, language, changeLanguage, availableLanguages } = useAccessibility();
 
   const [reminders, setReminders] = useState([]);
 
@@ -50,7 +51,7 @@ export default function ElderDashboard() {
   });
 
   const handleCardClick = (view, spokenText) => {
-    if (autoVoiceRead && spokenText) {
+    if (spokenText) {
       speakText(spokenText);
     }
     navigateTo('elder', view);
@@ -62,7 +63,7 @@ export default function ElderDashboard() {
     const updated = await api.getReminders();
     setReminders(updated);
     refreshUserData();
-    speakText(`Great job! You completed ${rem.title}.`);
+    speakText(`${rem.title} - ${t.done || 'Done'}`);
   };
 
   const handleSnoozeReminder = async (e, rem, minutes) => {
@@ -71,9 +72,9 @@ export default function ElderDashboard() {
     const updated = await api.getReminders();
     setReminders(updated);
     refreshUserData();
-    const newTime = snoozed?.time || `${minutes}m later`;
-    speakText(`Reminder snoozed until ${newTime}.`);
-    showToast(`⏰ Snoozed to ${newTime}`, 3500, 'reminder');
+    const newTime = snoozed?.time || `${minutes}m`;
+    speakText(`${t.snooze10m || 'Snooze'}: ${rem.title} (${newTime})`);
+    showToast(`⏰ ${t.snooze10m || 'Snooze'}: ${rem.title} (${newTime})`, 3500, 'reminder');
   };
 
   const handleTakeLaterReminder = async (e, rem) => {
@@ -83,8 +84,8 @@ export default function ElderDashboard() {
     setReminders(updated);
     refreshUserData();
     const newTime = later?.time || "08:00 PM";
-    speakText(`Reminder moved to ${newTime} tonight.`);
-    showToast(`🌙 Rescheduled to ${newTime} tonight`, 3500, 'reminder');
+    speakText(`${t.takeLater || 'Later'}: ${rem.title} (${newTime})`);
+    showToast(`🌙 ${t.takeLater || 'Later'}: ${rem.title} (${newTime})`, 3500, 'reminder');
   };
 
   return (
@@ -98,9 +99,28 @@ export default function ElderDashboard() {
 
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 bg-teal-900/60 px-4 py-1.5 rounded-full border border-teal-500/40 text-teal-200 text-sm font-semibold w-fit">
-              <Calendar className="w-4 h-4 text-amber-400" />
-              <span>{todayDateString}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 bg-teal-900/60 px-4 py-1.5 rounded-full border border-teal-500/40 text-teal-200 text-sm font-semibold w-fit">
+                <Calendar className="w-4 h-4 text-amber-400" />
+                <span>{todayDateString}</span>
+              </div>
+
+              {/* Direct Dashboard Language Selector */}
+              <div className="flex items-center gap-1.5 bg-teal-950/80 hover:bg-teal-900 px-3 py-1.5 rounded-full border border-amber-400/60 shadow-md transition">
+                <Globe className="w-4 h-4 text-amber-400 shrink-0" />
+                <select
+                  value={language}
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  className="bg-transparent text-white font-black text-xs sm:text-sm focus:outline-none cursor-pointer"
+                  aria-label="Select Language"
+                >
+                  {availableLanguages && availableLanguages.map(l => (
+                    <option key={l.code} value={l.code} className="bg-slate-900 text-white font-bold">
+                      {l.native} ({l.name})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-extrabold font-sans tracking-tight text-white flex items-center gap-3">
@@ -148,7 +168,7 @@ export default function ElderDashboard() {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-black uppercase tracking-wider bg-red-600 text-white px-3 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-1">
-                  🚨 HIGH ALERT REMINDER
+                  🚨 {t.highAlertReminder || "HIGH ALERT REMINDER"}
                 </span>
                 <span className="text-sm font-black text-red-950 flex items-center gap-1">
                   <Clock className="w-4 h-4 text-red-700" /> {pendingReminders[0].time}
@@ -169,13 +189,13 @@ export default function ElderDashboard() {
               onClick={(e) => {
                 e.stopPropagation();
                 speechService.playHighAlertSound(3);
-                showToast(`🔊 Playing High Alert Sound for: ${pendingReminders[0].title}`, 3000, 'alert');
+                showToast(`🔊 ${t.highAlertSoundBtn || 'High Alert Sound'}: ${pendingReminders[0].title}`, 3000, 'alert');
               }}
               className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-base flex items-center justify-center gap-2 shadow-md active:scale-95 transition"
-              title="Play High Alert Sound"
+              title={t.highAlertSoundBtn || "Play High Alert Sound"}
             >
               <Volume2 className="w-5 h-5 animate-bounce" />
-              <span>High Alert Sound</span>
+              <span>{t.highAlertSoundBtn || "High Alert Sound"}</span>
             </button>
 
             {/* Trigger Red Popup Modal */}
@@ -185,9 +205,9 @@ export default function ElderDashboard() {
                 triggerReminderAlert(pendingReminders[0]);
               }}
               className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-white hover:bg-red-50 text-red-700 border-2 border-red-400 font-black text-base flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition"
-              title="Open Full Red Notification Pop-up"
+              title={t.viewAlertPopupBtn || "Open Full Red Notification Pop-up"}
             >
-              <span>View Alert Pop-up</span>
+              <span>{t.viewAlertPopupBtn || "View Alert Pop-up"}</span>
             </button>
 
             <AudioButton
@@ -209,7 +229,7 @@ export default function ElderDashboard() {
                 className="flex-1 sm:flex-initial px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-lg flex items-center justify-center gap-2 transition"
               >
                 <RotateCcw className="w-5 h-5" />
-                <span>{t.snooze30 || "Snooze 30m"}</span>
+                <span>{t.snooze30 || t.snooze30m || "Snooze 30m"}</span>
               </button>
               <button
                 onClick={(e) => handleTakeLaterReminder(e, pendingReminders[0])}
@@ -227,7 +247,7 @@ export default function ElderDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
         {/* 1. Cognitive Games */}
         <div
-          onClick={() => handleCardClick('games_hub', 'Opening Mind Games section. We have 3 culturally rich games ready for you.')}
+          onClick={() => handleCardClick('games_hub', t.navToGames || t.startGames)}
           className="elder-card p-6 sm:p-8 cursor-pointer border-3 border-teal-200 hover:border-teal-500 bg-white hover:bg-teal-50/40 transition group relative"
         >
           <div className="flex items-start justify-between gap-4">
@@ -266,7 +286,7 @@ export default function ElderDashboard() {
 
         {/* 2. Today's Reminders */}
         <div
-          onClick={() => handleCardClick('reminders', 'Opening your daily reminders. You can see your medicine schedules and water reminders.')}
+          onClick={() => handleCardClick('reminders', t.navToReminders || t.viewReminders)}
           className="elder-card p-6 sm:p-8 cursor-pointer border-3 border-amber-200 hover:border-amber-500 bg-white hover:bg-amber-50/40 transition group"
         >
           <div className="flex items-start justify-between gap-4">
@@ -274,7 +294,7 @@ export default function ElderDashboard() {
               🔔
             </div>
             <AudioButton
-              textToRead={`${t.viewReminders || 'Daily Reminders'}. ${completedCount} completed.`}
+              textToRead={`${t.viewReminders || 'Daily Reminders'}. ${completedCount} ${t.completedToday || 'completed'}.`}
               size="md"
             />
           </div>
@@ -305,7 +325,7 @@ export default function ElderDashboard() {
 
         {/* 3. Memory Support & Cultural Recall */}
         <div
-          onClick={() => handleCardClick('game_object', 'Opening North East Object and Story Recall. Reconnect with familiar memories.')}
+          onClick={() => handleCardClick('game_object', `${t.memorySupportCard || 'Memory Support'}. ${t.tapToPlay || 'Play'}`)}
           className="elder-card p-6 sm:p-8 cursor-pointer border-3 border-rose-200 hover:border-rose-500 bg-white hover:bg-rose-50/40 transition group"
         >
           <div className="flex items-start justify-between gap-4">
@@ -343,7 +363,7 @@ export default function ElderDashboard() {
         <div
           onClick={() => {
             setIsVoiceAssistantOpen(true);
-            speakText("Voice Sathi is ready. How can I help you?");
+            speakText(t.voiceListening || "Voice Sathi is ready. How can I help you?");
           }}
           className="elder-card p-6 sm:p-8 cursor-pointer border-3 border-indigo-200 hover:border-indigo-500 bg-white hover:bg-indigo-50/40 transition group"
         >
@@ -381,7 +401,7 @@ export default function ElderDashboard() {
 
       {/* 5. Progress Card (Wide) */}
       <div
-        onClick={() => handleCardClick('progress', 'Viewing your overall stars and cognitive activity streak.')}
+        onClick={() => handleCardClick('progress', t.navToProgress || t.starsCard)}
         className="elder-card p-6 sm:p-8 cursor-pointer border-3 border-purple-200 hover:border-purple-500 bg-gradient-to-r from-purple-50/60 to-white transition group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
       >
         <div className="flex items-start gap-5">
@@ -426,7 +446,7 @@ export default function ElderDashboard() {
 
         <a
           href={`tel:${userProfile?.emergency_contact_phone || '+919876543210'}`}
-          onClick={() => speakText(`Calling your caregiver ${userProfile?.emergency_contact_name || 'Priya'}`)}
+          onClick={() => speakText(`${t.callNow || 'Calling'}: ${userProfile?.emergency_contact_name || 'Priya'}`)}
           className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-md transition"
         >
           <PhoneCall className="w-5 h-5" />

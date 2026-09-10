@@ -26,7 +26,7 @@ export default function AccessibilitySettings() {
     largeButtons,
     setLargeButtons,
     language,
-    setLanguage,
+    changeLanguage,
     availableLanguages,
     speakText,
     t
@@ -34,17 +34,16 @@ export default function AccessibilitySettings() {
 
   const handleSetFont = (sz) => {
     setFontSize(sz);
-    speakText(`Text size set to ${sz}`);
+    speakText(`Text size: ${sz}`);
   };
 
   const handleSetTheme = (th) => {
     setTheme(th);
-    speakText(`Display contrast changed.`);
+    speakText(`Display theme changed`);
   };
 
-  const handleSetLanguage = (langCode, langName) => {
-    setLanguage(langCode);
-    speakText(`Language changed to ${langName}`);
+  const handleSetLanguage = (langCode) => {
+    changeLanguage(langCode);
   };
 
   return (
@@ -52,7 +51,10 @@ export default function AccessibilitySettings() {
       {/* Top Bar */}
       <div className="flex items-center justify-between">
         <button
-          onClick={() => navigateTo('elder', 'dashboard')}
+          onClick={() => {
+            speakText(t.navToHome || t.home);
+            navigateTo('elder', 'dashboard');
+          }}
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />

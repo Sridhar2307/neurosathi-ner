@@ -92,6 +92,16 @@ export const AccessibilityProvider = ({ children }) => {
     if (autoVoiceRead) speakText(nextTheme === 'warm_sepia' ? 'Warm Brown theme activated' : 'Default theme activated');
   };
 
+  const changeLanguage = (newLangCode) => {
+    if (!newLangCode) return;
+    setLanguage(newLangCode);
+    localStorage.setItem('ns_language', newLangCode);
+
+    const targetDict = CULTURAL_TRANSLATIONS[newLangCode] || CULTURAL_TRANSLATIONS.en;
+    const spokenMessage = targetDict.langChanged || `${newLangCode} selected.`;
+    speechService.speak(spokenMessage, { lang: newLangCode });
+  };
+
   return (
     <AccessibilityContext.Provider
       value={{
@@ -107,6 +117,7 @@ export const AccessibilityProvider = ({ children }) => {
         setLargeButtons,
         language,
         setLanguage,
+        changeLanguage,
         speakText,
         stopSpeaking,
         isSpeaking,

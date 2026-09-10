@@ -35,7 +35,7 @@ export default function GamesHub() {
   }, []);
 
   const handleLaunchGame = (viewKey, spokenName) => {
-    if (autoVoiceRead) speakText(`Launching ${spokenName}`);
+    if (spokenName) speakText(spokenName);
     navigateTo('elder', viewKey);
   };
 
@@ -44,7 +44,10 @@ export default function GamesHub() {
       {/* Back Button & Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <button
-          onClick={() => navigateTo('elder', 'dashboard')}
+          onClick={() => {
+            speakText(t.navToHome || t.home);
+            navigateTo('elder', 'dashboard');
+          }}
           className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base sm:text-lg shadow-sm transition"
         >
           <ArrowLeft className="w-5 h-5 text-teal-700" />
@@ -150,7 +153,7 @@ export default function GamesHub() {
               className="w-full"
             />
             <button
-              onClick={() => handleLaunchGame('game_memory', 'North East Heritage Memory Match')}
+              onClick={() => handleLaunchGame('game_memory', t.heritageMatch || 'Heritage Memory Match')}
               className="w-full py-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition"
             >
               <Play className="w-5 h-5 fill-current" />
@@ -198,7 +201,7 @@ export default function GamesHub() {
               className="w-full bg-amber-100 text-amber-900 border-amber-300"
             />
             <button
-              onClick={() => handleLaunchGame('game_sequence', 'NER Rhythm and Sequence Recall')}
+              onClick={() => handleLaunchGame('game_sequence', t.sequenceRecall || 'NER Rhythm and Sequence Recall')}
               className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-tactile-amber active:shadow-tactile-amber-pressed transform active:translate-y-1 transition"
             >
               <Music className="w-5 h-5" />
@@ -246,7 +249,7 @@ export default function GamesHub() {
               className="w-full bg-rose-100 text-rose-900 border-rose-300"
             />
             <button
-              onClick={() => handleLaunchGame('game_object', 'North East Familiar Object and Story Recall')}
+              onClick={() => handleLaunchGame('game_object', t.objectStoryRecall || 'North East Familiar Object and Story Recall')}
               className="w-full py-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-md transition"
             >
               <Compass className="w-5 h-5" />
@@ -294,7 +297,7 @@ export default function GamesHub() {
               className="w-full bg-green-100 text-green-900 border-green-300"
             />
             <button
-              onClick={() => handleLaunchGame('game_daily_life', 'Daily Life Sequencing')}
+              onClick={() => handleLaunchGame('game_daily_life', t.dailyLifeTitle || 'Daily Life Sequencing')}
               className="w-full py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-md transition"
             >
               <Sunrise className="w-5 h-5" />
