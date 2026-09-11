@@ -27,12 +27,36 @@ from ai_engine import calculate_adaptive_difficulty, generate_encouraging_messag
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 
+ID_TO_UUID = {
+    DEMO_USER_ID: "e0000000-0000-0000-0000-000000000002",
+    LAKSHMI_USER_ID: "e0000000-0000-0000-0000-000000000001",
+}
+UUID_TO_ID = {
+    "e0000000-0000-0000-0000-000000000002": DEMO_USER_ID,
+    "e0000000-0000-0000-0000-000000000001": LAKSHMI_USER_ID,
+}
+
+def to_uuid(uid: str) -> str:
+    if not uid:
+        return "e0000000-0000-0000-0000-000000000002"
+    if uid in ID_TO_UUID:
+        return ID_TO_UUID[uid]
+    import uuid
+    try:
+        uuid.UUID(str(uid))
+        return str(uid)
+    except Exception:
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(uid)))
+
+def from_uuid(uuid_str: str) -> str:
+    return UUID_TO_ID.get(str(uuid_str), str(uuid_str))
+
 supabase = None
 if SUPABASE_URL and SUPABASE_ANON_KEY and "http" in SUPABASE_URL:
     try:
         from supabase import create_client, Client
         supabase: Optional[Client] = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-        print("Connected to Supabase PostgreSQL.")
+        print("Connected to Supabase PostgreSQL Database.")
     except Exception as e:
         print(f"Supabase connection notice (falling back to hybrid local store): {e}")
         supabase = None
@@ -81,6 +105,66 @@ class HybridDatabase:
             {"id": "log-4", "user_id": DEMO_USER_ID, "action": "Drank Fresh Copper Glass Water", "category": "hydration", "timestamp": "11:02 AM", "status": "completed"},
             {"id": "log-5", "user_id": DEMO_USER_ID, "action": "Voice Query: 'What are my afternoon tasks?'", "category": "voice", "timestamp": "01:20 PM", "status": "completed"},
         ]
+
+        # Sync live data from Supabase if connected
+        if supabase:
+            try:
+                # 1. Sync profiles
+                p_res = supabase.table("profiles").select("*").execute()
+                for row in p_res.data:
+                    app_uid = from_uuid(row.get("id"))
+                    self.users[app_uid] = UserProfile(
+                        id=app_uid,
+                        name=row.get("name", "Patient"),
+                        email=row.get("emergency_contact_email") or f"{app_uid}@neurosathi.in",
+                        role=row.get("role", "elder"),
+                        age=row.get("age", 74),
+                        gender=row.get("gender", "Female"),
+                        blood_group=row.get("blood_group", "O+"),
+                        location=row.get("location", "Guwahati, Assam"),
+                        language_preference=row.get("preferred_language", "en"),
+                        medical_stage=row.get("medical_stage", "Early-stage Dementia / MCI"),
+                        allergies=row.get("allergies", "None reported"),
+                        doctor_name=row.get("doctor_name", "Dr. Anupam Sarma (Neurologist)"),
+                        doctor_phone=row.get("doctor_phone", "+91 98640 12345"),
+                        doctor_hospital=row.get("doctor_hospital", "Guwahati Neurological Center, Assam"),
+                        emergency_contact_name=row.get("emergency_contact_name", "Primary Caregiver"),
+                        emergency_contact_relation=row.get("emergency_contact_relation", "Family"),
+                        emergency_contact_phone=row.get("emergency_contact_phone", "+91 98765 43210"),
+                        emergency_contact_email=row.get("emergency_contact_email", "caregiver@neurosathi.in"),
+                        emergency_contact_address=row.get("emergency_contact_address", "Guwahati, Assam"),
+                        current_streak=row.get("streak_count", 4),
+                        total_stars=row.get("total_stars", 56),
+                        caregiver_pin=row.get("caregiver_pin", "1234"),
+                        created_at=row.get("created_at", datetime.now().isoformat()),
+                        avatar_url=row.get("avatar_url", "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80")
+                    )
+
+                # 2. Sync reminders
+                r_res = supabase.table("reminders").select("*").execute()
+                for rem_row in r_res.data:
+                    rem_id = rem_row.get("id")
+                    app_uid = from_uuid(rem_row.get("user_id"))
+                    self.reminders[rem_id] = Reminder(
+                        id=rem_id,
+                        user_id=app_uid,
+                        title=rem_row.get("title", ""),
+                        category=rem_row.get("category", "medicine"),
+                        time=rem_row.get("time_schedule", "08:30 AM"),
+                        dosage_or_detail=rem_row.get("dosage_or_detail", ""),
+                        audio_prompt=rem_row.get("audio_prompt", ""),
+                        is_completed=rem_row.get("is_completed", False),
+                        icon_name=rem_row.get("icon_name", "Pill"),
+                        completed_at=rem_row.get("completed_at"),
+                        created_at=rem_row.get("created_at", datetime.now().isoformat())
+                    )
+
+                print(f"Supabase sync active: {len(self.users)} profiles, {len(self.reminders)} reminders loaded.")
+            except Exception as e:
+                print(f"Supabase load notice: {e}")
+
+    def is_supabase_connected(self) -> bool:
+        return supabase is not None
 
     # --- User & Patient Profile Methods ---
     def get_user(self, user_id: str) -> Optional[UserProfile]:
@@ -143,6 +227,29 @@ class HybridDatabase:
         )
         self.reminders[starter_reminder.id] = starter_reminder
 
+        # Sync to Supabase
+        if supabase:
+            try:
+                supabase.table("profiles").upsert({
+                    "id": to_uuid(new_id),
+                    "name": new_user.name,
+                    "role": new_user.role,
+                    "preferred_language": new_user.language_preference,
+                    "age": new_user.age,
+                    "gender": new_user.gender,
+                    "blood_group": new_user.blood_group,
+                    "location": new_user.location,
+                    "medical_stage": new_user.medical_stage,
+                    "emergency_contact_name": new_user.emergency_contact_name,
+                    "emergency_contact_phone": new_user.emergency_contact_phone,
+                    "emergency_contact_email": new_user.emergency_contact_email,
+                    "emergency_contact_address": new_user.emergency_contact_address,
+                    "streak_count": new_user.current_streak,
+                    "total_stars": new_user.total_stars
+                }).execute()
+            except Exception as e:
+                print(f"Supabase create user error: {e}")
+
         return new_user
 
     def update_user(self, user_id: str, update_in: UserProfileUpdate) -> Optional[UserProfile]:
@@ -157,6 +264,23 @@ class HybridDatabase:
         
         updated_user = UserProfile(**user_data)
         self.users[user_id] = updated_user
+
+        # Sync to Supabase
+        if supabase:
+            try:
+                supa_update = {}
+                if update_in.name is not None: supa_update["name"] = update_in.name
+                if update_in.location is not None: supa_update["location"] = update_in.location
+                if update_in.medical_stage is not None: supa_update["medical_stage"] = update_in.medical_stage
+                if update_in.emergency_contact_name is not None: supa_update["emergency_contact_name"] = update_in.emergency_contact_name
+                if update_in.emergency_contact_phone is not None: supa_update["emergency_contact_phone"] = update_in.emergency_contact_phone
+                if update_in.emergency_contact_email is not None: supa_update["emergency_contact_email"] = update_in.emergency_contact_email
+                if update_in.emergency_contact_address is not None: supa_update["emergency_contact_address"] = update_in.emergency_contact_address
+                if supa_update:
+                    supabase.table("profiles").update(supa_update).eq("id", to_uuid(user_id)).execute()
+            except Exception as e:
+                print(f"Supabase update user error: {e}")
+
         return updated_user
 
     def pair_device(self, req: DevicePairRequest) -> DevicePairResponse:
@@ -335,6 +459,25 @@ class HybridDatabase:
             "timestamp": datetime.now().strftime("%I:%M %p"),
             "status": "pending"
         })
+
+        # Sync to Supabase
+        if supabase:
+            try:
+                valid_cat = reminder_in.category if reminder_in.category in ['medicine', 'water', 'appointment', 'daily_task', 'meal'] else 'daily_task'
+                supabase.table("reminders").insert({
+                    "id": to_uuid(new_id),
+                    "user_id": to_uuid(reminder_in.user_id),
+                    "title": reminder_in.title,
+                    "category": valid_cat,
+                    "time_schedule": reminder_in.time,
+                    "dosage_or_detail": reminder_in.dosage_or_detail or "",
+                    "audio_prompt": reminder_in.audio_prompt or f"Reminder for {reminder_in.title}",
+                    "icon_name": reminder_in.icon_name or "Bell",
+                    "is_completed": reminder_in.is_completed or False
+                }).execute()
+            except Exception as e:
+                print(f"Supabase reminder create error: {e}")
+
         return new_reminder
 
     def update_reminder(self, reminder_id: str, update_in: ReminderUpdate) -> Optional[Reminder]:
@@ -366,11 +509,31 @@ class HybridDatabase:
             # Increase stars for elder
             if updated_reminder.user_id in self.users:
                 self.users[updated_reminder.user_id].total_stars += 2
+
+        # Sync to Supabase
+        if supabase:
+            try:
+                supa_r_update = {}
+                if update_in.title is not None: supa_r_update["title"] = update_in.title
+                if update_in.time is not None: supa_r_update["time_schedule"] = update_in.time
+                if update_in.dosage_or_detail is not None: supa_r_update["dosage_or_detail"] = update_in.dosage_or_detail
+                if update_in.is_completed is not None: supa_r_update["is_completed"] = update_in.is_completed
+                if updated_data.get("completed_at"): supa_r_update["completed_at"] = updated_data["completed_at"]
+                if supa_r_update:
+                    supabase.table("reminders").update(supa_r_update).eq("id", to_uuid(reminder_id)).execute()
+            except Exception as e:
+                print(f"Supabase reminder update error: {e}")
+
         return updated_reminder
 
     def delete_reminder(self, reminder_id: str) -> bool:
         if reminder_id in self.reminders:
             del self.reminders[reminder_id]
+            if supabase:
+                try:
+                    supabase.table("reminders").delete().eq("id", to_uuid(reminder_id)).execute()
+                except Exception as e:
+                    print(f"Supabase reminder delete error: {e}")
             return True
         return False
 
@@ -415,6 +578,34 @@ class HybridDatabase:
             "timestamp": datetime.now().strftime("%I:%M %p"),
             "status": "completed"
         })
+
+        # Sync to Supabase
+        if supabase:
+            try:
+                g_slug = result_in.game_type.value if hasattr(result_in.game_type, 'value') else str(result_in.game_type)
+                g_diff = result_in.difficulty.value if hasattr(result_in.difficulty, 'value') else str(result_in.difficulty)
+                supabase.table("game_results").insert({
+                    "id": to_uuid(new_id),
+                    "user_id": to_uuid(result_in.user_id),
+                    "game_slug": g_slug,
+                    "difficulty": g_diff,
+                    "score": result_in.score,
+                    "max_score": result_in.max_score,
+                    "attempts": result_in.attempts,
+                    "duration_seconds": result_in.duration_seconds,
+                    "mistakes": result_in.mistakes,
+                    "completed": result_in.completed,
+                    "cultural_theme": result_in.cultural_theme or "NER Heritage",
+                    "encouraging_message": encouragement,
+                    "adaptive_next_difficulty": next_diff
+                }).execute()
+                
+                # Update user stars in Supabase
+                u_profile = self.users.get(result_in.user_id)
+                if u_profile:
+                    supabase.table("profiles").update({"total_stars": u_profile.total_stars}).eq("id", to_uuid(result_in.user_id)).execute()
+            except Exception as e:
+                print(f"Supabase game result insert error: {e}")
 
         return new_result
 

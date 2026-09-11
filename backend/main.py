@@ -27,13 +27,21 @@ app.include_router(ai.router)
 
 @app.get("/health", tags=["System"])
 def health_check():
+    from database import db, SUPABASE_URL
+    is_db_connected = db.is_supabase_connected()
     return {
         "status": "healthy",
         "service": "NeuroSathi NER Backend",
         "hackathon": "Smart India Hackathon 2026",
         "problem_id": "SIH26003",
         "team": "Mavericks",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "database": {
+            "status": "connected" if is_db_connected else "offline_fallback",
+            "provider": "Supabase PostgreSQL (Cloud)",
+            "activated": is_db_connected,
+            "supabase_url": SUPABASE_URL if is_db_connected else None
+        }
     }
 
 @app.get("/", tags=["System"])

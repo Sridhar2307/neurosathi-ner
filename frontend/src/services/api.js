@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient';
+
 /**
  * NeuroSathi NER - API Service & Offline-First Sync Layer
  */
@@ -5,6 +7,31 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export const DEMO_USER_ID = "demo-user-123";
 export const LAKSHMI_USER_ID = "patient-lakshmi-demo";
+
+// Supabase UUID deterministic mapping
+const ID_TO_UUID_MAP = {
+  [DEMO_USER_ID]: "e0000000-0000-0000-0000-000000000002",
+  [LAKSHMI_USER_ID]: "e0000000-0000-0000-0000-000000000001",
+};
+const UUID_TO_ID_MAP = {
+  "e0000000-0000-0000-0000-000000000002": DEMO_USER_ID,
+  "e0000000-0000-0000-0000-000000000001": LAKSHMI_USER_ID,
+};
+
+export function toSupabaseUuid(id) {
+  if (!id) return "e0000000-0000-0000-0000-000000000002";
+  if (ID_TO_UUID_MAP[id]) return ID_TO_UUID_MAP[id];
+  // If it's already a valid UUID format (8-4-4-4-12)
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return id;
+  }
+  return "e0000000-0000-0000-0000-000000000002";
+}
+
+export function fromSupabaseUuid(uuidStr) {
+  if (!uuidStr) return DEMO_USER_ID;
+  return UUID_TO_ID_MAP[uuidStr] || uuidStr;
+}
 
 // Per-patient storage key helpers
 function patientKey(baseKey, userId) {
@@ -312,16 +339,44 @@ if (!localStorage.getItem(patientKey(STORAGE_KEYS.REMINDERS, LAKSHMI_USER_ID))) 
 }
 
 export const api = {
-  // Check backend health
+  // Check backend health & database connectivity
   async checkHealth() {
+    // 1. Try FastAPI backend first
     try {
       const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
-      if (res.ok) return { online: true, data: await res.json() };
+      if (res.ok) {
+        const data = await res.json();
+        return { online: true, database: 'supabase_connected', data };
+      }
     } catch (e) {}
-    return { online: false, data: { status: 'offline-mode', message: 'Running on local offline store' } };
+
+    // 2. Direct Supabase ping (works seamlessly on Netlify static hosting)
+    if (supabase) {
+      try {
+        const { error } = await supabase.from('profiles').select('id', { count: 'exact', head: true });
+        if (!error) {
+          return {
+            online: true,
+            database: 'supabase_connected',
+            data: {
+              status: 'healthy',
+              database: {
+                status: 'connected',
+                provider: 'Supabase PostgreSQL (Cloud)',
+                activated: true
+              }
+            }
+          };
+        }
+      } catch (err) {
+        console.warn('Supabase direct ping error:', err);
+      }
+    }
+
+    return { online: false, database: 'offline_local', data: { status: 'offline-mode', message: 'Running on local offline store' } };
   },
 
-  // Reminders — per-patient namespaced
+  // Reminders — per-patient namespaced with live Supabase & offline-first sync
   async getReminders(userId = DEMO_USER_ID) {
     const uid = userId || DEMO_USER_ID;
     const key = patientKey(STORAGE_KEYS.REMINDERS, uid);
@@ -331,6 +386,8 @@ export const api = {
     } else if (uid === LAKSHMI_USER_ID && !localStorage.getItem(key)) {
       setLocal(key, LAKSHMI_REMINDERS);
     }
+
+    // Try live FastAPI endpoint
     try {
       const res = await fetch(`${API_BASE}/reminders/${uid}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
@@ -339,6 +396,38 @@ export const api = {
         return data;
       }
     } catch (e) {}
+
+    // If FastAPI not reached, query Supabase directly
+    if (supabase) {
+      try {
+        const targetUuid = toSupabaseUuid(uid);
+        const { data, error } = await supabase
+          .from('reminders')
+          .select('*')
+          .eq('user_id', targetUuid)
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(r => ({
+            id: r.id,
+            user_id: uid,
+            title: r.title,
+            category: r.category || 'medicine',
+            time: r.time_schedule || r.time || '08:30 AM',
+            dosage_or_detail: r.dosage_or_detail || '',
+            audio_prompt: r.audio_prompt || '',
+            is_completed: Boolean(r.is_completed),
+            icon_name: r.icon_name || 'Pill',
+            created_at: r.created_at || new Date().toISOString()
+          }));
+          setLocal(key, mapped);
+          return mapped;
+        }
+      } catch (sbErr) {
+        console.warn('Supabase direct reminder fetch notice:', sbErr);
+      }
+    }
+
     const defaultList = uid === LAKSHMI_USER_ID ? LAKSHMI_REMINDERS : (uid === DEMO_USER_ID ? DEFAULT_REMINDERS : []);
     return getLocal(key, defaultList);
   },
@@ -372,6 +461,29 @@ export const api = {
     }
     
     setLocal(key, localReminders);
+
+    // Sync to Supabase directly if available
+    if (supabase) {
+      try {
+        const targetUuid = toSupabaseUuid(uid);
+        const validCategory = ['medicine', 'water', 'appointment', 'daily_task', 'meal'].includes(baseReminder.category)
+          ? baseReminder.category
+          : 'medicine';
+        await supabase.from('reminders').insert({
+          id: baseReminder.id,
+          user_id: targetUuid,
+          title: baseReminder.title,
+          category: validCategory,
+          time_schedule: baseReminder.time,
+          dosage_or_detail: baseReminder.dosage_or_detail || null,
+          audio_prompt: baseReminder.audio_prompt || null,
+          is_completed: false,
+          icon_name: baseReminder.icon_name || 'Pill'
+        });
+      } catch (sbErr) {
+        console.warn('Supabase createReminder notice:', sbErr);
+      }
+    }
 
     try {
       const res = await fetch(`${API_BASE}/reminders`, {
@@ -454,6 +566,27 @@ export const api = {
         }
       }
       setLocal(key, localReminders);
+    }
+
+    // Sync to Supabase directly if available
+    if (supabase) {
+      try {
+        const sbPayload = {};
+        if (updates.title !== undefined) sbPayload.title = updates.title;
+        if (updates.category !== undefined) sbPayload.category = updates.category;
+        if (updates.time !== undefined) sbPayload.time_schedule = updates.time;
+        if (updates.dosage_or_detail !== undefined) sbPayload.dosage_or_detail = updates.dosage_or_detail;
+        if (updates.audio_prompt !== undefined) sbPayload.audio_prompt = updates.audio_prompt;
+        if (updates.is_completed !== undefined) sbPayload.is_completed = Boolean(updates.is_completed);
+        if (updates.icon_name !== undefined) sbPayload.icon_name = updates.icon_name;
+        if (updates.is_completed) sbPayload.completed_at = new Date().toISOString();
+
+        if (Object.keys(sbPayload).length > 0) {
+          await supabase.from('reminders').update(sbPayload).eq('id', id);
+        }
+      } catch (sbErr) {
+        console.warn('Supabase updateReminder notice:', sbErr);
+      }
     }
 
     try {
@@ -571,6 +704,14 @@ export const api = {
     const filtered = localReminders.filter(r => r.id !== id);
     setLocal(key, filtered);
 
+    if (supabase) {
+      try {
+        await supabase.from('reminders').delete().eq('id', id);
+      } catch (sbErr) {
+        console.warn('Supabase deleteReminder notice:', sbErr);
+      }
+    }
+
     try {
       await fetch(`${API_BASE}/reminders/${id}`, {
         method: 'DELETE',
@@ -646,6 +787,25 @@ export const api = {
       if (res.ok) return await res.json();
     } catch (e) {}
 
+    // Direct Supabase telemetry sync
+    if (supabase) {
+      try {
+        const targetUuid = toSupabaseUuid(userId);
+        const validDiff = ['easy', 'medium', 'hard'].includes(resultData.difficulty) ? resultData.difficulty : 'easy';
+        await supabase.from('game_results').insert({
+          user_id: targetUuid,
+          game_slug: resultData.game_type || 'memory_match',
+          score: Math.round(resultData.score || 0),
+          duration_seconds: Math.round(resultData.time_taken_seconds || 60),
+          difficulty: validDiff,
+          mistakes: Math.round(resultData.mistakes || 0),
+          stars_earned: (resultData.score >= 80 ? 5 : 3)
+        });
+      } catch (sbErr) {
+        console.warn('Supabase game_results insert notice:', sbErr);
+      }
+    }
+
     return newResult;
   },
 
@@ -668,6 +828,38 @@ export const api = {
         return data;
       }
     } catch (e) {}
+
+    // Fallback direct Supabase query
+    if (supabase) {
+      try {
+        const targetUuid = toSupabaseUuid(uid);
+        const { data, error } = await supabase
+          .from('game_results')
+          .select('*')
+          .eq('user_id', targetUuid)
+          .order('played_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(g => ({
+            id: g.id,
+            user_id: uid,
+            game_type: g.game_slug,
+            game_name: g.game_slug === 'memory_match' ? 'North East Heritage Match' : (g.game_slug === 'sequence_recall' ? 'Daily Sequence Recall' : 'Tea Garden Item Spotter'),
+            score: g.score,
+            time_taken_seconds: g.duration_seconds,
+            difficulty: g.difficulty,
+            mistakes: g.mistakes,
+            stars_earned: g.stars_earned || 3,
+            timestamp: g.played_at || new Date().toISOString()
+          }));
+          setLocal(key, mapped);
+          return mapped;
+        }
+      } catch (sbErr) {
+        console.warn('Supabase game_results fetch notice:', sbErr);
+      }
+    }
+
     return getLocal(key, uid === DEMO_USER_ID ? DEFAULT_GAME_RESULTS : []);
   },
 
@@ -807,6 +999,48 @@ export const api = {
         return data;
       }
     } catch (e) {}
+
+    // Fallback: Read directly from Supabase profiles
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(p => {
+            const uid = fromSupabaseUuid(p.id);
+            return {
+              id: uid,
+              name: p.name || 'Patient',
+              email: p.emergency_contact_email || `${uid}@neurosathi.in`,
+              role: p.role || 'elder',
+              age: p.age || 74,
+              gender: p.gender || 'Female',
+              blood_group: p.blood_group || 'O+',
+              location: p.location || 'Guwahati, Assam',
+              language_preference: p.preferred_language || 'en',
+              medical_stage: p.medical_stage || 'Early-stage Dementia / MCI',
+              allergies: p.allergies || 'None reported',
+              doctor_name: p.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
+              doctor_phone: p.doctor_phone || '+91 98640 12345',
+              doctor_hospital: p.doctor_hospital || 'Guwahati Neurological Center, Assam',
+              emergency_contact_name: p.emergency_contact_name || 'Primary Caregiver',
+              emergency_contact_relation: p.emergency_contact_relation || 'Family',
+              emergency_contact_phone: p.emergency_contact_phone || '+91 98765 43210',
+              emergency_contact_email: p.emergency_contact_email || 'caregiver@neurosathi.in',
+              emergency_contact_address: p.emergency_contact_address || 'Guwahati, Assam',
+              current_streak: p.streak_count || 4,
+              total_stars: p.total_stars || 56,
+              caregiver_pin: p.caregiver_pin || '1234',
+              avatar_url: p.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+            };
+          });
+          setLocal(STORAGE_KEYS.PATIENTS, mapped);
+          return mapped;
+        }
+      } catch (sbErr) {
+        console.warn('Supabase getAllPatients notice:', sbErr);
+      }
+    }
+
     return getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
   },
 
@@ -828,7 +1062,7 @@ export const api = {
       }
     } catch (e) {}
 
-    // Offline: create locally
+    // Offline & Supabase direct insert
     const newPatient = {
       ...patientData,
       id: `patient-${Date.now().toString(36)}`,
@@ -855,6 +1089,28 @@ export const api = {
     const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
     const idx = patients.findIndex(p => p.id === userId);
     if (idx !== -1) { patients[idx] = updated; setLocal(STORAGE_KEYS.PATIENTS, patients); }
+
+    // Direct Supabase update
+    if (supabase) {
+      try {
+        const targetUuid = toSupabaseUuid(userId);
+        const sbUpdates = {};
+        if (updates.name) sbUpdates.name = updates.name;
+        if (updates.age) sbUpdates.age = updates.age;
+        if (updates.language_preference) sbUpdates.preferred_language = updates.language_preference;
+        if (updates.total_stars !== undefined) sbUpdates.total_stars = updates.total_stars;
+        if (updates.current_streak !== undefined) sbUpdates.streak_count = updates.current_streak;
+        if (updates.medical_stage) sbUpdates.medical_stage = updates.medical_stage;
+        if (updates.allergies) sbUpdates.allergies = updates.allergies;
+        if (updates.doctor_name) sbUpdates.doctor_name = updates.doctor_name;
+        if (updates.emergency_contact_phone) sbUpdates.emergency_contact_phone = updates.emergency_contact_phone;
+        if (Object.keys(sbUpdates).length > 0) {
+          await supabase.from('profiles').update(sbUpdates).eq('id', targetUuid);
+        }
+      } catch (sbErr) {
+        console.warn('Supabase updatePatient notice:', sbErr);
+      }
+    }
 
     try {
       const res = await fetch(`${API_BASE}/users/${userId}`, {
@@ -885,6 +1141,45 @@ export const api = {
         return data;
       }
     } catch (e) {}
+
+    // Fallback direct Supabase profile fetch
+    if (supabase) {
+      try {
+        const targetUuid = toSupabaseUuid(uid);
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', targetUuid).single();
+        if (!error && data) {
+          const profile = {
+            id: uid,
+            name: data.name || 'Patient',
+            email: data.emergency_contact_email || `${uid}@neurosathi.in`,
+            role: data.role || 'elder',
+            age: data.age || 74,
+            gender: data.gender || 'Female',
+            blood_group: data.blood_group || 'O+',
+            location: data.location || 'Guwahati, Assam',
+            language_preference: data.preferred_language || 'en',
+            medical_stage: data.medical_stage || 'Early-stage Dementia / MCI',
+            allergies: data.allergies || 'None reported',
+            doctor_name: data.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
+            doctor_phone: data.doctor_phone || '+91 98640 12345',
+            doctor_hospital: data.doctor_hospital || 'Guwahati Neurological Center, Assam',
+            emergency_contact_name: data.emergency_contact_name || 'Primary Caregiver',
+            emergency_contact_relation: data.emergency_contact_relation || 'Family',
+            emergency_contact_phone: data.emergency_contact_phone || '+91 98765 43210',
+            emergency_contact_email: data.emergency_contact_email || 'caregiver@neurosathi.in',
+            emergency_contact_address: data.emergency_contact_address || 'Guwahati, Assam',
+            current_streak: data.streak_count || 4,
+            total_stars: data.total_stars || 56,
+            caregiver_pin: data.caregiver_pin || '1234',
+            avatar_url: data.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+          };
+          setLocal(key, profile);
+          return profile;
+        }
+      } catch (sbErr) {
+        console.warn('Supabase getUserProfile notice:', sbErr);
+      }
+    }
 
     // Check cached patientKey
     const cached = getLocal(key, null);
