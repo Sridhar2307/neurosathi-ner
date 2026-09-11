@@ -286,21 +286,30 @@ export default function CaregiverDashboard() {
 
   // Patient shown in dashboard (from session or fallback)
   const patient = activePatient || data?.patient_profile || userProfile;
-  const [patientsList, setPatientsList] = useState(() => caregiverSession?.allPatients || []);
+
+  // Deduplicate and filter strictly to patients belonging to this caregiver's session
+  const cleanPatients = (list) => {
+    const map = new Map();
+    (list || []).forEach(p => {
+      if (p && p.id && p.role !== 'caregiver' && !map.has(p.id)) {
+        map.set(p.id, p);
+      }
+    });
+    if (patient && patient.id && patient.role !== 'caregiver' && !map.has(patient.id)) {
+      map.set(patient.id, patient);
+    }
+    return Array.from(map.values());
+  };
+
+  const [patientsList, setPatientsList] = useState(() => cleanPatients(caregiverSession?.allPatients));
 
   useEffect(() => {
-    const loadAllPatients = async () => {
-      const list = await api.getAllPatients();
-      if (list && list.length > 0) {
-        setPatientsList(list);
-      }
-    };
-    if (!caregiverSession?.allPatients || caregiverSession.allPatients.length <= 1) {
-      loadAllPatients();
+    if (caregiverSession?.allPatients) {
+      setPatientsList(cleanPatients(caregiverSession.allPatients));
     }
   }, [caregiverSession]);
 
-  const allPatients = patientsList.length > 0 ? patientsList : (caregiverSession?.allPatients || []);
+  const allPatients = cleanPatients(patientsList.length > 0 ? patientsList : caregiverSession?.allPatients);
 
   useEffect(() => {
     const fetchData = async () => {

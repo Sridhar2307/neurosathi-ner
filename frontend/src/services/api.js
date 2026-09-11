@@ -1067,7 +1067,16 @@ export const api = {
     setLocal(STORAGE_KEYS.PROFILE, matchedPatient);
     localStorage.setItem('ns_profile', JSON.stringify(matchedPatient));
     localStorage.setItem('ns_active_patient_id', activeId);
-    setLocal(STORAGE_KEYS.PATIENTS, patients);
+
+    // Filter candidates strictly to patients belonging to THIS caregiver's contact number
+    const myPatientsMap = new Map();
+    candidates.forEach(p => {
+      if (p && p.id && p.role !== 'caregiver') myPatientsMap.set(p.id, p);
+    });
+    if (!myPatientsMap.has(matchedPatient.id)) {
+      myPatientsMap.set(matchedPatient.id, matchedPatient);
+    }
+    const myPatients = Array.from(myPatientsMap.values());
 
     const caregiverInfo = {
       name: matchedPatient.emergency_contact_name || 'Primary Caregiver',
@@ -1080,7 +1089,7 @@ export const api = {
     const sessionData = {
       caregiver: caregiverInfo,
       activePatient: matchedPatient,
-      allPatients: patients
+      allPatients: myPatients
     };
     localStorage.setItem('ns_caregiver_session', JSON.stringify(sessionData));
 
@@ -1089,7 +1098,7 @@ export const api = {
       message: 'Caregiver authenticated successfully.',
       caregiver: caregiverInfo,
       active_patient: matchedPatient,
-      all_patients: patients
+      all_patients: myPatients
     };
   },
 

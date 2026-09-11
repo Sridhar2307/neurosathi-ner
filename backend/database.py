@@ -437,12 +437,17 @@ class HybridDatabase:
             "role": "caregiver"
         }
 
+        # Strictly return only patients belonging to this caregiver, never all users
+        my_patients = [u for u in matched if u.role != "caregiver"] if matched else [active_patient]
+        if not my_patients:
+            my_patients = [active_patient]
+
         return CaregiverLoginResponse(
             success=True,
             message="Caregiver authenticated successfully.",
             caregiver=caregiver_info,
             active_patient=active_patient,
-            all_patients=all_users
+            all_patients=my_patients
         )
 
     # --- Reminder Methods ---
