@@ -25,7 +25,14 @@ export function toSupabaseUuid(id) {
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     return id;
   }
-  return "e0000000-0000-0000-0000-000000000002";
+  // Deterministic valid UUID generation from non-UUID string
+  let h = 0;
+  for (let i = 0; i < id.length; i++) {
+    h = ((h << 5) - h) + id.charCodeAt(i);
+    h |= 0;
+  }
+  const hex = Math.abs(h).toString(16).padStart(8, '0');
+  return `f0000000-0000-4000-8000-${hex.padEnd(12, '0').slice(0, 12)}`;
 }
 
 export function fromSupabaseUuid(uuidStr) {
@@ -1145,36 +1152,134 @@ export const api = {
 
   // Register new patient
   async registerPatient(patientData) {
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `patient-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+
+    const newPatient = {
+      id: newId,
+      name: patientData.name || 'New Patient',
+      email: patientData.emergency_contact_email || `${patientData.name?.toLowerCase().replace(/\s+/g, '') || 'patient'}@neurosathi.in`,
+      role: 'elder',
+      age: patientData.age ? parseInt(patientData.age) : 70,
+      gender: patientData.gender || 'Male',
+      blood_group: patientData.blood_group || 'O+',
+      location: patientData.location || 'Guwahati, Assam',
+      language_preference: patientData.language_preference || 'en',
+      medical_stage: patientData.medical_stage || 'Early-stage Dementia / MCI',
+      allergies: patientData.allergies || 'None reported',
+      doctor_name: patientData.doctor_name || '',
+      doctor_phone: patientData.doctor_phone || '',
+      doctor_hospital: patientData.doctor_hospital || '',
+      emergency_contact_name: patientData.emergency_contact_name || 'Primary Caregiver',
+      emergency_contact_relation: patientData.emergency_contact_relation || 'Family',
+      emergency_contact_phone: patientData.emergency_contact_phone || '',
+      emergency_contact_email: patientData.emergency_contact_email || '',
+      emergency_contact_address: patientData.emergency_contact_address || patientData.location || 'Guwahati, Assam',
+      caregiver_notes: patientData.caregiver_notes || '',
+      caregiver_pin: String(patientData.caregiver_pin || '1234').trim(),
+      created_at: new Date().toISOString(),
+      current_streak: 1,
+      total_stars: 10,
+      avatar_url: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+    };
+
+    // 1. Save patient-specific store
+    setLocal(patientKey(STORAGE_KEYS.PROFILE, newPatient.id), newPatient);
+
+    // 2. Add to global patients roster
+    const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+    const existingIdx = patients.findIndex(p => p.id === newPatient.id);
+    if (existingIdx !== -1) {
+      patients[existingIdx] = newPatient;
+    } else {
+      patients.push(newPatient);
+    }
+    setLocal(STORAGE_KEYS.PATIENTS, patients);
+
+    // 3. Create starter default reminders for this newly registered patient
+    const remKey = patientKey(STORAGE_KEYS.REMINDERS, newPatient.id);
+    const starterReminders = [
+      {
+        id: `rem-${Date.now().toString(36)}-1`,
+        user_id: newPatient.id,
+        title: "Morning Fresh Water & Hydration",
+        category: "water",
+        time: "08:30 AM",
+        dosage_or_detail: "1 glass fresh water to stay hydrated",
+        audio_prompt: `Good morning ${newPatient.name}, please drink a refreshing glass of water.`,
+        is_completed: false,
+        icon_name: "Droplet",
+        created_at: new Date().toISOString()
+      },
+      {
+        id: `rem-${Date.now().toString(36)}-2`,
+        user_id: newPatient.id,
+        title: "Afternoon Memory Routine",
+        category: "daily_task",
+        time: "03:00 PM",
+        dosage_or_detail: "Daily cognitive exercise and music",
+        audio_prompt: `Time for a gentle cognitive exercise, ${newPatient.name}.`,
+        is_completed: false,
+        icon_name: "Brain",
+        created_at: new Date().toISOString()
+      }
+    ];
+    setLocal(remKey, starterReminders);
+
+    // 4. Direct Supabase cloud insert / upsert
+    if (supabase) {
+      try {
+        const targetUuid = toSupabaseUuid(newPatient.id);
+        await supabase.from('profiles').upsert({
+          id: targetUuid,
+          name: newPatient.name,
+          role: 'elder',
+          preferred_language: newPatient.language_preference,
+          age: newPatient.age,
+          gender: newPatient.gender,
+          blood_group: newPatient.blood_group,
+          location: newPatient.location,
+          medical_stage: newPatient.medical_stage,
+          allergies: newPatient.allergies,
+          doctor_name: newPatient.doctor_name || null,
+          doctor_phone: newPatient.doctor_phone || null,
+          doctor_hospital: newPatient.doctor_hospital || null,
+          emergency_contact_name: newPatient.emergency_contact_name,
+          emergency_contact_relation: newPatient.emergency_contact_relation,
+          emergency_contact_phone: newPatient.emergency_contact_phone,
+          emergency_contact_email: newPatient.emergency_contact_email || null,
+          emergency_contact_address: newPatient.emergency_contact_address || null,
+          streak_count: 1,
+          total_stars: 10,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      } catch (sbErr) {
+        console.warn('Supabase registerPatient cloud insert notice:', sbErr);
+      }
+    }
+
+    // 5. Try live FastAPI backend
     try {
       const res = await fetch(`${API_BASE}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patientData),
+        body: JSON.stringify(newPatient),
         signal: AbortSignal.timeout(3000)
       });
       if (res.ok) {
-        const newPatient = await res.json();
-        const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
-        patients.push(newPatient);
-        setLocal(STORAGE_KEYS.PATIENTS, patients);
-        setLocal(patientKey(STORAGE_KEYS.PROFILE, newPatient.id), newPatient);
-        return { success: true, patient: newPatient };
+        const backendPatient = await res.json();
+        const merged = { ...newPatient, ...backendPatient };
+        setLocal(patientKey(STORAGE_KEYS.PROFILE, merged.id), merged);
+        const updatedPatients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS).map(p =>
+          p.id === newPatient.id ? merged : p
+        );
+        setLocal(STORAGE_KEYS.PATIENTS, updatedPatients);
+        return { success: true, patient: merged };
       }
     } catch (e) {}
 
-    // Offline & Supabase direct insert
-    const newPatient = {
-      ...patientData,
-      id: `patient-${Date.now().toString(36)}`,
-      created_at: new Date().toISOString(),
-      current_streak: 1,
-      total_stars: 10,
-      role: 'elder'
-    };
-    const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
-    patients.push(newPatient);
-    setLocal(STORAGE_KEYS.PATIENTS, patients);
-    setLocal(patientKey(STORAGE_KEYS.PROFILE, newPatient.id), newPatient);
     return { success: true, patient: newPatient };
   },
 
