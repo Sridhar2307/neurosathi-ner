@@ -1,9 +1,15 @@
 from fastapi import APIRouter, HTTPException, Path
-from typing import List
+from typing import List, Optional
 from models import Reminder, ReminderCreate, ReminderUpdate
 from database import db
 
 router = APIRouter(tags=["Reminders"])
+
+@router.get("/reminders", response_model=List[Reminder])
+def get_all_reminders(user_id: Optional[str] = None):
+    if user_id:
+        return db.get_reminders(user_id)
+    return list(db.reminders.values())
 
 @router.get("/reminders/{user_id}", response_model=List[Reminder])
 def get_user_reminders(user_id: str = Path(..., description="The ID of the user")):

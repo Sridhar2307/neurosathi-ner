@@ -27,6 +27,7 @@ def get_user_profile(id: str = Path(..., description="User / Patient ID")):
     return user
 
 @router.put("/users/{id}", response_model=UserProfile)
+@router.patch("/users/{id}", response_model=UserProfile)
 def update_user_profile(id: str = Path(..., description="User / Patient ID"), updates: UserProfileUpdate = Body(...)):
     """Update patient medical details and caregiver contact details."""
     updated = db.update_user(id, updates)

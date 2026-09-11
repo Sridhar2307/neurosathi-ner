@@ -130,9 +130,9 @@ class CaregiverLoginRequest(BaseModel):
 class CaregiverLoginResponse(BaseModel):
     success: bool
     message: str
-    caregiver: Dict[str, Any]
-    active_patient: UserProfile
-    all_patients: List[UserProfile]
+    caregiver: Optional[Dict[str, Any]] = None
+    active_patient: Optional[UserProfile] = None
+    all_patients: Optional[List[UserProfile]] = []
 
 # --- Reminder Models ---
 class ReminderCreate(BaseModel):

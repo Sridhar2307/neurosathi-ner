@@ -608,37 +608,70 @@ export const api = {
       }
     } catch (e) {}
 
-    // Offline fallback: check PIN against stored patients
-    const allPatients = getLocal(STORAGE_KEYS.PATIENTS, [DEFAULT_PROFILE]);
+    // Offline fallback: match contact or PIN against all stored patients
+    const allPatients = getLocal(STORAGE_KEYS.PATIENTS, []);
     const demoProfile = getLocal(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE);
-    const patients = allPatients.length ? allPatients : [demoProfile];
-    const activePatient = patients[0];
 
-    const validPins = ['1234', activePatient.caregiver_pin].filter(Boolean);
-    const validContacts = [
-      'demo', 'demo@care.in', '9876543210',
-      activePatient.emergency_contact_phone,
-      activePatient.emergency_contact_email
-    ].filter(Boolean);
+    // Combine all unique stored patients
+    const patientMap = new Map();
+    if (demoProfile && demoProfile.id) patientMap.set(demoProfile.id, demoProfile);
+    allPatients.forEach(p => {
+      if (p && p.id) patientMap.set(p.id, p);
+    });
+    const patients = Array.from(patientMap.values());
+    if (patients.length === 0) patients.push(DEFAULT_PROFILE);
 
-    const pinOk = validPins.includes(pin) || pin === activePatient.caregiver_pin;
-    const contactOk = validContacts.some(c => c && c.replace(/\s/g,'') === contact.replace(/\s/g,''));
+    const clean = (str) => (str || '').toString().toLowerCase().replace(/[\s\-\(\)\+]/g, '');
+    const enteredContact = clean(contact);
+    const enteredPin = (pin || '').toString().trim();
 
-    if (!pinOk && !contactOk && contact !== 'demo') {
-      return { success: false, message: 'Invalid credentials. Try contact: demo@care.in, PIN: 1234' };
+    // Find the patient whose emergency_contact_phone, emergency_contact_email, or caregiver_pin matches
+    const matchedPatient = patients.find(p => {
+      const phoneNorm = clean(p.emergency_contact_phone);
+      const emailNorm = (p.emergency_contact_email || '').toLowerCase().trim();
+      const pinVal = (p.caregiver_pin || '').toString().trim();
+      const isDemoContact = ['demo', 'demo@care.in', '9876543210'].includes(enteredContact);
+
+      return (
+        (phoneNorm && phoneNorm === enteredContact) ||
+        (emailNorm && emailNorm === (contact || '').toLowerCase().trim()) ||
+        (pinVal && pinVal === enteredContact) ||
+        (pinVal && pinVal === enteredPin && !isDemoContact && enteredPin !== '1234') ||
+        (isDemoContact && (p.id === demoProfile?.id || p.id === DEMO_USER_ID))
+      );
+    }) || (
+      // If contact is explicitly "demo", select demo patient
+      enteredContact === 'demo' ? (patients.find(p => p.id === demoProfile?.id || p.id === DEMO_USER_ID) || patients[0]) : null
+    );
+
+    if (!matchedPatient) {
+      return {
+        success: false,
+        message: 'No patient record found matching the entered contact or PIN. Please check your credentials.'
+      };
+    }
+
+    const validPins = ['1234', matchedPatient.caregiver_pin].filter(Boolean).map(x => String(x).trim());
+    const pinOk = !enteredPin || validPins.includes(enteredPin) || enteredContact === 'demo';
+
+    if (!pinOk) {
+      return {
+        success: false,
+        message: 'Incorrect PIN entered for this caregiver account.'
+      };
     }
 
     return {
       success: true,
       message: 'Caregiver session authenticated (offline mode).',
       caregiver: {
-        name: activePatient.emergency_contact_name || 'Primary Caregiver',
-        relation: activePatient.emergency_contact_relation || 'Family',
-        phone: activePatient.emergency_contact_phone || contact,
-        email: activePatient.emergency_contact_email || null,
+        name: matchedPatient.emergency_contact_name || 'Primary Caregiver',
+        relation: matchedPatient.emergency_contact_relation || 'Family',
+        phone: matchedPatient.emergency_contact_phone || contact,
+        email: matchedPatient.emergency_contact_email || null,
         contact
       },
-      active_patient: activePatient,
+      active_patient: matchedPatient,
       all_patients: patients
     };
   },

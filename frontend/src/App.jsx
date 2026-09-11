@@ -27,7 +27,14 @@ import CaregiverAnalytics from './pages/caregiver/CaregiverAnalytics';
 import AIRecommendationView from './pages/caregiver/AIRecommendationView';
 
 export default function App() {
-  const { appMode, currentView, toastMessage } = useApp();
+  const { appMode, currentView, setCurrentView, caregiverSession, toastMessage } = useApp();
+
+  // Route guard: if appMode is restored as 'caregiver' but there is no active session, force currentView to 'login'
+  React.useEffect(() => {
+    if (appMode === 'caregiver' && !caregiverSession && currentView !== 'login') {
+      setCurrentView('login');
+    }
+  }, [appMode, caregiverSession, currentView, setCurrentView]);
 
   const renderCurrentView = () => {
     if (appMode === 'landing') {
@@ -60,6 +67,11 @@ export default function App() {
     }
 
     if (appMode === 'caregiver') {
+      // Guard: if no active caregiverSession in AppContext, always require login
+      if (!caregiverSession) {
+        return <CaregiverLogin />;
+      }
+
       switch (currentView) {
         case 'login':
           return <CaregiverLogin />;

@@ -145,6 +145,25 @@ def test_user_crud_and_auth():
     assert login_res.status_code == 200
     assert login_res.json()["success"] is True
     assert login_res.json()["active_patient"]["id"] == patient_id
+
+    # 5. Caregiver Login - Unknown contact
+    unknown_res = client.post("/auth/caregiver-login", json={
+        "contact": "unknown.person@nowhere.com",
+        "pin": "1234"
+    })
+    assert unknown_res.status_code == 200
+    assert unknown_res.json()["success"] is False
+    assert "No patient record found" in unknown_res.json()["message"]
+
+    # 6. Caregiver Login - Wrong PIN
+    wrong_pin_res = client.post("/auth/caregiver-login", json={
+        "contact": "anita.sharma@care.in",
+        "pin": "9999"
+    })
+    assert wrong_pin_res.status_code == 200
+    assert wrong_pin_res.json()["success"] is False
+    assert "Incorrect PIN" in wrong_pin_res.json()["message"]
+
     print("[PASS] User CRUD and Caregiver Auth passed.")
 
 if __name__ == "__main__":

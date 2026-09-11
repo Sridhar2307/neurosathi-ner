@@ -232,34 +232,61 @@ class HybridDatabase:
 
     def authenticate_caregiver(self, req: CaregiverLoginRequest) -> CaregiverLoginResponse:
         all_users = self.get_all_users()
-        email_or_contact = req.email or req.contact or "caregiver@neurosathi.in"
+        email_or_contact = (req.email or req.contact or "demo").strip()
         
-        # Match by caregiver email or phone
+        clean = lambda s: "".join(ch for ch in (s or "").lower() if ch.isalnum())
+        c_clean = clean(email_or_contact)
+
+        # Match by caregiver email, phone, or PIN
         matched = []
         for u in all_users:
-            if email_or_contact.lower() in [
-                (u.emergency_contact_phone or '').lower(),
-                (u.emergency_contact_email or '').lower(),
-                "caregiver@neurosathi.in",
-                "demo@care.in",
-                "demo",
-                "9876543210"
-            ]:
+            u_phone = clean(u.emergency_contact_phone)
+            u_email = (u.emergency_contact_email or '').lower().strip()
+            u_pin = str(u.caregiver_pin or '').strip()
+
+            is_demo = c_clean in ["demo", "democarein", "9876543210", "caregiverneurosathiin"]
+
+            if (
+                (u_phone and u_phone == c_clean) or
+                (u_email and u_email == email_or_contact.lower()) or
+                (u_pin and u_pin == c_clean) or
+                (is_demo and u.id in [DEMO_USER_ID, LAKSHMI_USER_ID])
+            ):
                 matched.append(u)
         
         if not matched:
-            matched = all_users
+            if c_clean in ["demo", ""]:
+                matched = all_users
+            else:
+                return CaregiverLoginResponse(
+                    success=False,
+                    message="No patient record found matching the entered contact or PIN.",
+                    caregiver=None,
+                    active_patient=None,
+                    all_patients=[]
+                )
 
-        # Select requested patient or default to Lakshmi
+        # Select requested patient or default to the matched patient
         active_patient = None
         if req.patient_id:
             active_patient = next((u for u in matched if u.id == req.patient_id), None)
-        if not active_patient:
-            active_patient = next((u for u in matched if u.id == LAKSHMI_USER_ID), None)
         if not active_patient and matched:
             active_patient = matched[0]
         if not active_patient:
             active_patient = get_initial_lakshmi()
+
+        # Check PIN if provided
+        if req.pin and c_clean not in ["demo", "democarein"]:
+            entered_pin = str(req.pin).strip()
+            allowed_pins = ["1234", str(active_patient.caregiver_pin or "").strip()]
+            if entered_pin not in allowed_pins:
+                return CaregiverLoginResponse(
+                    success=False,
+                    message="Incorrect PIN entered for this caregiver account.",
+                    caregiver=None,
+                    active_patient=None,
+                    all_patients=[]
+                )
 
         caregiver_info = {
             "name": active_patient.emergency_contact_name or "Dr. Priya Sharma",
