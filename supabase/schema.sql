@@ -28,12 +28,16 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     emergency_contact_phone TEXT,
     emergency_contact_email TEXT,
     emergency_contact_address TEXT,
+    caregiver_pin TEXT DEFAULT '1234',
     streak_count INTEGER DEFAULT 1,
     total_stars INTEGER DEFAULT 25,
     avatar_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Ensure caregiver_pin exists on existing databases
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS caregiver_pin TEXT DEFAULT '1234';
 
 -- 2. Patient Devices (Device-level persistent pairing for elderly patients)
 CREATE TABLE IF NOT EXISTS public.patient_devices (

@@ -989,7 +989,7 @@ export const api = {
               emergency_contact_address: sp.emergency_contact_address || localP.emergency_contact_address || 'Guwahati, Assam',
               current_streak: sp.streak_count || localP.current_streak || 4,
               total_stars: sp.total_stars || localP.total_stars || 56,
-              caregiver_pin: localP.caregiver_pin || '1234',
+              caregiver_pin: sp.caregiver_pin || localP.caregiver_pin || '1234',
               caregiver_notes: localP.caregiver_notes || '',
               avatar_url: sp.avatar_url || localP.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
             };
@@ -1143,7 +1143,7 @@ export const api = {
               emergency_contact_address: p.emergency_contact_address || localP.emergency_contact_address || 'Guwahati, Assam',
               current_streak: p.streak_count || localP.current_streak || 4,
               total_stars: p.total_stars || localP.total_stars || 56,
-              caregiver_pin: localP.caregiver_pin || '1234',
+              caregiver_pin: p.caregiver_pin || localP.caregiver_pin || '1234',
               caregiver_notes: localP.caregiver_notes || '',
               avatar_url: p.avatar_url || localP.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
             };
@@ -1259,6 +1259,7 @@ export const api = {
           emergency_contact_phone: newPatient.emergency_contact_phone,
           emergency_contact_email: newPatient.emergency_contact_email || null,
           emergency_contact_address: newPatient.emergency_contact_address || null,
+          caregiver_pin: newPatient.caregiver_pin || '1234',
           streak_count: 1,
           total_stars: 10,
           created_at: new Date().toISOString(),
@@ -1350,6 +1351,7 @@ export const api = {
         if (updates.emergency_contact_phone !== undefined) sbUpdates.emergency_contact_phone = updates.emergency_contact_phone;
         if (updates.emergency_contact_email !== undefined) sbUpdates.emergency_contact_email = updates.emergency_contact_email;
         if (updates.emergency_contact_address !== undefined) sbUpdates.emergency_contact_address = updates.emergency_contact_address;
+        if (updates.caregiver_pin !== undefined) sbUpdates.caregiver_pin = updates.caregiver_pin;
         if (updates.total_stars !== undefined) sbUpdates.total_stars = updates.total_stars;
         if (updates.current_streak !== undefined) sbUpdates.streak_count = updates.current_streak;
 
@@ -1424,7 +1426,7 @@ export const api = {
             emergency_contact_address: data.emergency_contact_address || localProf.emergency_contact_address || 'Guwahati, Assam',
             current_streak: data.streak_count || localProf.current_streak || 4,
             total_stars: data.total_stars || localProf.total_stars || 56,
-            caregiver_pin: localProf.caregiver_pin || '1234',
+            caregiver_pin: data.caregiver_pin || localProf.caregiver_pin || '1234',
             caregiver_notes: localProf.caregiver_notes || '',
             avatar_url: data.avatar_url || localProf.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
           };
