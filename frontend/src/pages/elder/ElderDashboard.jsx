@@ -29,12 +29,15 @@ export default function ElderDashboard() {
     navigateTo,
     setIsVoiceAssistantOpen,
     userProfile,
+    activePatient,
     refreshUserData,
     triggerReminderAlert,
     showToast,
     activePatientId
   } = useApp();
   const { speakText, autoVoiceRead, t, language, changeLanguage, availableLanguages } = useAccessibility();
+
+  const profile = activePatient || userProfile;
 
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -59,7 +62,7 @@ export default function ElderDashboard() {
     day: 'numeric'
   });
 
-  const patientFirstName = (userProfile?.name || 'Bhaben').split(' ')[0];
+  const patientFirstName = (profile?.name || 'Elder').split(' ')[0];
   const welcomeText = (() => {
     const raw = t.welcome || `Good Day, ${patientFirstName}!`;
     if (patientFirstName.toLowerCase() !== 'bhaben') {
@@ -157,6 +160,35 @@ export default function ElderDashboard() {
             <p className="text-lg sm:text-xl text-teal-100 font-medium max-w-2xl leading-relaxed">
               {t.welcomeSubtitle || "Here is your gentle cognitive routine for today. Let's keep your mind active and happy!"}
             </p>
+
+            {/* Patient Details Sub-banner */}
+            <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm font-semibold text-teal-200/90 pt-1">
+              {profile?.age && (
+                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30">
+                  {profile.age} Years
+                </span>
+              )}
+              {profile?.gender && (
+                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30">
+                  {profile.gender}
+                </span>
+              )}
+              {profile?.blood_group && (
+                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30 text-rose-300">
+                  Blood: {profile.blood_group}
+                </span>
+              )}
+              {profile?.location && (
+                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30">
+                  📍 {profile.location}
+                </span>
+              )}
+              {profile?.medical_stage && (
+                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30 text-amber-300">
+                  ⚕️ {profile.medical_stage}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Streak & Stars Counter Badge */}
@@ -164,7 +196,7 @@ export default function ElderDashboard() {
             <div className="text-center px-3 border-r border-teal-700">
               <div className="flex items-center justify-center gap-1.5 text-amber-400">
                 <Flame className="w-7 h-7 fill-amber-400 animate-gentle-float" />
-                <span className="text-3xl sm:text-4xl font-black">{userProfile?.current_streak || 4}</span>
+                <span className="text-3xl sm:text-4xl font-black">{profile?.current_streak || 4}</span>
               </div>
               <span className="text-xs sm:text-sm font-bold text-teal-200 uppercase tracking-wider">{t.streak || 'Day Streak'}</span>
             </div>
@@ -172,7 +204,7 @@ export default function ElderDashboard() {
             <div className="text-center px-3">
               <div className="flex items-center justify-center gap-1.5 text-amber-300">
                 <Award className="w-7 h-7 fill-amber-300" />
-                <span className="text-3xl sm:text-4xl font-black">{userProfile?.total_stars || 56}</span>
+                <span className="text-3xl sm:text-4xl font-black">{profile?.total_stars || 56}</span>
               </div>
               <span className="text-xs sm:text-sm font-bold text-teal-200 uppercase tracking-wider">{t.stars || 'Stars'}</span>
             </div>
@@ -458,23 +490,56 @@ export default function ElderDashboard() {
               {t.caregiverCard || "Emergency & Caregiver Contact"}
             </span>
             <h3 className="text-xl font-black text-slate-900">
-              {userProfile?.emergency_contact_name || 'Priya Sharma (Daughter)'}
+              {profile?.emergency_contact_name || 'Primary Caregiver'}{profile?.emergency_contact_relation ? ` (${profile.emergency_contact_relation})` : ''}
             </h3>
             <p className="text-sm font-semibold text-slate-600">
-              {userProfile?.emergency_contact_phone || '+91 98765 43210'} • {userProfile?.emergency_contact_address || userProfile?.location || 'Guwahati, Assam'}
+              {profile?.emergency_contact_phone || '+91 98765 43210'} • {profile?.emergency_contact_address || profile?.location || 'Guwahati, Assam'}
             </p>
           </div>
         </div>
 
         <a
-          href={`tel:${(userProfile?.emergency_contact_phone || '+919876543210').replace(/[\s\-\(\)]/g, '')}`}
-          onClick={() => speakText(`${t.callNow || 'Calling'}: ${userProfile?.emergency_contact_name || 'Caregiver'}`)}
+          href={`tel:${(profile?.emergency_contact_phone || '+919876543210').replace(/[^0-9\+]/g, '')}`}
+          onClick={() => speakText(`${t.callNow || 'Calling'}: ${profile?.emergency_contact_name || 'Caregiver'}`)}
           className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-md transition"
         >
           <PhoneCall className="w-5 h-5" />
           <span>{t.callNow || "Call Caregiver"}</span>
         </a>
       </div>
+
+      {/* Attending Physician & Hospital Contact if Configured */}
+      {profile?.doctor_name && (
+        <div className="bg-teal-50/80 rounded-3xl p-5 border-2 border-teal-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-left">
+            <div className="w-12 h-12 rounded-2xl bg-teal-200 text-teal-800 flex items-center justify-center text-xl shrink-0 font-bold">
+              👨‍⚕️
+            </div>
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-teal-800">
+                Attending Neurologist & Medical Care
+              </span>
+              <h4 className="text-lg font-black text-slate-900">
+                {profile.doctor_name}
+              </h4>
+              <p className="text-xs font-semibold text-slate-600">
+                {profile.doctor_phone} • {profile.doctor_hospital || 'Neurological Center'}
+              </p>
+            </div>
+          </div>
+
+          {profile?.doctor_phone && (
+            <a
+              href={`tel:${profile.doctor_phone.replace(/[^0-9\+]/g, '')}`}
+              onClick={() => speakText(`Calling ${profile.doctor_name}`)}
+              className="px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm flex items-center gap-2 transition shrink-0 shadow-sm"
+            >
+              <PhoneCall className="w-4 h-4" />
+              <span>Call Doctor</span>
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }

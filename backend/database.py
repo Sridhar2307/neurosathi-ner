@@ -270,9 +270,18 @@ class HybridDatabase:
             try:
                 supa_update = {}
                 if update_in.name is not None: supa_update["name"] = update_in.name
+                if update_in.age is not None: supa_update["age"] = update_in.age
+                if update_in.gender is not None: supa_update["gender"] = update_in.gender
+                if update_in.blood_group is not None: supa_update["blood_group"] = update_in.blood_group
                 if update_in.location is not None: supa_update["location"] = update_in.location
+                if update_in.language_preference is not None: supa_update["preferred_language"] = update_in.language_preference
                 if update_in.medical_stage is not None: supa_update["medical_stage"] = update_in.medical_stage
+                if update_in.allergies is not None: supa_update["allergies"] = update_in.allergies
+                if update_in.doctor_name is not None: supa_update["doctor_name"] = update_in.doctor_name
+                if update_in.doctor_phone is not None: supa_update["doctor_phone"] = update_in.doctor_phone
+                if update_in.doctor_hospital is not None: supa_update["doctor_hospital"] = update_in.doctor_hospital
                 if update_in.emergency_contact_name is not None: supa_update["emergency_contact_name"] = update_in.emergency_contact_name
+                if update_in.emergency_contact_relation is not None: supa_update["emergency_contact_relation"] = update_in.emergency_contact_relation
                 if update_in.emergency_contact_phone is not None: supa_update["emergency_contact_phone"] = update_in.emergency_contact_phone
                 if update_in.emergency_contact_email is not None: supa_update["emergency_contact_email"] = update_in.emergency_contact_email
                 if update_in.emergency_contact_address is not None: supa_update["emergency_contact_address"] = update_in.emergency_contact_address
@@ -358,24 +367,32 @@ class HybridDatabase:
         all_users = self.get_all_users()
         email_or_contact = (req.email or req.contact or "demo").strip()
         
-        clean = lambda s: "".join(ch for ch in (s or "").lower() if ch.isalnum())
-        c_clean = clean(email_or_contact)
+        clean_alnum = lambda s: "".join(ch for ch in (s or "").lower() if ch.isalnum())
+        clean_digits = lambda s: "".join(ch for ch in (s or "") if ch.isdigit())
 
-        # Match by caregiver email, phone, or PIN
+        c_clean = clean_alnum(email_or_contact)
+        c_digits = clean_digits(email_or_contact)
+        req_pin = str(req.pin or "").strip()
+
+        # Match by caregiver email, phone digits, or PIN
         matched = []
         for u in all_users:
-            u_phone = clean(u.emergency_contact_phone)
+            u_phone_digits = clean_digits(u.emergency_contact_phone)
             u_email = (u.emergency_contact_email or '').lower().strip()
             u_pin = str(u.caregiver_pin or '').strip()
 
+            phone_match = bool(
+                c_digits and u_phone_digits and (
+                    u_phone_digits == c_digits or
+                    u_phone_digits.endswith(c_digits) or
+                    c_digits.endswith(u_phone_digits)
+                )
+            )
+            email_match = bool(u_email and u_email == email_or_contact.lower())
+            pin_match = bool(u_pin and (u_pin == c_clean or (req_pin and u_pin == req_pin and req_pin != '1234')))
             is_demo = c_clean in ["demo", "democarein", "9876543210", "caregiverneurosathiin"]
 
-            if (
-                (u_phone and u_phone == c_clean) or
-                (u_email and u_email == email_or_contact.lower()) or
-                (u_pin and u_pin == c_clean) or
-                (is_demo and u.id in [DEMO_USER_ID, LAKSHMI_USER_ID])
-            ):
+            if phone_match or email_match or pin_match or (is_demo and u.id in [DEMO_USER_ID, LAKSHMI_USER_ID]):
                 matched.append(u)
         
         if not matched:

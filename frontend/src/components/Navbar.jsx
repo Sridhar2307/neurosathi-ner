@@ -17,8 +17,10 @@ import {
 } from 'lucide-react';
 
 export default function Navbar() {
-  const { appMode, currentView, navigateTo, setIsVoiceAssistantOpen, userProfile } = useApp();
+  const { appMode, currentView, navigateTo, setIsVoiceAssistantOpen, userProfile, activePatient } = useApp();
   const { speakText, autoVoiceRead, t } = useAccessibility();
+
+  const currentPatient = activePatient || userProfile;
 
   const handleNavClick = (mode, view, audioPrompt) => {
     navigateTo(mode, view);
@@ -95,7 +97,7 @@ export default function Navbar() {
                 {t.appName || "NeuroSathi"} <span className="text-amber-500">{t.appRegion || "NER"}</span>
               </h1>
               <p className="text-xs sm:text-sm font-semibold text-teal-700">
-                {userProfile?.name || 'Bhaben Kalita'}
+                {currentPatient?.name || 'Elder'}
               </p>
             </div>
           </button>
@@ -188,7 +190,7 @@ export default function Navbar() {
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Patient: <strong className="text-slate-200">{userProfile?.name || 'Bhaben Kalita'}</strong>{userProfile?.age ? ` (Age ${userProfile.age})` : ''} • {userProfile?.location || 'Guwahati, Assam'}
+                Patient: <strong className="text-slate-200">{currentPatient?.name || 'Patient'}</strong>{currentPatient?.age ? ` (Age ${currentPatient.age})` : ''} • {currentPatient?.location || 'Guwahati, Assam'}
               </p>
             </div>
           </button>

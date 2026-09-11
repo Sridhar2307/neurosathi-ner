@@ -906,6 +906,12 @@ export const api = {
 
   // Caregiver Auth
   async caregiverLogin(contact, pin) {
+    const cleanDigits = (str) => (str || '').toString().replace(/\D/g, '');
+    const cleanStr = (str) => (str || '').toString().toLowerCase().trim();
+    const enteredContact = cleanStr(contact);
+    const enteredDigits = cleanDigits(contact);
+    const enteredPin = (pin || '').toString().trim();
+
     try {
       const res = await fetch(`${API_BASE}/auth/caregiver-login`, {
         method: 'POST',
@@ -915,46 +921,112 @@ export const api = {
       });
       if (res.ok) {
         const data = await res.json();
-        // Store all patients locally
-        if (data.all_patients) setLocal(STORAGE_KEYS.PATIENTS, data.all_patients);
+        if (data.success && data.active_patient) {
+          const act = data.active_patient;
+          setLocal(patientKey(STORAGE_KEYS.PROFILE, act.id), act);
+          setLocal(STORAGE_KEYS.PROFILE, act);
+          localStorage.setItem('ns_profile', JSON.stringify(act));
+          localStorage.setItem('ns_active_patient_id', act.id);
+          if (data.all_patients) setLocal(STORAGE_KEYS.PATIENTS, data.all_patients);
+        }
         return data;
       }
     } catch (e) {}
 
-    // Offline fallback: match contact or PIN against all stored patients
+    // Offline & Supabase Direct Fallback: match contact or PIN against all stored patients
     const allPatients = getLocal(STORAGE_KEYS.PATIENTS, []);
-    const demoProfile = getLocal(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE);
+    const demoProfile = getLocal(STORAGE_KEYS.PROFILE, null);
+    const nsProfile = getLocal('ns_profile', null);
+    const pDemo = getLocal(patientKey(STORAGE_KEYS.PROFILE, DEMO_USER_ID), null);
+    const pLakshmi = getLocal(patientKey(STORAGE_KEYS.PROFILE, LAKSHMI_USER_ID), null);
 
-    // Combine all unique stored patients
+    // Combine all patient candidates
     const patientMap = new Map();
+    // Default seed patients
+    INITIAL_PATIENTS.forEach(p => { if (p && p.id) patientMap.set(p.id, p); });
+
+    // Overlay cached profiles
     if (demoProfile && demoProfile.id) patientMap.set(demoProfile.id, demoProfile);
-    allPatients.forEach(p => {
-      if (p && p.id) patientMap.set(p.id, p);
-    });
+    if (nsProfile && nsProfile.id) patientMap.set(nsProfile.id, nsProfile);
+    if (pDemo && pDemo.id) patientMap.set(pDemo.id, pDemo);
+    if (pLakshmi && pLakshmi.id) patientMap.set(pLakshmi.id, pLakshmi);
+    allPatients.forEach(p => { if (p && p.id) patientMap.set(p.id, p); });
+
+    // If Supabase is available, query cloud profiles too
+    if (supabase) {
+      try {
+        const { data: supaProfiles } = await supabase.from('profiles').select('*').limit(20);
+        if (supaProfiles && supaProfiles.length > 0) {
+          supaProfiles.forEach(sp => {
+            const uid = fromSupabaseUuid(sp.id);
+            const localP = patientMap.get(uid) || {};
+            const merged = {
+              id: uid,
+              name: sp.name || localP.name || 'Patient',
+              email: sp.emergency_contact_email || localP.email || `${uid}@neurosathi.in`,
+              role: sp.role || 'elder',
+              age: sp.age || localP.age || 74,
+              gender: sp.gender || localP.gender || 'Female',
+              blood_group: sp.blood_group || localP.blood_group || 'O+',
+              location: sp.location || localP.location || 'Guwahati, Assam',
+              language_preference: sp.preferred_language || localP.language_preference || 'en',
+              medical_stage: sp.medical_stage || localP.medical_stage || 'Early-stage Dementia / MCI',
+              allergies: sp.allergies || localP.allergies || 'None reported',
+              doctor_name: sp.doctor_name || localP.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
+              doctor_phone: sp.doctor_phone || localP.doctor_phone || '+91 98640 12345',
+              doctor_hospital: sp.doctor_hospital || localP.doctor_hospital || 'Guwahati Neurological Center, Assam',
+              emergency_contact_name: sp.emergency_contact_name || localP.emergency_contact_name || 'Primary Caregiver',
+              emergency_contact_relation: sp.emergency_contact_relation || localP.emergency_contact_relation || 'Family',
+              emergency_contact_phone: sp.emergency_contact_phone || localP.emergency_contact_phone || '+91 98765 43210',
+              emergency_contact_email: sp.emergency_contact_email || localP.emergency_contact_email || 'caregiver@neurosathi.in',
+              emergency_contact_address: sp.emergency_contact_address || localP.emergency_contact_address || 'Guwahati, Assam',
+              current_streak: sp.streak_count || localP.current_streak || 4,
+              total_stars: sp.total_stars || localP.total_stars || 56,
+              caregiver_pin: localP.caregiver_pin || '1234',
+              caregiver_notes: localP.caregiver_notes || '',
+              avatar_url: sp.avatar_url || localP.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+            };
+            patientMap.set(uid, merged);
+          });
+        }
+      } catch (sbErr) {
+        console.warn('Supabase login check notice:', sbErr);
+      }
+    }
+
+    // Rehydrate each candidate with the most granular patient-specific local store
+    for (const [id, p] of patientMap.entries()) {
+      const specific = getLocal(patientKey(STORAGE_KEYS.PROFILE, id), null);
+      if (specific) {
+        patientMap.set(id, { ...p, ...specific });
+      }
+    }
+
     const patients = Array.from(patientMap.values());
     if (patients.length === 0) patients.push(DEFAULT_PROFILE);
 
-    const clean = (str) => (str || '').toString().toLowerCase().replace(/[\s\-\(\)\+]/g, '');
-    const enteredContact = clean(contact);
-    const enteredPin = (pin || '').toString().trim();
+    const isDemoContact = ['demo', 'democarein', '9876543210', 'demo@care.in'].includes(enteredContact);
 
-    // Find the patient whose emergency_contact_phone, emergency_contact_email, or caregiver_pin matches
+    // Find matching patient by phone (flexible digits), email, or PIN
     const matchedPatient = patients.find(p => {
-      const phoneNorm = clean(p.emergency_contact_phone);
-      const emailNorm = (p.emergency_contact_email || '').toLowerCase().trim();
-      const pinVal = (p.caregiver_pin || '').toString().trim();
-      const isDemoContact = ['demo', 'demo@care.in', '9876543210'].includes(enteredContact);
+      const pPhoneDigits = cleanDigits(p.emergency_contact_phone);
+      const pEmail = cleanStr(p.emergency_contact_email);
+      const pPin = String(p.caregiver_pin || '').trim();
 
-      return (
-        (phoneNorm && phoneNorm === enteredContact) ||
-        (emailNorm && emailNorm === (contact || '').toLowerCase().trim()) ||
-        (pinVal && pinVal === enteredContact) ||
-        (pinVal && pinVal === enteredPin && !isDemoContact && enteredPin !== '1234') ||
-        (isDemoContact && (p.id === demoProfile?.id || p.id === DEMO_USER_ID))
+      const phoneMatches = Boolean(
+        enteredDigits && pPhoneDigits && (
+          pPhoneDigits === enteredDigits ||
+          pPhoneDigits.endsWith(enteredDigits) ||
+          enteredDigits.endsWith(pPhoneDigits)
+        )
       );
+
+      const emailMatches = Boolean(pEmail && pEmail === enteredContact);
+      const pinMatches = Boolean(pPin && (pPin === enteredContact || pPin === enteredPin && enteredPin !== '1234'));
+
+      return phoneMatches || emailMatches || pinMatches || (isDemoContact && (p.id === DEMO_USER_ID || p.id === LAKSHMI_USER_ID));
     }) || (
-      // If contact is explicitly "demo", select demo patient
-      enteredContact === 'demo' ? (patients.find(p => p.id === demoProfile?.id || p.id === DEMO_USER_ID) || patients[0]) : null
+      isDemoContact ? (patients.find(p => p.id === DEMO_USER_ID) || patients[0]) : null
     );
 
     if (!matchedPatient) {
@@ -964,8 +1036,9 @@ export const api = {
       };
     }
 
+    // Validate PIN
     const validPins = ['1234', matchedPatient.caregiver_pin].filter(Boolean).map(x => String(x).trim());
-    const pinOk = !enteredPin || validPins.includes(enteredPin) || enteredContact === 'demo';
+    const pinOk = !enteredPin || validPins.includes(enteredPin) || isDemoContact;
 
     if (!pinOk) {
       return {
@@ -974,16 +1047,33 @@ export const api = {
       };
     }
 
+    // Persist matched patient into active profiles immediately
+    const activeId = matchedPatient.id;
+    setLocal(patientKey(STORAGE_KEYS.PROFILE, activeId), matchedPatient);
+    setLocal(STORAGE_KEYS.PROFILE, matchedPatient);
+    localStorage.setItem('ns_profile', JSON.stringify(matchedPatient));
+    localStorage.setItem('ns_active_patient_id', activeId);
+    setLocal(STORAGE_KEYS.PATIENTS, patients);
+
+    const caregiverInfo = {
+      name: matchedPatient.emergency_contact_name || 'Primary Caregiver',
+      relation: matchedPatient.emergency_contact_relation || 'Family',
+      phone: matchedPatient.emergency_contact_phone || contact,
+      email: matchedPatient.emergency_contact_email || null,
+      contact
+    };
+
+    const sessionData = {
+      caregiver: caregiverInfo,
+      activePatient: matchedPatient,
+      allPatients: patients
+    };
+    localStorage.setItem('ns_caregiver_session', JSON.stringify(sessionData));
+
     return {
       success: true,
-      message: 'Caregiver session authenticated (offline mode).',
-      caregiver: {
-        name: matchedPatient.emergency_contact_name || 'Primary Caregiver',
-        relation: matchedPatient.emergency_contact_relation || 'Family',
-        phone: matchedPatient.emergency_contact_phone || contact,
-        email: matchedPatient.emergency_contact_email || null,
-        contact
-      },
+      message: 'Caregiver authenticated successfully.',
+      caregiver: caregiverInfo,
       active_patient: matchedPatient,
       all_patients: patients
     };
@@ -1000,37 +1090,39 @@ export const api = {
       }
     } catch (e) {}
 
-    // Fallback: Read directly from Supabase profiles
+    // Direct Supabase query
     if (supabase) {
       try {
         const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
         if (!error && data && data.length > 0) {
           const mapped = data.map(p => {
             const uid = fromSupabaseUuid(p.id);
+            const localP = getLocal(patientKey(STORAGE_KEYS.PROFILE, uid), {});
             return {
               id: uid,
-              name: p.name || 'Patient',
-              email: p.emergency_contact_email || `${uid}@neurosathi.in`,
+              name: p.name || localP.name || 'Patient',
+              email: p.emergency_contact_email || localP.email || `${uid}@neurosathi.in`,
               role: p.role || 'elder',
-              age: p.age || 74,
-              gender: p.gender || 'Female',
-              blood_group: p.blood_group || 'O+',
-              location: p.location || 'Guwahati, Assam',
-              language_preference: p.preferred_language || 'en',
-              medical_stage: p.medical_stage || 'Early-stage Dementia / MCI',
-              allergies: p.allergies || 'None reported',
-              doctor_name: p.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
-              doctor_phone: p.doctor_phone || '+91 98640 12345',
-              doctor_hospital: p.doctor_hospital || 'Guwahati Neurological Center, Assam',
-              emergency_contact_name: p.emergency_contact_name || 'Primary Caregiver',
-              emergency_contact_relation: p.emergency_contact_relation || 'Family',
-              emergency_contact_phone: p.emergency_contact_phone || '+91 98765 43210',
-              emergency_contact_email: p.emergency_contact_email || 'caregiver@neurosathi.in',
-              emergency_contact_address: p.emergency_contact_address || 'Guwahati, Assam',
-              current_streak: p.streak_count || 4,
-              total_stars: p.total_stars || 56,
-              caregiver_pin: p.caregiver_pin || '1234',
-              avatar_url: p.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+              age: p.age || localP.age || 74,
+              gender: p.gender || localP.gender || 'Female',
+              blood_group: p.blood_group || localP.blood_group || 'O+',
+              location: p.location || localP.location || 'Guwahati, Assam',
+              language_preference: p.preferred_language || localP.language_preference || 'en',
+              medical_stage: p.medical_stage || localP.medical_stage || 'Early-stage Dementia / MCI',
+              allergies: p.allergies || localP.allergies || 'None reported',
+              doctor_name: p.doctor_name || localP.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
+              doctor_phone: p.doctor_phone || localP.doctor_phone || '+91 98640 12345',
+              doctor_hospital: p.doctor_hospital || localP.doctor_hospital || 'Guwahati Neurological Center, Assam',
+              emergency_contact_name: p.emergency_contact_name || localP.emergency_contact_name || 'Primary Caregiver',
+              emergency_contact_relation: p.emergency_contact_relation || localP.emergency_contact_relation || 'Family',
+              emergency_contact_phone: p.emergency_contact_phone || localP.emergency_contact_phone || '+91 98765 43210',
+              emergency_contact_email: p.emergency_contact_email || localP.emergency_contact_email || 'caregiver@neurosathi.in',
+              emergency_contact_address: p.emergency_contact_address || localP.emergency_contact_address || 'Guwahati, Assam',
+              current_streak: p.streak_count || localP.current_streak || 4,
+              total_stars: p.total_stars || localP.total_stars || 56,
+              caregiver_pin: localP.caregiver_pin || '1234',
+              caregiver_notes: localP.caregiver_notes || '',
+              avatar_url: p.avatar_url || localP.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
             };
           });
           setLocal(STORAGE_KEYS.PATIENTS, mapped);
@@ -1058,6 +1150,7 @@ export const api = {
         const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
         patients.push(newPatient);
         setLocal(STORAGE_KEYS.PATIENTS, patients);
+        setLocal(patientKey(STORAGE_KEYS.PROFILE, newPatient.id), newPatient);
         return { success: true, patient: newPatient };
       }
     } catch (e) {}
@@ -1078,40 +1171,74 @@ export const api = {
     return { success: true, patient: newPatient };
   },
 
-  // Update patient details
+  // Update patient details — two-way synced across Caregiver & Elder views and persisted in Supabase
   async updatePatient(userId, updates) {
     const profileKey = patientKey(STORAGE_KEYS.PROFILE, userId);
-    const current = getLocal(profileKey, DEFAULT_PROFILE);
-    const updated = { ...current, ...updates };
+    const current = getLocal(profileKey, getLocal(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE));
+    const updated = { ...current, ...updates, id: userId };
+
+    // 1. Save patient-specific store
     setLocal(profileKey, updated);
 
-    // Also update in patients list
+    // 2. Update active profile so Elder view immediately reflects all new details
+    setLocal(STORAGE_KEYS.PROFILE, updated);
+    localStorage.setItem('ns_profile', JSON.stringify(updated));
+    localStorage.setItem('ns_active_patient_id', userId);
+
+    // 3. Update in allPatients list
     const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
     const idx = patients.findIndex(p => p.id === userId);
-    if (idx !== -1) { patients[idx] = updated; setLocal(STORAGE_KEYS.PATIENTS, patients); }
+    if (idx !== -1) {
+      patients[idx] = updated;
+    } else {
+      patients.push(updated);
+    }
+    setLocal(STORAGE_KEYS.PATIENTS, patients);
 
-    // Direct Supabase update
+    // 4. Update caregiver session in localStorage if active
+    try {
+      const storedSession = localStorage.getItem('ns_caregiver_session');
+      if (storedSession) {
+        const parsedSession = JSON.parse(storedSession);
+        parsedSession.activePatient = updated;
+        if (parsedSession.allPatients) {
+          parsedSession.allPatients = parsedSession.allPatients.map(p => p.id === userId ? updated : p);
+        }
+        localStorage.setItem('ns_caregiver_session', JSON.stringify(parsedSession));
+      }
+    } catch (e) {}
+
+    // 5. Upsert to Supabase profiles cloud table
     if (supabase) {
       try {
         const targetUuid = toSupabaseUuid(userId);
-        const sbUpdates = {};
-        if (updates.name) sbUpdates.name = updates.name;
-        if (updates.age) sbUpdates.age = updates.age;
-        if (updates.language_preference) sbUpdates.preferred_language = updates.language_preference;
+        const sbUpdates = { id: targetUuid, updated_at: new Date().toISOString() };
+        if (updates.name !== undefined) sbUpdates.name = updates.name;
+        if (updates.age !== undefined) sbUpdates.age = updates.age ? parseInt(updates.age) : null;
+        if (updates.gender !== undefined) sbUpdates.gender = updates.gender;
+        if (updates.blood_group !== undefined) sbUpdates.blood_group = updates.blood_group;
+        if (updates.location !== undefined) sbUpdates.location = updates.location;
+        if (updates.language_preference !== undefined) sbUpdates.preferred_language = updates.language_preference;
+        if (updates.medical_stage !== undefined) sbUpdates.medical_stage = updates.medical_stage;
+        if (updates.allergies !== undefined) sbUpdates.allergies = updates.allergies;
+        if (updates.doctor_name !== undefined) sbUpdates.doctor_name = updates.doctor_name;
+        if (updates.doctor_phone !== undefined) sbUpdates.doctor_phone = updates.doctor_phone;
+        if (updates.doctor_hospital !== undefined) sbUpdates.doctor_hospital = updates.doctor_hospital;
+        if (updates.emergency_contact_name !== undefined) sbUpdates.emergency_contact_name = updates.emergency_contact_name;
+        if (updates.emergency_contact_relation !== undefined) sbUpdates.emergency_contact_relation = updates.emergency_contact_relation;
+        if (updates.emergency_contact_phone !== undefined) sbUpdates.emergency_contact_phone = updates.emergency_contact_phone;
+        if (updates.emergency_contact_email !== undefined) sbUpdates.emergency_contact_email = updates.emergency_contact_email;
+        if (updates.emergency_contact_address !== undefined) sbUpdates.emergency_contact_address = updates.emergency_contact_address;
         if (updates.total_stars !== undefined) sbUpdates.total_stars = updates.total_stars;
         if (updates.current_streak !== undefined) sbUpdates.streak_count = updates.current_streak;
-        if (updates.medical_stage) sbUpdates.medical_stage = updates.medical_stage;
-        if (updates.allergies) sbUpdates.allergies = updates.allergies;
-        if (updates.doctor_name) sbUpdates.doctor_name = updates.doctor_name;
-        if (updates.emergency_contact_phone) sbUpdates.emergency_contact_phone = updates.emergency_contact_phone;
-        if (Object.keys(sbUpdates).length > 0) {
-          await supabase.from('profiles').update(sbUpdates).eq('id', targetUuid);
-        }
+
+        await supabase.from('profiles').upsert(sbUpdates);
       } catch (sbErr) {
-        console.warn('Supabase updatePatient notice:', sbErr);
+        console.warn('Supabase updatePatient upsert notice:', sbErr);
       }
     }
 
+    // 6. FastApi backend update
     try {
       const res = await fetch(`${API_BASE}/users/${userId}`, {
         method: 'PUT',
@@ -1121,10 +1248,11 @@ export const api = {
       });
       if (res.ok) return await res.json();
     } catch (e) {}
+
     return updated;
   },
 
-  // Get user profile — per-patient namespaced
+  // Get user profile — per-patient namespaced with fallback merging
   async getUserProfile(userId = DEMO_USER_ID) {
     const uid = userId || DEMO_USER_ID;
     const key = patientKey(STORAGE_KEYS.PROFILE, uid);
@@ -1133,12 +1261,16 @@ export const api = {
     } else if (uid === LAKSHMI_USER_ID && !localStorage.getItem(key)) {
       setLocal(key, LAKSHMI_PROFILE);
     }
+
+    // Try FastAPI first
     try {
       const res = await fetch(`${API_BASE}/users/${uid}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
-        setLocal(key, data);
-        return data;
+        const localProf = getLocal(key, {});
+        const merged = { ...localProf, ...data };
+        setLocal(key, merged);
+        return merged;
       }
     } catch (e) {}
 
@@ -1148,30 +1280,32 @@ export const api = {
         const targetUuid = toSupabaseUuid(uid);
         const { data, error } = await supabase.from('profiles').select('*').eq('id', targetUuid).single();
         if (!error && data) {
+          const localProf = getLocal(key, {});
           const profile = {
             id: uid,
-            name: data.name || 'Patient',
-            email: data.emergency_contact_email || `${uid}@neurosathi.in`,
+            name: data.name || localProf.name || 'Patient',
+            email: data.emergency_contact_email || localProf.email || `${uid}@neurosathi.in`,
             role: data.role || 'elder',
-            age: data.age || 74,
-            gender: data.gender || 'Female',
-            blood_group: data.blood_group || 'O+',
-            location: data.location || 'Guwahati, Assam',
-            language_preference: data.preferred_language || 'en',
-            medical_stage: data.medical_stage || 'Early-stage Dementia / MCI',
-            allergies: data.allergies || 'None reported',
-            doctor_name: data.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
-            doctor_phone: data.doctor_phone || '+91 98640 12345',
-            doctor_hospital: data.doctor_hospital || 'Guwahati Neurological Center, Assam',
-            emergency_contact_name: data.emergency_contact_name || 'Primary Caregiver',
-            emergency_contact_relation: data.emergency_contact_relation || 'Family',
-            emergency_contact_phone: data.emergency_contact_phone || '+91 98765 43210',
-            emergency_contact_email: data.emergency_contact_email || 'caregiver@neurosathi.in',
-            emergency_contact_address: data.emergency_contact_address || 'Guwahati, Assam',
-            current_streak: data.streak_count || 4,
-            total_stars: data.total_stars || 56,
-            caregiver_pin: data.caregiver_pin || '1234',
-            avatar_url: data.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+            age: data.age || localProf.age || 74,
+            gender: data.gender || localProf.gender || 'Female',
+            blood_group: data.blood_group || localProf.blood_group || 'O+',
+            location: data.location || localProf.location || 'Guwahati, Assam',
+            language_preference: data.preferred_language || localProf.language_preference || 'en',
+            medical_stage: data.medical_stage || localProf.medical_stage || 'Early-stage Dementia / MCI',
+            allergies: data.allergies || localProf.allergies || 'None reported',
+            doctor_name: data.doctor_name || localProf.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
+            doctor_phone: data.doctor_phone || localProf.doctor_phone || '+91 98640 12345',
+            doctor_hospital: data.doctor_hospital || localProf.doctor_hospital || 'Guwahati Neurological Center, Assam',
+            emergency_contact_name: data.emergency_contact_name || localProf.emergency_contact_name || 'Primary Caregiver',
+            emergency_contact_relation: data.emergency_contact_relation || localProf.emergency_contact_relation || 'Family',
+            emergency_contact_phone: data.emergency_contact_phone || localProf.emergency_contact_phone || '+91 98765 43210',
+            emergency_contact_email: data.emergency_contact_email || localProf.emergency_contact_email || 'caregiver@neurosathi.in',
+            emergency_contact_address: data.emergency_contact_address || localProf.emergency_contact_address || 'Guwahati, Assam',
+            current_streak: data.streak_count || localProf.current_streak || 4,
+            total_stars: data.total_stars || localProf.total_stars || 56,
+            caregiver_pin: localProf.caregiver_pin || '1234',
+            caregiver_notes: localProf.caregiver_notes || '',
+            avatar_url: data.avatar_url || localProf.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
           };
           setLocal(key, profile);
           return profile;

@@ -123,6 +123,7 @@ function EditPatientModal({ patient, onClose, onSave }) {
     emergency_contact_phone: patient?.emergency_contact_phone || '',
     emergency_contact_email: patient?.emergency_contact_email || '',
     caregiver_notes: patient?.caregiver_notes || '',
+    caregiver_pin: patient?.caregiver_pin || '1234',
   });
 
   const upd = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -232,6 +233,20 @@ function EditPatientModal({ patient, onClose, onSave }) {
                 <input type="email" className={INPUT} value={form.emergency_contact_email} onChange={e => upd('emergency_contact_email', e.target.value)} />
               </div>
               <div className="col-span-2">
+                <label className={LBL}>Caregiver Login PIN (4 digits)</label>
+                <input
+                  type="password"
+                  maxLength={6}
+                  placeholder="e.g. 1234"
+                  className={INPUT}
+                  value={form.caregiver_pin}
+                  onChange={e => upd('caregiver_pin', e.target.value)}
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Use this PIN together with your phone number/email to log in to the Caregiver Portal.
+                </p>
+              </div>
+              <div className="col-span-2">
                 <label className={LBL}>Caregiver Notes</label>
                 <textarea className={`${INPUT} h-20 resize-none`} value={form.caregiver_notes} onChange={e => upd('caregiver_notes', e.target.value)} />
               </div>
@@ -308,6 +323,11 @@ export default function CaregiverDashboard() {
       ),
     };
     setCaregiverSession(updatedSession);
+    setPatientsList(prev => {
+      const idx = prev.findIndex(p => p.id === activePatientId);
+      if (idx !== -1) return prev.map(p => p.id === activePatientId ? saved : p);
+      return [...prev, saved];
+    });
     setShowEditModal(false);
     // Reload dashboard
     const dash = await api.getCaregiverDashboard(activePatientId);
