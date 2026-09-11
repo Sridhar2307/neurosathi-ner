@@ -24,16 +24,16 @@ import {
 } from 'lucide-react';
 
 export default function CaregiverAnalytics() {
-  const { navigateTo } = useApp();
+  const { navigateTo, activePatientId, activePatient } = useApp();
   const [games, setGames] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
-      const data = await api.getGameResults();
+      const data = await api.getGameResults(activePatientId);
       setGames(data);
     };
     loadData();
-  }, []);
+  }, [activePatientId]);
 
   const chartData = games.map((g, idx) => ({
     name: `Game ${idx + 1}`,
@@ -56,9 +56,14 @@ export default function CaregiverAnalytics() {
       </div>
 
       <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider bg-cyan-900/60 text-cyan-300 px-3 py-1 rounded-full border border-cyan-700">
+            Patient: {activePatient?.name || 'Elder'}
+          </span>
+        </div>
         <h1 className="text-2xl font-bold text-white">Cognitive Analytics & Session Telemetry</h1>
         <p className="text-sm text-slate-400">
-          Detailed cognitive breakdown across Visual Recognition, Working Memory, and Auditory Processing domains.
+          Detailed cognitive breakdown across Visual Recognition, Working Memory, and Auditory Processing domains for <strong className="text-cyan-300">{activePatient?.name || 'this patient'}</strong>.
         </p>
       </div>
 

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export default function CaregiverReminders() {
-  const { navigateTo, triggerReminderAlert, showToast } = useApp();
+  const { navigateTo, triggerReminderAlert, showToast, activePatientId, activePatient } = useApp();
   const [reminders, setReminders] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
@@ -33,19 +33,20 @@ export default function CaregiverReminders() {
   const [detail, setDetail] = useState('');
 
   const loadData = async () => {
-    const data = await api.getReminders();
+    const data = await api.getReminders(activePatientId);
     setReminders(data);
   };
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [activePatientId]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!title) return;
 
     await api.createReminder({
+      user_id: activePatientId,
       title,
       category,
       time,
@@ -63,12 +64,12 @@ export default function CaregiverReminders() {
 
   const handleToggle = async (r) => {
     const nextStatus = !r.is_completed;
-    await api.updateReminder(r.id, { is_completed: nextStatus });
+    await api.updateReminder(r.id, { is_completed: nextStatus }, activePatientId);
     await loadData();
   };
 
   const handleDelete = async (id) => {
-    await api.deleteReminder(id);
+    await api.deleteReminder(id, activePatientId);
     await loadData();
   };
 
@@ -113,14 +114,31 @@ export default function CaregiverReminders() {
       </div>
 
       <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider bg-cyan-900/60 text-cyan-300 px-3 py-1 rounded-full border border-cyan-700">
+            Active: {activePatient?.name || 'Elder Patient'}
+          </span>
+        </div>
         <h1 className="text-2xl font-bold text-white">Patient Medication & Routine Scheduler</h1>
         <p className="text-sm text-slate-400">
-          Reminders configured here will automatically synchronize with the Elder Dashboard and trigger regional audio alerts.
+          Reminders configured here for <strong className="text-cyan-300">{activePatient?.name || 'this patient'}</strong> automatically synchronize with the Elder Dashboard and trigger regional audio alerts.
         </p>
       </div>
 
       {/* Reminders Table / Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {reminders.length === 0 ? (
+        <div className="p-10 text-center bg-slate-800/60 rounded-3xl border border-slate-700 space-y-3">
+          <p className="text-lg text-slate-300 font-bold">No reminders scheduled yet for {activePatient?.name || 'this patient'}.</p>
+          <p className="text-sm text-slate-400 max-w-md mx-auto">Create a medication or routine reminder to have it pop up with audio prompts on the elder dashboard.</p>
+          <button
+            onClick={() => setShowModal(true)}
+            className="mt-2 px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm inline-flex items-center gap-2 shadow-md transition"
+          >
+            <Plus className="w-4 h-4" /> Add First Reminder
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {reminders.map(r => (
           <div
             key={r.id}
@@ -195,6 +213,7 @@ export default function CaregiverReminders() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Modal */}
       {showModal && (

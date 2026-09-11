@@ -206,7 +206,7 @@ mni: {
 };
 
 export default function VoiceAssistantModal() {
-  const { isVoiceAssistantOpen, setIsVoiceAssistantOpen, navigateTo } = useApp();
+  const { isVoiceAssistantOpen, setIsVoiceAssistantOpen, navigateTo, activePatientId } = useApp();
   const { speakText, stopSpeaking, cycleTheme, cycleFontSize, language } = useAccessibility();
 
   const [isListening, setIsListening] = useState(false);
@@ -241,7 +241,7 @@ export default function VoiceAssistantModal() {
       text.includes('दवा') || text.includes('दवाई') || text.includes('याद') || text.includes('पानी') ||
       text.includes('routine') || text.includes('কাজ') || text.includes('থবক')
     ) {
-      const reminders = await api.getReminders();
+      const reminders = await api.getReminders(activePatientId);
       const pending = reminders.filter(r => !r.is_completed);
       const msg = pending.length > 0
         ? dict.remindersPending(pending.length, pending[0].title, pending[0].time)
@@ -330,7 +330,7 @@ export default function VoiceAssistantModal() {
       text.includes('তৰা') || text.includes('তারা') || text.includes('सितारे') || text.includes('प्रगति') ||
       text.includes('উন্নতি') || text.includes('প্ৰগতি')
     ) {
-      const profile = await api.getUserProfile();
+      const profile = await api.getUserProfile(activePatientId);
       const msg = dict.progress(profile.total_stars, profile.current_streak);
       setResponseMessage(msg);
       speakText(msg);
@@ -348,7 +348,7 @@ export default function VoiceAssistantModal() {
       text.includes('enkawltu') || text.includes('chhungte') || text.includes('ডাক্তার') ||
       text.includes('পৰিয়াল') || text.includes('परिवार') || text.includes('फोन') || text.includes('ফোন')
     ) {
-      const profile = await api.getUserProfile();
+      const profile = await api.getUserProfile(activePatientId);
       const msg = dict.callCaregiver(profile.emergency_contact_name, profile.emergency_contact_phone);
       setResponseMessage(msg);
       speakText(msg);

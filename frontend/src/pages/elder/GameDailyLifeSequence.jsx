@@ -96,7 +96,7 @@ const ICON_COMPONENTS = {
 };
 
 export default function GameDailyLifeSequence() {
-  const { navigateTo, refreshUserData } = useApp();
+  const { navigateTo, refreshUserData, activePatientId } = useApp();
   const { speakText, autoVoiceRead, t } = useAccessibility();
 
   const [currentSequence, setCurrentSequence] = useState(null);
@@ -192,7 +192,7 @@ export default function GameDailyLifeSequence() {
     const finalScore = Math.max(55, Math.min(100, baseScore - penalty));
 
     const result = await api.recordGameResult({
-      user_id: "demo-user-123",
+      user_id: activePatientId || "demo-user-123",
       game_type: "daily_life_sequence",
       difficulty: difficulty,
       score: finalScore,

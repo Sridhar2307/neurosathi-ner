@@ -10,20 +10,20 @@ import {
 } from 'lucide-react';
 
 export default function ElderProgress() {
-  const { navigateTo, userProfile } = useApp();
+  const { navigateTo, userProfile, activePatientId } = useApp();
   const { t, speakText } = useAccessibility();
   const [games, setGames] = useState([]);
 
   useEffect(() => {
     const fetchGames = async () => {
-      const results = await api.getGameResults();
+      const results = await api.getGameResults(activePatientId);
       setGames(results);
     };
     fetchGames();
-  }, []);
+  }, [activePatientId]);
 
-  const totalStars = userProfile?.total_stars || 56;
-  const streak = userProfile?.current_streak || 4;
+  const totalStars = userProfile?.total_stars ?? 56;
+  const streak = userProfile?.current_streak ?? 4;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">

@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function GameMemoryMatch() {
-  const { navigateTo, refreshUserData } = useApp();
+  const { navigateTo, refreshUserData, activePatientId } = useApp();
   const { speakText, autoVoiceRead, t } = useAccessibility();
 
   // Difficulty: 'easy' (4 pairs = 8 tiles), 'medium' (6 pairs = 12 tiles), 'hard' (8 pairs = 16 tiles)
@@ -77,11 +77,11 @@ export default function GameMemoryMatch() {
   // Load saved difficulty on mount
   useEffect(() => {
     const loadDifficulty = async () => {
-      const saved = await api.getSavedDifficulty("demo-user-123", "memory_match");
+      const saved = await api.getSavedDifficulty(activePatientId || "demo-user-123", "memory_match");
       setDifficulty(saved);
     };
     loadDifficulty();
-  }, []);
+  }, [activePatientId]);
 
   // Timer
   useEffect(() => {
@@ -152,7 +152,7 @@ export default function GameMemoryMatch() {
 
     setIsSaving(true);
     const result = await api.recordGameResult({
-      user_id: "demo-user-123",
+      user_id: activePatientId || "demo-user-123",
       game_type: "memory_match",
       difficulty: difficulty,
       score: finalScore,

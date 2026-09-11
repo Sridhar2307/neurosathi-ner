@@ -19,20 +19,20 @@ import {
 } from 'lucide-react';
 
 export default function GamesHub() {
-  const { navigateTo } = useApp();
+  const { navigateTo, activePatientId } = useApp();
   const { speakText, autoVoiceRead, t } = useAccessibility();
   const [recommendation, setRecommendation] = useState(null);
   const [recentScores, setRecentScores] = useState([]);
 
   useEffect(() => {
     const fetchAI = async () => {
-      const rec = await api.getAIRecommendation();
+      const rec = await api.getAIRecommendation(activePatientId);
       setRecommendation(rec);
-      const scores = await api.getGameResults();
+      const scores = await api.getGameResults(activePatientId);
       setRecentScores(scores);
     };
     fetchAI();
-  }, []);
+  }, [activePatientId]);
 
   const handleLaunchGame = (viewKey, spokenName) => {
     if (spokenName) speakText(spokenName);

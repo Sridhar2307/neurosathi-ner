@@ -4,10 +4,11 @@
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export const DEMO_USER_ID = "demo-user-123";
+export const LAKSHMI_USER_ID = "patient-lakshmi-demo";
 
 // Per-patient storage key helpers
 function patientKey(baseKey, userId) {
-  return `${baseKey}_${userId}`;
+  return `${baseKey}_${userId || DEMO_USER_ID}`;
 }
 
 // Initial fallback state stored in localStorage if backend is unreachable
@@ -22,20 +23,100 @@ const STORAGE_KEYS = {
   GAME_DIFFICULTY: 'neurosathi_game_difficulty',
 };
 
-const DEFAULT_PROFILE = {
+export const DEFAULT_PROFILE = {
   id: DEMO_USER_ID,
   name: "Bhaben Kalita",
   email: "bhaben.kalita@neurosathi.in",
   role: "elder",
   age: 74,
+  gender: "Male",
+  blood_group: "O+",
   location: "Guwahati, Assam",
   language_preference: "en",
+  medical_stage: "Early-stage Dementia / MCI",
+  allergies: "None reported",
+  doctor_name: "Dr. Anupam Sarma (Neurologist)",
+  doctor_phone: "+91 98640 12345",
+  doctor_hospital: "Guwahati Neurological Center, Assam",
   emergency_contact_name: "Priya Sharma (Daughter)",
+  emergency_contact_relation: "Daughter & Caregiver",
   emergency_contact_phone: "+91 98765 43210",
+  emergency_contact_email: "priya@care.in",
+  caregiver_notes: "Prefers morning tea and Assamese Bihu folk songs.",
+  caregiver_pin: "1234",
   current_streak: 4,
   total_stars: 56,
   avatar_url: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80"
 };
+
+export const LAKSHMI_PROFILE = {
+  id: LAKSHMI_USER_ID,
+  name: "Lakshmi Devi",
+  email: "lakshmi.devi@neurosathi.in",
+  role: "elder",
+  age: 72,
+  gender: "Female",
+  blood_group: "B+",
+  location: "Beltola, Guwahati, Assam",
+  language_preference: "en",
+  medical_stage: "Mild Cognitive Impairment (Early Stage)",
+  allergies: "None reported",
+  doctor_name: "Dr. Anupam Sarma (Neurologist)",
+  doctor_phone: "+91 98640 12345",
+  doctor_hospital: "Guwahati Neurological Center, Assam",
+  emergency_contact_name: "Dr. Priya Sharma (Daughter)",
+  emergency_contact_relation: "Daughter & Primary Caregiver",
+  emergency_contact_phone: "+91 98765 43210",
+  emergency_contact_email: "caregiver@neurosathi.in",
+  emergency_contact_address: "Beltola, Guwahati, Assam",
+  caregiver_notes: "Enjoys Assamese folklore and visual memory matching. Responds well to gentle reminders.",
+  caregiver_pin: "1234",
+  current_streak: 5,
+  total_stars: 62,
+  avatar_url: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80"
+};
+
+export const INITIAL_PATIENTS = [DEFAULT_PROFILE, LAKSHMI_PROFILE];
+
+export const LAKSHMI_REMINDERS = [
+  {
+    id: "rem-lakshmi-1",
+    user_id: LAKSHMI_USER_ID,
+    title: "Donepezil 5mg (Memory Support)",
+    category: "medicine",
+    time: "09:00 AM",
+    dosage_or_detail: "1 tablet with water after breakfast",
+    audio_prompt: "Good morning Lakshmi, please take your Donepezil memory tablet.",
+    is_completed: false,
+    icon_name: "Pill",
+    created_at: new Date(Date.now() - 86400000 * 4).toISOString()
+  },
+  {
+    id: "rem-lakshmi-2",
+    user_id: LAKSHMI_USER_ID,
+    title: "Midday Fresh Water & Tulsi Tea",
+    category: "water",
+    time: "12:30 PM",
+    dosage_or_detail: "1 glass lukewarm water with fresh tulsi leaves",
+    audio_prompt: "Time for a relaxing drink of fresh water and herbal tea, Lakshmi.",
+    is_completed: true,
+    completed_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+    icon_name: "Droplet",
+    created_at: new Date(Date.now() - 86400000 * 4).toISOString()
+  },
+  {
+    id: "rem-lakshmi-3",
+    user_id: LAKSHMI_USER_ID,
+    title: "Afternoon Memory Story Recall",
+    category: "daily_task",
+    time: "04:00 PM",
+    dosage_or_detail: "15 minutes North East folk story recall game",
+    audio_prompt: "Lakshmi, let's play your afternoon memory story game!",
+    is_completed: false,
+    icon_name: "Brain",
+    created_at: new Date(Date.now() - 86400000 * 3).toISOString()
+  }
+];
 
 const DEFAULT_REMINDERS = [
   {
@@ -210,6 +291,25 @@ if (!localStorage.getItem(STORAGE_KEYS.REMINDERS)) setLocal(STORAGE_KEYS.REMINDE
 if (!localStorage.getItem(STORAGE_KEYS.GAME_RESULTS)) setLocal(STORAGE_KEYS.GAME_RESULTS, DEFAULT_GAME_RESULTS);
 if (!localStorage.getItem(STORAGE_KEYS.ALERTS)) setLocal(STORAGE_KEYS.ALERTS, DEFAULT_ALERTS);
 if (!localStorage.getItem(STORAGE_KEYS.PROFILE)) setLocal(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE);
+if (!localStorage.getItem(STORAGE_KEYS.PATIENTS)) setLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+
+// Seed patient-specific stores if empty
+if (!localStorage.getItem(patientKey(STORAGE_KEYS.PROFILE, DEMO_USER_ID))) {
+  setLocal(patientKey(STORAGE_KEYS.PROFILE, DEMO_USER_ID), DEFAULT_PROFILE);
+}
+if (!localStorage.getItem(patientKey(STORAGE_KEYS.REMINDERS, DEMO_USER_ID))) {
+  setLocal(patientKey(STORAGE_KEYS.REMINDERS, DEMO_USER_ID), DEFAULT_REMINDERS);
+}
+if (!localStorage.getItem(patientKey(STORAGE_KEYS.GAME_RESULTS, DEMO_USER_ID))) {
+  setLocal(patientKey(STORAGE_KEYS.GAME_RESULTS, DEMO_USER_ID), DEFAULT_GAME_RESULTS);
+}
+
+if (!localStorage.getItem(patientKey(STORAGE_KEYS.PROFILE, LAKSHMI_USER_ID))) {
+  setLocal(patientKey(STORAGE_KEYS.PROFILE, LAKSHMI_USER_ID), LAKSHMI_PROFILE);
+}
+if (!localStorage.getItem(patientKey(STORAGE_KEYS.REMINDERS, LAKSHMI_USER_ID))) {
+  setLocal(patientKey(STORAGE_KEYS.REMINDERS, LAKSHMI_USER_ID), LAKSHMI_REMINDERS);
+}
 
 export const api = {
   // Check backend health
@@ -223,20 +323,24 @@ export const api = {
 
   // Reminders — per-patient namespaced
   async getReminders(userId = DEMO_USER_ID) {
-    const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
-    // Seed defaults only for demo patient
-    if (userId === DEMO_USER_ID && !localStorage.getItem(key)) {
+    const uid = userId || DEMO_USER_ID;
+    const key = patientKey(STORAGE_KEYS.REMINDERS, uid);
+    // Seed defaults for demo and lakshmi patients if not present
+    if (uid === DEMO_USER_ID && !localStorage.getItem(key)) {
       setLocal(key, DEFAULT_REMINDERS);
+    } else if (uid === LAKSHMI_USER_ID && !localStorage.getItem(key)) {
+      setLocal(key, LAKSHMI_REMINDERS);
     }
     try {
-      const res = await fetch(`${API_BASE}/reminders/${userId}`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${API_BASE}/reminders/${uid}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
         setLocal(key, data);
         return data;
       }
     } catch (e) {}
-    return getLocal(key, userId === DEMO_USER_ID ? DEFAULT_REMINDERS : []);
+    const defaultList = uid === LAKSHMI_USER_ID ? LAKSHMI_REMINDERS : (uid === DEMO_USER_ID ? DEFAULT_REMINDERS : []);
+    return getLocal(key, defaultList);
   },
 
   async createReminder(reminderData) {
@@ -478,8 +582,9 @@ export const api = {
 
   // Games
   async recordGameResult(resultData) {
-    const localResults = getLocal(STORAGE_KEYS.GAME_RESULTS, DEFAULT_GAME_RESULTS);
     const userId = resultData.user_id || DEMO_USER_ID;
+    const gameResultsKey = patientKey(STORAGE_KEYS.GAME_RESULTS, userId);
+    const localResults = getLocal(gameResultsKey, userId === DEMO_USER_ID ? DEFAULT_GAME_RESULTS : []);
     const gameType = resultData.game_type;
     
     // Get saved difficulty for this game type
@@ -510,12 +615,26 @@ export const api = {
     };
 
     localResults.unshift(newResult);
+    setLocal(gameResultsKey, localResults);
     setLocal(STORAGE_KEYS.GAME_RESULTS, localResults);
 
-    // Update stars
-    const profile = getLocal(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE);
+    // Update stars on patient profile
+    const profileKey = patientKey(STORAGE_KEYS.PROFILE, userId);
+    const defaultProf = userId === LAKSHMI_USER_ID ? LAKSHMI_PROFILE : DEFAULT_PROFILE;
+    const profile = getLocal(profileKey, defaultProf);
     profile.total_stars = (profile.total_stars || 0) + (resultData.score >= 80 ? 5 : 3);
-    setLocal(STORAGE_KEYS.PROFILE, profile);
+    setLocal(profileKey, profile);
+    if (userId === DEMO_USER_ID) {
+      setLocal(STORAGE_KEYS.PROFILE, profile);
+    }
+
+    // Also update in allPatients list
+    const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+    const pIdx = patients.findIndex(p => p.id === userId);
+    if (pIdx !== -1) {
+      patients[pIdx].total_stars = profile.total_stars;
+      setLocal(STORAGE_KEYS.PATIENTS, patients);
+    }
 
     try {
       const res = await fetch(`${API_BASE}/games/result`, {
@@ -536,31 +655,33 @@ export const api = {
   },
 
   async getGameResults(userId = DEMO_USER_ID) {
-    const key = patientKey(STORAGE_KEYS.GAME_RESULTS, userId);
-    if (userId === DEMO_USER_ID && !localStorage.getItem(key)) {
+    const uid = userId || DEMO_USER_ID;
+    const key = patientKey(STORAGE_KEYS.GAME_RESULTS, uid);
+    if (uid === DEMO_USER_ID && !localStorage.getItem(key)) {
       setLocal(key, DEFAULT_GAME_RESULTS);
     }
     try {
-      const res = await fetch(`${API_BASE}/games/results/${userId}`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${API_BASE}/games/results/${uid}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
         setLocal(key, data);
         return data;
       }
     } catch (e) {}
-    return getLocal(key, userId === DEMO_USER_ID ? DEFAULT_GAME_RESULTS : []);
+    return getLocal(key, uid === DEMO_USER_ID ? DEFAULT_GAME_RESULTS : []);
   },
 
   // Caregiver Summary & AI
   async getCaregiverDashboard(userId = DEMO_USER_ID) {
+    const uid = userId || DEMO_USER_ID;
     try {
-      const res = await fetch(`${API_BASE}/caregiver/dashboard/${userId}`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${API_BASE}/caregiver/dashboard/${uid}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) return await res.json();
     } catch (e) {}
 
-    const profile = getLocal(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE);
-    const reminders = getLocal(STORAGE_KEYS.REMINDERS, DEFAULT_REMINDERS);
-    const games = getLocal(STORAGE_KEYS.GAME_RESULTS, DEFAULT_GAME_RESULTS);
+    const profile = await this.getUserProfile(uid);
+    const reminders = await this.getReminders(uid);
+    const games = await this.getGameResults(uid);
     const alerts = getLocal(STORAGE_KEYS.ALERTS, DEFAULT_ALERTS);
 
     const completed = reminders.filter(r => r.is_completed).length;
@@ -686,7 +807,7 @@ export const api = {
         return data;
       }
     } catch (e) {}
-    return getLocal(STORAGE_KEYS.PATIENTS, [DEFAULT_PROFILE]);
+    return getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
   },
 
   // Register new patient
@@ -700,7 +821,7 @@ export const api = {
       });
       if (res.ok) {
         const newPatient = await res.json();
-        const patients = getLocal(STORAGE_KEYS.PATIENTS, [DEFAULT_PROFILE]);
+        const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
         patients.push(newPatient);
         setLocal(STORAGE_KEYS.PATIENTS, patients);
         return { success: true, patient: newPatient };
@@ -716,7 +837,7 @@ export const api = {
       total_stars: 10,
       role: 'elder'
     };
-    const patients = getLocal(STORAGE_KEYS.PATIENTS, []);
+    const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
     patients.push(newPatient);
     setLocal(STORAGE_KEYS.PATIENTS, patients);
     setLocal(patientKey(STORAGE_KEYS.PROFILE, newPatient.id), newPatient);
@@ -731,7 +852,7 @@ export const api = {
     setLocal(profileKey, updated);
 
     // Also update in patients list
-    const patients = getLocal(STORAGE_KEYS.PATIENTS, []);
+    const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
     const idx = patients.findIndex(p => p.id === userId);
     if (idx !== -1) { patients[idx] = updated; setLocal(STORAGE_KEYS.PATIENTS, patients); }
 
@@ -749,41 +870,61 @@ export const api = {
 
   // Get user profile — per-patient namespaced
   async getUserProfile(userId = DEMO_USER_ID) {
-    const key = patientKey(STORAGE_KEYS.PROFILE, userId);
-    if (userId === DEMO_USER_ID && !localStorage.getItem(key)) {
+    const uid = userId || DEMO_USER_ID;
+    const key = patientKey(STORAGE_KEYS.PROFILE, uid);
+    if (uid === DEMO_USER_ID && !localStorage.getItem(key)) {
       setLocal(key, DEFAULT_PROFILE);
+    } else if (uid === LAKSHMI_USER_ID && !localStorage.getItem(key)) {
+      setLocal(key, LAKSHMI_PROFILE);
     }
     try {
-      const res = await fetch(`${API_BASE}/users/${userId}`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${API_BASE}/users/${uid}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
         setLocal(key, data);
         return data;
       }
     } catch (e) {}
-    return getLocal(key, DEFAULT_PROFILE);
+
+    // Check cached patientKey
+    const cached = getLocal(key, null);
+    if (cached) return cached;
+
+    // Check allPatients
+    const allPatients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+    const found = allPatients.find(p => p.id === uid);
+    if (found) {
+      setLocal(key, found);
+      return found;
+    }
+
+    return uid === LAKSHMI_USER_ID ? LAKSHMI_PROFILE : DEFAULT_PROFILE;
   },
 
   async getAIRecommendation(userId = DEMO_USER_ID) {
+    const uid = userId || DEMO_USER_ID;
     try {
       const res = await fetch(`${API_BASE}/ai/recommendation`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({ user_id: uid }),
         signal: AbortSignal.timeout(2500)
       });
       if (res.ok) return await res.json();
     } catch (e) {}
 
+    const profile = await this.getUserProfile(uid);
+    const pName = (profile?.name || 'Elder').split(' ')[0];
+
     // Local deterministic AI recommendation
     return {
-      user_id: userId,
+      user_id: uid,
       recommended_game: "memory_match",
       recommended_game_name: "North East Heritage Match",
       recommended_difficulty: "medium",
       reasoning: "Visual associative memory exercises with North East cultural pairs will gently reinforce spatial pattern recognition and sustained attention.",
-      caregiver_note: "Elder patient demonstrates high engagement with familiar imagery (Assam tea leaf & Kaziranga rhino). Visual memory is steady.",
-      encouraging_voice_message: "Good day, Bhaben! Let's explore beautiful pictures of North East heritage in the Memory Match game today.",
+      caregiver_note: `${pName} demonstrates high engagement with familiar imagery (Assam tea leaf & Kaziranga rhino). Visual memory is steady.`,
+      encouraging_voice_message: `Good day, ${pName}! Let's explore beautiful pictures of North East heritage in the Memory Match game today.`,
       disclaimer: "AI Cognitive Assistance is designed for stimulation and engagement, not clinical diagnosis."
     };
   }

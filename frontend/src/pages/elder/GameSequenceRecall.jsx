@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function GameSequenceRecall() {
-  const { navigateTo, refreshUserData } = useApp();
+  const { navigateTo, refreshUserData, activePatientId } = useApp();
   const { speakText, autoVoiceRead, t } = useAccessibility();
 
   const [sequence, setSequence] = useState([]);
@@ -38,7 +38,7 @@ export default function GameSequenceRecall() {
   // Load saved difficulty on mount
   useEffect(() => {
     const loadDifficulty = async () => {
-      const saved = await api.getSavedDifficulty("demo-user-123", "sequence_recall");
+      const saved = await api.getSavedDifficulty(activePatientId || "demo-user-123", "sequence_recall");
       setDifficulty(saved);
       // Adjust starting round based on difficulty
       if (saved === 'medium') setRound(2);
@@ -144,7 +144,7 @@ export default function GameSequenceRecall() {
     const calculatedScore = Math.max(60, 100 - (mistakes * 10));
 
     const result = await api.recordGameResult({
-      user_id: "demo-user-123",
+      user_id: activePatientId || "demo-user-123",
       game_type: "sequence_recall",
       difficulty: difficulty,
       score: calculatedScore,

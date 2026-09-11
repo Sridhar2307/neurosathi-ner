@@ -188,7 +188,7 @@ export default function Navbar() {
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Patient: <strong className="text-slate-200">{userProfile?.name || 'Bhaben Kalita'}</strong> (Age 74) • Guwahati, Assam
+                Patient: <strong className="text-slate-200">{userProfile?.name || 'Bhaben Kalita'}</strong>{userProfile?.age ? ` (Age ${userProfile.age})` : ''} • {userProfile?.location || 'Guwahati, Assam'}
               </p>
             </div>
           </button>

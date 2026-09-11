@@ -271,7 +271,21 @@ export default function CaregiverDashboard() {
 
   // Patient shown in dashboard (from session or fallback)
   const patient = activePatient || data?.patient_profile || userProfile;
-  const allPatients = caregiverSession?.allPatients || [];
+  const [patientsList, setPatientsList] = useState(() => caregiverSession?.allPatients || []);
+
+  useEffect(() => {
+    const loadAllPatients = async () => {
+      const list = await api.getAllPatients();
+      if (list && list.length > 0) {
+        setPatientsList(list);
+      }
+    };
+    if (!caregiverSession?.allPatients || caregiverSession.allPatients.length <= 1) {
+      loadAllPatients();
+    }
+  }, [caregiverSession]);
+
+  const allPatients = patientsList.length > 0 ? patientsList : (caregiverSession?.allPatients || []);
 
   useEffect(() => {
     const fetchData = async () => {

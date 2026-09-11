@@ -28,7 +28,14 @@ import {
 } from 'lucide-react';
 
 export default function MemoryAssistance() {
-  const { navigateTo, refreshUserData, triggerReminderAlert, showToast } = useApp();
+  const {
+    navigateTo,
+    refreshUserData,
+    triggerReminderAlert,
+    showToast,
+    activePatientId,
+    userProfile
+  } = useApp();
   const { speakText, autoVoiceRead, t } = useAccessibility();
 
   const [reminders, setReminders] = useState([]);
@@ -42,17 +49,17 @@ export default function MemoryAssistance() {
   const [newDetail, setNewDetail] = useState('');
 
   const loadReminders = async () => {
-    const data = await api.getReminders();
+    const data = await api.getReminders(activePatientId);
     setReminders(data);
   };
 
   useEffect(() => {
     loadReminders();
-  }, []);
+  }, [activePatientId]);
 
   const handleToggleComplete = async (rem) => {
     const nextStatus = !rem.is_completed;
-    await api.updateReminder(rem.id, { is_completed: nextStatus });
+    await api.updateReminder(rem.id, { is_completed: nextStatus }, activePatientId);
     await loadReminders();
     refreshUserData();
 
@@ -64,13 +71,13 @@ export default function MemoryAssistance() {
   };
 
   const handleDelete = async (id, title) => {
-    await api.deleteReminder(id);
+    await api.deleteReminder(id, activePatientId);
     await loadReminders();
     speakText(`Deleted reminder ${title}`);
   };
 
   const handleSnoozeReminder = async (rem, minutes) => {
-    const updated = await api.snoozeReminder(rem.id, minutes);
+    const updated = await api.snoozeReminder(rem.id, minutes, activePatientId);
     await loadReminders();
     refreshUserData();
     const newTimeDisplay = updated?.time || `${minutes}m later`;
@@ -79,7 +86,7 @@ export default function MemoryAssistance() {
   };
 
   const handleTakeLaterReminder = async (rem) => {
-    const updated = await api.takeLaterReminder(rem.id);
+    const updated = await api.takeLaterReminder(rem.id, activePatientId);
     await loadReminders();
     refreshUserData();
     const newTimeDisplay = updated?.time || "08:00 PM";
@@ -92,6 +99,7 @@ export default function MemoryAssistance() {
     if (!newTitle) return;
 
     await api.createReminder({
+      user_id: activePatientId,
       title: newTitle,
       category: newCategory,
       time: newTime,

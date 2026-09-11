@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export default function GameObjectRecognition() {
-  const { navigateTo, refreshUserData } = useApp();
+  const { navigateTo, refreshUserData, activePatientId } = useApp();
   const { speakText, autoVoiceRead, t } = useAccessibility();
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -35,11 +35,11 @@ export default function GameObjectRecognition() {
   // Load saved difficulty on mount
   useEffect(() => {
     const loadDifficulty = async () => {
-      const saved = await api.getSavedDifficulty("demo-user-123", "object_recognition");
+      const saved = await api.getSavedDifficulty(activePatientId || "demo-user-123", "object_recognition");
       setDifficulty(saved);
     };
     loadDifficulty();
-  }, []);
+  }, [activePatientId]);
 
   useEffect(() => {
     if (autoVoiceRead && currentStory) {
@@ -76,7 +76,7 @@ export default function GameObjectRecognition() {
 
       const finalScore = Math.max(50, score);
       const res = await api.recordGameResult({
-        user_id: "demo-user-123",
+        user_id: activePatientId || "demo-user-123",
         game_type: "object_recognition",
         difficulty: difficulty,
         score: finalScore,

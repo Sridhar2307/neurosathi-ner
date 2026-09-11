@@ -25,20 +25,29 @@ import {
 } from 'lucide-react';
 
 export default function ElderDashboard() {
-  const { navigateTo, setIsVoiceAssistantOpen, userProfile, refreshUserData, triggerReminderAlert, showToast } = useApp();
+  const {
+    navigateTo,
+    setIsVoiceAssistantOpen,
+    userProfile,
+    refreshUserData,
+    triggerReminderAlert,
+    showToast,
+    activePatientId
+  } = useApp();
   const { speakText, autoVoiceRead, t, language, changeLanguage, availableLanguages } = useAccessibility();
 
   const [reminders, setReminders] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const rems = await api.getReminders();
+      const rems = await api.getReminders(activePatientId);
       setReminders(rems);
       setLoading(false);
     };
     loadData();
-  }, []);
+  }, [activePatientId]);
 
   const pendingReminders = reminders.filter(r => !r.is_completed);
   const completedCount = reminders.filter(r => r.is_completed).length;
@@ -50,6 +59,19 @@ export default function ElderDashboard() {
     day: 'numeric'
   });
 
+  const patientFirstName = (userProfile?.name || 'Bhaben').split(' ')[0];
+  const welcomeText = (() => {
+    const raw = t.welcome || `Good Day, ${patientFirstName}!`;
+    if (patientFirstName.toLowerCase() !== 'bhaben') {
+      return raw
+        .replace(/Bhaben/gi, patientFirstName)
+        .replace(/ভবেন/g, patientFirstName)
+        .replace(/भवेन/g, patientFirstName)
+        .replace(/भबेन/g, patientFirstName);
+    }
+    return raw;
+  })();
+
   const handleCardClick = (view, spokenText) => {
     if (spokenText) {
       speakText(spokenText);
@@ -59,8 +81,8 @@ export default function ElderDashboard() {
 
   const handleCompleteQuickReminder = async (e, rem) => {
     e.stopPropagation();
-    await api.updateReminder(rem.id, { is_completed: true });
-    const updated = await api.getReminders();
+    await api.updateReminder(rem.id, { is_completed: true }, activePatientId);
+    const updated = await api.getReminders(activePatientId);
     setReminders(updated);
     refreshUserData();
     speakText(`${rem.title} - ${t.done || 'Done'}`);
@@ -68,8 +90,8 @@ export default function ElderDashboard() {
 
   const handleSnoozeReminder = async (e, rem, minutes) => {
     e.stopPropagation();
-    const snoozed = await api.snoozeReminder(rem.id, minutes);
-    const updated = await api.getReminders();
+    const snoozed = await api.snoozeReminder(rem.id, minutes, activePatientId);
+    const updated = await api.getReminders(activePatientId);
     setReminders(updated);
     refreshUserData();
     const newTime = snoozed?.time || `${minutes}m`;
@@ -79,8 +101,8 @@ export default function ElderDashboard() {
 
   const handleTakeLaterReminder = async (e, rem) => {
     e.stopPropagation();
-    const later = await api.takeLaterReminder(rem.id);
-    const updated = await api.getReminders();
+    const later = await api.takeLaterReminder(rem.id, activePatientId);
+    const updated = await api.getReminders(activePatientId);
     setReminders(updated);
     refreshUserData();
     const newTime = later?.time || "08:00 PM";
@@ -124,9 +146,9 @@ export default function ElderDashboard() {
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-extrabold font-sans tracking-tight text-white flex items-center gap-3">
-              <span>{t.welcome || `Good Day, ${userProfile?.name || 'Bhaben'}!`}</span>
+              <span>{welcomeText}</span>
               <AudioButton
-                textToRead={`${t.welcome || 'Good Day, Bhaben!'} Today is ${todayDateString}. ${pendingReminders.length > 0 ? `You have ${pendingReminders.length} reminders pending.` : 'All your morning tasks are completed.'}`}
+                textToRead={`${welcomeText} Today is ${todayDateString}. ${pendingReminders.length > 0 ? `You have ${pendingReminders.length} reminders pending.` : 'All your morning tasks are completed.'}`}
                 size="lg"
                 className="bg-white text-teal-800 border-none shadow-md"
               />
@@ -439,14 +461,14 @@ export default function ElderDashboard() {
               {userProfile?.emergency_contact_name || 'Priya Sharma (Daughter)'}
             </h3>
             <p className="text-sm font-semibold text-slate-600">
-              {userProfile?.emergency_contact_phone || '+91 98765 43210'} • Guwahati, Assam
+              {userProfile?.emergency_contact_phone || '+91 98765 43210'} • {userProfile?.emergency_contact_address || userProfile?.location || 'Guwahati, Assam'}
             </p>
           </div>
         </div>
 
         <a
-          href={`tel:${userProfile?.emergency_contact_phone || '+919876543210'}`}
-          onClick={() => speakText(`${t.callNow || 'Calling'}: ${userProfile?.emergency_contact_name || 'Priya'}`)}
+          href={`tel:${(userProfile?.emergency_contact_phone || '+919876543210').replace(/[\s\-\(\)]/g, '')}`}
+          onClick={() => speakText(`${t.callNow || 'Calling'}: ${userProfile?.emergency_contact_name || 'Caregiver'}`)}
           className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-md transition"
         >
           <PhoneCall className="w-5 h-5" />

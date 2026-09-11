@@ -13,19 +13,19 @@ import {
 } from 'lucide-react';
 
 export default function AIRecommendationView() {
-  const { navigateTo } = useApp();
+  const { navigateTo, activePatientId, activePatient } = useApp();
   const [rec, setRec] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAI = async () => {
       setLoading(true);
-      const res = await api.getAIRecommendation();
+      const res = await api.getAIRecommendation(activePatientId);
       setRec(res);
       setLoading(false);
     };
     fetchAI();
-  }, []);
+  }, [activePatientId]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 space-y-8 bg-slate-900 min-h-screen text-slate-100">

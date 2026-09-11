@@ -28,21 +28,47 @@ export const AppProvider = ({ children }) => {
     } catch { return null; }
   });
 
+  // Track activePatientId explicitly across Elder & Caregiver modes
+  const [activePatientId, setActivePatientId] = useState(() => {
+    try {
+      const storedSession = localStorage.getItem('ns_caregiver_session');
+      if (storedSession) {
+        const parsed = JSON.parse(storedSession);
+        if (parsed?.activePatient?.id) return parsed.activePatient.id;
+      }
+      return localStorage.getItem('ns_active_patient_id') || DEMO_USER_ID;
+    } catch {
+      return DEMO_USER_ID;
+    }
+  });
+
   const setCaregiverSession = (session) => {
     setCaregiverSessionRaw(session);
     if (session) {
       localStorage.setItem('ns_caregiver_session', JSON.stringify(session));
+      if (session.activePatient) {
+        setActivePatientId(session.activePatient.id);
+        localStorage.setItem('ns_active_patient_id', session.activePatient.id);
+        localStorage.setItem('ns_profile', JSON.stringify(session.activePatient));
+        setUserProfile(session.activePatient);
+      }
     } else {
       localStorage.removeItem('ns_caregiver_session');
     }
   };
 
-  // Active patient derived from session
-  const activePatient = caregiverSession?.activePatient || null;
-  const activePatientId = activePatient?.id || DEMO_USER_ID;
+  // Active patient derived from session or userProfile
+  const activePatient = caregiverSession?.activePatient || userProfile || null;
 
   const switchPatient = (patient) => {
-    setCaregiverSession({ ...caregiverSession, activePatient: patient });
+    if (!patient) return;
+    const updatedSession = caregiverSession ? { ...caregiverSession, activePatient: patient } : { activePatient: patient };
+    setCaregiverSession(updatedSession);
+    setActivePatientId(patient.id);
+    localStorage.setItem('ns_active_patient_id', patient.id);
+    localStorage.setItem('ns_profile', JSON.stringify(patient));
+    setUserProfile(patient);
+    showToast(`Active patient switched to ${patient.name}`);
     setCurrentView('dashboard');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -59,9 +85,12 @@ export const AppProvider = ({ children }) => {
     const health = await api.checkHealth();
     setIsOnline(health.online);
 
-    const uid = activePatientId;
+    const uid = activePatientId || DEMO_USER_ID;
     const profile = await api.getUserProfile(uid);
-    setUserProfile(profile);
+    if (profile) {
+      setUserProfile(profile);
+      localStorage.setItem('ns_profile', JSON.stringify(profile));
+    }
   };
 
   useEffect(() => {
