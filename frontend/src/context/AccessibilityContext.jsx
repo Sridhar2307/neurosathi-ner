@@ -79,17 +79,27 @@ export const AccessibilityProvider = ({ children }) => {
   });
 
 
-  const cycleFontSize = () => {
+  const cycleFontSize = (speak = autoVoiceRead) => {
     const sizes = ['small', 'medium', 'large', 'xlarge'];
     const nextIdx = (sizes.indexOf(fontSize) + 1) % sizes.length;
-    setFontSize(sizes[nextIdx]);
-    if (autoVoiceRead) speakText(`Text size set to ${sizes[nextIdx]}`);
+    const nextSize = sizes[nextIdx];
+    setFontSize(nextSize);
+    if (speak) {
+      const sizeLabel = t[nextSize] || nextSize;
+      const prefix = t.textSizeAnnounce || t.textSize || 'Text size:';
+      speakText(`${prefix} ${sizeLabel}`);
+    }
+    return nextSize;
   };
 
-  const cycleTheme = () => {
+  const cycleTheme = (speak = autoVoiceRead) => {
     const nextTheme = theme === 'standard' ? 'warm_sepia' : 'standard';
     setTheme(nextTheme);
-    if (autoVoiceRead) speakText(nextTheme === 'warm_sepia' ? 'Warm Brown theme activated' : 'Default theme activated');
+    if (speak) {
+      const themeLabel = nextTheme === 'warm_sepia' ? (t.warmBrown || 'Warm Brown') : (t.defaultTheme || 'Default');
+      speakText(`${t.theme || 'Theme'}: ${themeLabel}`);
+    }
+    return nextTheme;
   };
 
   const changeLanguage = (newLangCode) => {

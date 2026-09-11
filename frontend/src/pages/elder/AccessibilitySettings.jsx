@@ -34,12 +34,15 @@ export default function AccessibilitySettings() {
 
   const handleSetFont = (sz) => {
     setFontSize(sz);
-    speakText(`Text size: ${sz}`);
+    const sizeLabel = t[sz] || sz;
+    const prefix = t.textSizeAnnounce || t.textSize || 'Text size:';
+    speakText(`${prefix} ${sizeLabel}`);
   };
 
   const handleSetTheme = (th) => {
     setTheme(th);
-    speakText(`Display theme changed`);
+    const themeLabel = th === 'warm_sepia' ? (t.warmBrown || 'Warm Brown') : (t.defaultTheme || 'Default');
+    speakText(`${t.theme || 'Theme'}: ${themeLabel}`);
   };
 
   const handleSetLanguage = (langCode) => {
@@ -191,7 +194,7 @@ export default function AccessibilitySettings() {
               onClick={() => {
                 const next = !autoVoiceRead;
                 setAutoVoiceRead(next);
-                if (next) speakText("Voice guidance enabled.");
+                if (next) speakText(t.voiceGuidanceEnabled || "Voice guidance enabled.");
               }}
               className={`px-6 py-3 rounded-2xl font-extrabold text-base transition ${
                 autoVoiceRead ? 'bg-teal-600 text-white' : 'bg-slate-300 text-slate-700'
@@ -211,7 +214,7 @@ export default function AccessibilitySettings() {
               onClick={() => {
                 const next = !largeButtons;
                 setLargeButtons(next);
-                if (next) speakText("Extra large touch buttons enabled.");
+                if (next) speakText(t.largeButtonsEnabled || "Extra large touch buttons enabled.");
               }}
               className={`px-6 py-3 rounded-2xl font-extrabold text-base transition ${
                 largeButtons ? 'bg-teal-600 text-white' : 'bg-slate-300 text-slate-700'
@@ -231,7 +234,7 @@ export default function AccessibilitySettings() {
               onClick={() => {
                 const next = !reducedMotion;
                 setReducedMotion(next);
-                if (next) speakText("Animations reduced.");
+                if (next) speakText(t.reducedMotionEnabled || "Reduced motion mode enabled.");
               }}
               className={`px-6 py-3 rounded-2xl font-extrabold text-base transition ${
                 reducedMotion ? 'bg-teal-600 text-white' : 'bg-slate-300 text-slate-700'

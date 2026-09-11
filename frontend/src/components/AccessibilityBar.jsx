@@ -34,7 +34,7 @@ export default function AccessibilityBar() {
           aria-label="Text Size"
         >
           <Type className="w-4 h-4 text-amber-400" />
-          <span>{t.textSize || 'Text'}: <strong className="text-amber-300 uppercase">{fontSize}</strong></span>
+          <span>{t.textSize || 'Text'}: <strong className="text-amber-300">{t[fontSize] || fontSize}</strong></span>
         </button>
 
         {/* Contrast Theme Button */}

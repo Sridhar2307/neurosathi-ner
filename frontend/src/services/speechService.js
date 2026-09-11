@@ -72,14 +72,28 @@ class SpeechService {
       const availableVoices = (this.cachedVoices && this.cachedVoices.length > 0)
         ? this.cachedVoices
         : (this.synth.getVoices() || []);
+      if ((!this.cachedVoices || this.cachedVoices.length === 0) && availableVoices.length > 0) {
+        this.cachedVoices = availableVoices;
+      }
 
-      const matchedVoice = this.findBestVoice(availableVoices, options.lang || 'en-IN');
+      const langMap = {
+        hi: 'hi-IN',
+        bn: 'bn-IN',
+        as: 'as-IN',
+        mni: 'bn-IN',
+        lus: 'en-IN',
+        en: 'en-IN'
+      };
+      const baseCode = (options.lang || 'en').split('-')[0].toLowerCase();
+      const targetLang = langMap[baseCode] || options.lang || 'en-IN';
+
+      const matchedVoice = this.findBestVoice(availableVoices, options.lang || targetLang);
       if (matchedVoice) {
         utterance.voice = matchedVoice;
         // Setting utterance.lang to the matched voice's supported language prevents 'language-unavailable' crash
         utterance.lang = matchedVoice.lang;
       } else {
-        utterance.lang = 'en-IN';
+        utterance.lang = targetLang;
       }
 
       if (options.onEnd) {

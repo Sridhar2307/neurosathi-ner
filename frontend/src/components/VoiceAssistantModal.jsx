@@ -357,7 +357,7 @@ export default function VoiceAssistantModal() {
 
     // 7. Contrast
     if (text.includes('contrast') || text.includes('dark') || text.includes('color') || text.includes('रंग') || text.includes('ৰং') || text.includes('রং')) {
-      cycleTheme();
+      cycleTheme(false);
       const msg = dict.contrastUpdated;
       setResponseMessage(msg);
       speakText(msg);
@@ -366,7 +366,7 @@ export default function VoiceAssistantModal() {
 
     // 8. Font Size
     if (text.includes('text') || text.includes('font') || text.includes('bigger') || text.includes('large') || text.includes('बड़ा') || text.includes('ডাঙৰ') || text.includes('বড়')) {
-      cycleFontSize();
+      cycleFontSize(false);
       const msg = dict.textSizeUpdated;
       setResponseMessage(msg);
       speakText(msg);

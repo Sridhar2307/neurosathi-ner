@@ -160,6 +160,11 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchDesc: "Enlarges clickable buttons to 60px minimum for tremor-safe tapping.",
     reducedMotionTitle: "Reduced Motion Mode",
     reducedMotionDesc: "Disables floating cards and animations to prevent dizziness.",
+    textSizeAnnounce: "Text size:",
+    themeUpdated: "Display theme changed.",
+    voiceGuidanceEnabled: "Voice guidance enabled.",
+    largeButtonsEnabled: "Extra large touch buttons enabled.",
+    reducedMotionEnabled: "Reduced motion mode enabled.",
 
     // Navigation Voice Prompts
     navToHome: "Navigating to Home screen.",
@@ -378,6 +383,11 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchDesc: "সহজে স্পৰ্শ কৰিব পৰাকৈ বুটামবোৰ যথেষ্ট ডাঙৰ কৰে।",
     reducedMotionTitle: "কম এনিমেচন ম'ড",
     reducedMotionDesc: "মূৰ ঘূৰোৱা ৰোধ কৰিবলৈ এনিমেচন বন্ধ কৰে।",
+    textSizeAnnounce: "আখৰৰ আকাৰ:",
+    themeUpdated: "পৰ্দাৰ ৰং সলনি কৰা হ'ল।",
+    voiceGuidanceEnabled: "কণ্ঠ নিৰ্দেশনা সক্ৰিয় কৰা হ'ল।",
+    largeButtonsEnabled: "ডাঙৰ স্পৰ্শ বুটাম সক্ৰিয় কৰা হ'ল।",
+    reducedMotionEnabled: "কম এনিমেচন ম'ড সক্ৰিয় কৰা হ'ল।",
 
     // Navigation Voice Prompts
     navToHome: "গৃহ পৃষ্ঠালৈ যোৱা হৈছে।",
@@ -596,6 +606,11 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchDesc: "সহজে চাপার সুবিধার জন্য বাটনগুলো বড় মাপের রাখা হয়।",
     reducedMotionTitle: "কম মোশন মোড",
     reducedMotionDesc: "মাথা ঘোরা রোধে অ্যানিমেশন সীমিত রাখা হয়।",
+    textSizeAnnounce: "অক্ষরের আকার:",
+    themeUpdated: "ডিসপ্লে থিম পরিবর্তন করা হলো।",
+    voiceGuidanceEnabled: "ভয়েস নির্দেশিকা চালু করা হলো।",
+    largeButtonsEnabled: "বড় স্পর্শ বাটন সক্রিয় করা হলো।",
+    reducedMotionEnabled: "কম অ্যানিমেশন মোড চালু করা হলো।",
 
     // Navigation Voice Prompts
     navToHome: "হোম পেজে যাওয়া হচ্ছে।",
@@ -814,6 +829,11 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchDesc: "हाथ कांपने पर भी आसानी से छूने के लिए बड़े बटन।",
     reducedMotionTitle: "कम गति मोड",
     reducedMotionDesc: "चक्कर से बचने के लिए तैरती एनिमेशन बंद करता है।",
+    textSizeAnnounce: "अक्षरों का आकार:",
+    themeUpdated: "डिस्प्ले थीम बदल दी गई है।",
+    voiceGuidanceEnabled: "आवाज़ मार्गदर्शन चालू किया गया।",
+    largeButtonsEnabled: "बड़े टच बटन सक्रिय किए गए।",
+    reducedMotionEnabled: "कम गति मोड सक्रिय किया गया।",
 
     // Navigation Voice Prompts
     navToHome: "होम स्क्रीन पर जा रहे हैं।",
@@ -1032,6 +1052,11 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchDesc: "খুত খনবদা খুদোংচানবা অচৌবা বুটাম।",
     reducedMotionTitle: "মোশন কমহনবা",
     reducedMotionDesc: "মিৎ তুমশিনবদা নকহন্দনবা খোংজেল কমহনবা।",
+    textSizeAnnounce: "ময়োক্কী অচৌবা:",
+    themeUpdated: "মচুগী থিম হোংদোক্লে।",
+    voiceGuidanceEnabled: "খোন্থোক্কী লমজিং হৌরে।",
+    largeButtonsEnabled: "অচৌবা নমফম বুটাম হৌরে।",
+    reducedMotionEnabled: "খোংজেল কমহনবা হৌরে।",
 
     // Navigation Voice Prompts
     navToHome: "য়ুমগী মফমদা চৎলে।",
@@ -1250,6 +1275,11 @@ export const CULTURAL_TRANSLATIONS = {
     largeTouchDesc: "Kut khur pawhin hmeh theih tura hmehna lian.",
     reducedMotionTitle: "Che reng tlemna",
     reducedMotionDesc: "Mit ti kham lo tura che kual tlemte tura siam.",
+    textSizeAnnounce: "Hawrawp lian zawng:",
+    themeUpdated: "Display rawng thlak a ni.",
+    voiceGuidanceEnabled: "Aw hmanga chhiarna tihnun a ni.",
+    largeButtonsEnabled: "Hmehna lian tihnun a ni.",
+    reducedMotionEnabled: "Che kual tlemte tura siam a ni.",
 
     // Navigation Voice Prompts
     navToHome: "In lamah kan kal mek e.",
