@@ -1007,38 +1007,45 @@ export const api = {
 
     const isDemoContact = ['demo', 'democarein', '9876543210', 'demo@care.in'].includes(enteredContact);
 
-    // Find matching patient by phone (flexible digits), email, or PIN
-    const matchedPatient = patients.find(p => {
-      const pPhoneDigits = cleanDigits(p.emergency_contact_phone);
+    // Step 1: find all patients whose phone (last 10 digits) or email matches the entered contact
+    const candidates = patients.filter(p => {
+      const pPhoneDigits = cleanDigits(p.emergency_contact_phone).slice(-10);
       const pEmail = cleanStr(p.emergency_contact_email);
-      const pPin = String(p.caregiver_pin || '').trim();
+      const enteredDigitsShort = enteredDigits.slice(-10);
 
-      const phoneMatches = Boolean(
-        enteredDigits && pPhoneDigits && (
-          pPhoneDigits === enteredDigits ||
-          pPhoneDigits.endsWith(enteredDigits) ||
-          enteredDigits.endsWith(pPhoneDigits)
-        )
-      );
+      const phoneMatches = Boolean(enteredDigitsShort && pPhoneDigits && pPhoneDigits === enteredDigitsShort);
+      const emailMatches = Boolean(pEmail && enteredContact && pEmail === enteredContact);
 
-      const emailMatches = Boolean(pEmail && pEmail === enteredContact);
-      const pinMatches = Boolean(pPin && (pPin === enteredContact || pPin === enteredPin && enteredPin !== '1234'));
+      return phoneMatches || emailMatches;
+    });
 
-      return phoneMatches || emailMatches || pinMatches || (isDemoContact && (p.id === DEMO_USER_ID || p.id === LAKSHMI_USER_ID));
-    }) || (
-      isDemoContact ? (patients.find(p => p.id === DEMO_USER_ID) || patients[0]) : null
-    );
+    let matchedPatient = null;
+
+    if (candidates.length === 1) {
+      matchedPatient = candidates[0];
+    } else if (candidates.length > 1) {
+      // Multiple patients share this contact — disambiguate strictly by PIN
+      matchedPatient = candidates.find(p => String(p.caregiver_pin || '1234').trim() === enteredPin) || null;
+      if (!matchedPatient) {
+        return {
+          success: false,
+          message: 'Multiple patients found for this contact. Please enter the correct PIN for the patient you want to access.'
+        };
+      }
+    } else if (isDemoContact) {
+      matchedPatient = patients.find(p => p.id === DEMO_USER_ID) || patients[0];
+    }
 
     if (!matchedPatient) {
       return {
         success: false,
-        message: 'No patient record found matching the entered contact or PIN. Please check your credentials.'
+        message: 'No patient record found matching the entered contact. Please check your credentials.'
       };
     }
 
-    // Validate PIN
-    const validPins = ['1234', matchedPatient.caregiver_pin].filter(Boolean).map(x => String(x).trim());
-    const pinOk = !enteredPin || validPins.includes(enteredPin) || isDemoContact;
+    // Step 2: validate PIN strictly against the matched patient only
+    const storedPin = String(matchedPatient.caregiver_pin || '1234').trim();
+    const pinOk = isDemoContact || storedPin === enteredPin;
 
     if (!pinOk) {
       return {
