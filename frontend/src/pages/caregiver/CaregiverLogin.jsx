@@ -59,7 +59,7 @@ export default function CaregiverLogin() {
     emergency_contact_phone: '',
     emergency_contact_email: '',
     caregiver_notes: '',
-    caregiver_pin: '1234',
+    caregiver_pin: '',
     language_preference: 'en',
   });
 
@@ -117,6 +117,10 @@ export default function CaregiverLogin() {
     e.preventDefault();
     if (!form.name.trim()) { setError('Patient name is required.'); return; }
     if (!form.emergency_contact_phone.trim()) { setError('Caregiver phone number is required.'); return; }
+    if (!form.caregiver_pin?.trim() || form.caregiver_pin.trim().length < 4) {
+      setError('Please set a 4-digit PIN for your caregiver login.');
+      return;
+    }
 
     setRegistering(true);
     setError('');
@@ -132,7 +136,7 @@ export default function CaregiverLogin() {
     if (result.success && result.patient) {
       setRegisterSuccess(true);
       setContact(form.emergency_contact_phone || form.emergency_contact_email || '');
-      setPin(form.caregiver_pin || '1234');
+      setPin(form.caregiver_pin);
       showToast(`Patient "${result.patient.name}" registered successfully!`);
       setShowRegister(false);
 

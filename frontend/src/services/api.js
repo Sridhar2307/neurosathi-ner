@@ -335,51 +335,38 @@ function saveDifficulty(userId, gameType, difficulty) {
   setLocal(difficultyKey(userId, gameType), difficulty);
 }
 
-// Helper: Purge legacy/previous patient records and ensure a clean slate for new patient registrations
+// Helper: Purge legacy records, demo data, and all saved logins/sessions across devices
 export function cleanupDemoData() {
   try {
-    const WIPE_VERSION_KEY = 'ns_patient_wipe_v2026_09_12';
+    const WIPE_VERSION_KEY = 'ns_login_wipe_v2026_09_12_v3';
 
     if (!localStorage.getItem(WIPE_VERSION_KEY)) {
-      // 1. Remove active patient pointers and caches
+      // 1. Completely remove all saved logins and session states
+      localStorage.removeItem('ns_caregiver_session');
       localStorage.removeItem('ns_active_patient_id');
       localStorage.removeItem('ns_profile');
       localStorage.removeItem('neurosathi_profile');
       localStorage.removeItem('ns_all_patients');
+      localStorage.removeItem('ns_appMode');
       localStorage.removeItem('neurosathi_reminders');
       localStorage.removeItem('neurosathi_game_results');
       localStorage.removeItem('neurosathi_alerts');
 
-      // If user was on elder view with old patient, return to landing
-      if (localStorage.getItem('ns_appMode') === 'elder') {
-        localStorage.removeItem('ns_appMode');
-      }
-
-      // 2. Clean caregiver session: preserve caregiver login credentials but reset patient lists
-      const rawSession = localStorage.getItem('ns_caregiver_session');
-      if (rawSession) {
-        try {
-          const session = JSON.parse(rawSession);
-          if (session && typeof session === 'object') {
-            session.activePatient = null;
-            session.allPatients = [];
-            localStorage.setItem('ns_caregiver_session', JSON.stringify(session));
-          }
-        } catch (e) {
-          localStorage.removeItem('ns_caregiver_session');
+      // 2. Clear any session storage
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.clear();
         }
-      }
+      } catch (e) {}
 
-      // 3. Remove all per-patient storage keys
+      // 3. Remove all per-patient and dynamic data storage keys while preserving language/accessibility
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (
           k &&
-          (k.startsWith('neurosathi_profile_') ||
-           k.startsWith('neurosathi_reminders_') ||
-           k.startsWith('neurosathi_game_results_') ||
-           k.startsWith('neurosathi_game_difficulty_'))
+          (k.startsWith('neurosathi_') ||
+           (k.startsWith('ns_') && !['ns_language', 'ns_fontSize', 'ns_theme', 'ns_largeButtons', 'ns_autoVoiceRead', 'ns_reducedMotion', WIPE_VERSION_KEY].includes(k)))
         ) {
           keysToRemove.push(k);
         }
