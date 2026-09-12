@@ -77,7 +77,7 @@ export default function GameMemoryMatch() {
   // Load saved difficulty on mount
   useEffect(() => {
     const loadDifficulty = async () => {
-      const saved = await api.getSavedDifficulty(activePatientId || "demo-user-123", "memory_match");
+      const saved = await api.getSavedDifficulty(activePatientId || "guest", "memory_match");
       setDifficulty(saved);
     };
     loadDifficulty();
@@ -152,7 +152,7 @@ export default function GameMemoryMatch() {
 
     setIsSaving(true);
     const result = await api.recordGameResult({
-      user_id: activePatientId || "demo-user-123",
+      user_id: activePatientId || "guest",
       game_type: "memory_match",
       difficulty: difficulty,
       score: finalScore,

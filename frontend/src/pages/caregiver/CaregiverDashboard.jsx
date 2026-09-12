@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAccessibility } from '../../context/AccessibilityContext';
 import { api } from '../../services/api';
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -107,6 +108,7 @@ function generateReport(patient, data) {
 
 // ── Edit Patient Modal ────────────────────────────────────────────────────────
 function EditPatientModal({ patient, onClose, onSave }) {
+  const { t } = useAccessibility();
   const [form, setForm] = useState({
     name: patient?.name || '',
     age: patient?.age || '',
@@ -257,11 +259,11 @@ function EditPatientModal({ patient, onClose, onSave }) {
           <button
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-slate-600 text-slate-300 hover:text-white font-bold text-sm transition"
-          >Cancel</button>
+          >{t.cancel || "Cancel"}</button>
           <button
             onClick={() => onSave({ ...form, age: form.age ? parseInt(form.age) : undefined })}
             className="flex-1 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm transition"
-          >Save Changes</button>
+          >{t.saveChanges || t.save || "Save Changes"}</button>
         </div>
       </div>
     </div>
@@ -276,6 +278,7 @@ export default function CaregiverDashboard() {
     activePatient, activePatientId,
     switchPatient, caregiverLogout, showToast
   } = useApp();
+  const { t, language, changeLanguage, availableLanguages } = useAccessibility();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -576,12 +579,12 @@ export default function CaregiverDashboard() {
                     className="px-3.5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-sm flex items-center gap-2 transition border border-slate-600"
                   >
                     <Users className="w-4 h-4 text-amber-400" />
-                    <span className="hidden sm:inline">Switch Patient</span>
+                    <span className="hidden sm:inline">{t.selectPatient || "Switch Patient"}</span>
                     {showPatientSwitcher ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
                   {showPatientSwitcher && (
                     <div className="absolute right-0 top-full mt-2 z-30 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl min-w-[220px] overflow-hidden">
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-4 pt-3 pb-1">Select Patient</p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-4 pt-3 pb-1">{t.selectActivePatient || "Select Patient"}</p>
                       {allPatients.map(p => (
                         <button
                           key={p.id}
@@ -610,7 +613,7 @@ export default function CaregiverDashboard() {
                 className="px-3.5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-sm flex items-center gap-2 transition border border-slate-600"
               >
                 <Edit3 className="w-4 h-4 text-cyan-400" />
-                <span className="hidden sm:inline">Edit Patient</span>
+                <span className="hidden sm:inline">{t.editProfile || "Edit Patient"}</span>
               </button>
 
               <button
@@ -618,7 +621,7 @@ export default function CaregiverDashboard() {
                 className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm flex items-center gap-2 transition"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Med / Task</span>
+                <span>{t.addReminder || "Add Med / Task"}</span>
               </button>
 
               <button
@@ -626,7 +629,7 @@ export default function CaregiverDashboard() {
                 className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-sm flex items-center gap-2 transition"
               >
                 <Heart className="w-4 h-4 fill-current" />
-                <span>Elder View</span>
+                <span>{t.elderView || "Elder View"}</span>
               </button>
 
               {/* Export Dropdown */}
@@ -636,7 +639,7 @@ export default function CaregiverDashboard() {
                   className="px-3.5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-sm flex items-center gap-2 transition border border-slate-600"
                 >
                   <Download className="w-4 h-4 text-amber-400" />
-                  <span className="hidden sm:inline">Export</span>
+                  <span className="hidden sm:inline">{t.exportCsv || "Export"}</span>
                   {showExportMenu ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
                 {showExportMenu && (
@@ -646,21 +649,21 @@ export default function CaregiverDashboard() {
                       className="w-full text-left px-4 py-3 text-sm font-semibold transition flex items-center gap-2 text-slate-200 hover:bg-slate-700"
                     >
                       <FileSpreadsheet className="w-4 h-4 text-green-400" />
-                      <span>Download CSV Reports</span>
+                      <span>{t.exportCsv || "Download CSV Reports"}</span>
                     </button>
                     <button
                       onClick={handleExportJSON}
                       className="w-full text-left px-4 py-3 text-sm font-semibold transition flex items-center gap-2 text-slate-200 hover:bg-slate-700 border-t border-slate-700"
                     >
                       <FileType className="w-4 h-4 text-blue-400" />
-                      <span>Download Full JSON Report</span>
+                      <span>{t.exportJson || "Download Full JSON Report"}</span>
                     </button>
                     <button
                       onClick={handlePrintReport}
                       className="w-full text-left px-4 py-3 text-sm font-semibold transition flex items-center gap-2 text-slate-200 hover:bg-slate-700 border-t border-slate-700"
                     >
                       <Printer className="w-4 h-4 text-cyan-400" />
-                      <span>Print Clinical Report</span>
+                      <span>{t.printReport || "Print Clinical Report"}</span>
                     </button>
                   </div>
                 )}
@@ -668,10 +671,11 @@ export default function CaregiverDashboard() {
 
               <button
                 onClick={caregiverLogout}
-                title="Logout"
+                title={t.signOut || "Logout"}
                 className="px-3 py-2.5 rounded-xl bg-slate-700/80 hover:bg-red-900/60 text-slate-400 hover:text-red-300 font-bold text-sm flex items-center gap-1.5 transition border border-slate-600 hover:border-red-700"
               >
                 <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">{t.signOut || "Sign Out"}</span>
               </button>
             </div>
           </div>

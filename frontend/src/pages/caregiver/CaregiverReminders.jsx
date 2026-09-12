@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAccessibility } from '../../context/AccessibilityContext';
 import { api } from '../../services/api';
 import { speechService } from '../../services/speechService';
 import {
@@ -24,6 +25,7 @@ import {
 
 export default function CaregiverReminders() {
   const { navigateTo, triggerReminderAlert, showToast, activePatientId, activePatient } = useApp();
+  const { t } = useAccessibility();
   const [reminders, setReminders] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
@@ -81,7 +83,7 @@ export default function CaregiverReminders() {
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700 transition"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Overview</span>
+          <span>{t.overview ? `← ${t.overview}` : (t.backToHome || "Back to Overview")}</span>
         </button>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -97,10 +99,10 @@ export default function CaregiverReminders() {
               showToast("🚨 High-Alert Alarm & Red Pop-up triggered", 3500, 'reminder');
             }}
             className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-red-600/30 active:scale-95 transition"
-            title="Preview how the high alert sound and red modal pop-up appear on the Elder's screen"
+            title={t.testHighAlertBtn || "Test High Alert Sound"}
           >
             <Bell className="w-4 h-4 animate-bounce" />
-            <span>Test Elder High-Alert Sound & Red Pop-up</span>
+            <span>{t.testHighAlertBtn || "Test Elder High-Alert Sound & Red Pop-up"}</span>
           </button>
 
           <button
@@ -108,7 +110,7 @@ export default function CaregiverReminders() {
             className="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm flex items-center gap-2 transition"
           >
             <Plus className="w-4 h-4" />
-            <span>New Scheduled Reminder</span>
+            <span>{t.addReminder || "New Scheduled Reminder"}</span>
           </button>
         </div>
       </div>
@@ -116,10 +118,10 @@ export default function CaregiverReminders() {
       <div className="bg-slate-800 rounded-3xl p-6 border border-slate-700 space-y-2">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-wider bg-cyan-900/60 text-cyan-300 px-3 py-1 rounded-full border border-cyan-700">
-            Active: {activePatient?.name || 'Elder Patient'}
+            {t.patient || "Active"}: {activePatient?.name || 'Elder Patient'}
           </span>
         </div>
-        <h1 className="text-2xl font-bold text-white">Patient Medication & Routine Scheduler</h1>
+        <h1 className="text-2xl font-bold text-white">{t.scheduleMeds || "Patient Medication & Routine Scheduler"}</h1>
         <p className="text-sm text-slate-400">
           Reminders configured here for <strong className="text-cyan-300">{activePatient?.name || 'this patient'}</strong> automatically synchronize with the Elder Dashboard and trigger regional audio alerts.
         </p>
@@ -134,7 +136,7 @@ export default function CaregiverReminders() {
             onClick={() => setShowModal(true)}
             className="mt-2 px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm inline-flex items-center gap-2 shadow-md transition"
           >
-            <Plus className="w-4 h-4" /> Add First Reminder
+            <Plus className="w-4 h-4" /> {t.addReminder || "Add First Reminder"}
           </button>
         </div>
       ) : (
@@ -158,7 +160,7 @@ export default function CaregiverReminders() {
                 </span>
                 {r.is_completed && (
                   <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Done
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {t.done || "Done"}
                   </span>
                 )}
               </div>
@@ -177,7 +179,7 @@ export default function CaregiverReminders() {
                 title="Test High Alert Sound & Red Pop-up for this reminder"
               >
                 <Volume2 className="w-3.5 h-3.5" />
-                <span>Alert</span>
+                <span>{t.highAlertReminder || "Alert"}</span>
               </button>
 
               <button
@@ -192,12 +194,12 @@ export default function CaregiverReminders() {
                 {r.is_completed ? (
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Done</span>
+                    <span>{t.done || "Done"}</span>
                   </>
                 ) : (
                   <>
                     <Clock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Mark Done</span>
+                    <span>{t.markDone || "Mark Done"}</span>
                   </>
                 )}
               </button>
@@ -205,7 +207,7 @@ export default function CaregiverReminders() {
               <button
                 onClick={() => handleDelete(r.id)}
                 className="p-2 rounded-xl bg-rose-950/40 text-rose-400 hover:bg-rose-900 border border-rose-800 transition"
-                title="Delete Reminder"
+                title={t.delete || "Delete Reminder"}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -219,12 +221,12 @@ export default function CaregiverReminders() {
       {showModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-800 rounded-3xl max-w-md w-full p-6 border border-slate-700 shadow-2xl text-slate-100">
-            <h2 className="text-xl font-bold mb-4">Add Scheduled Reminder</h2>
+            <h2 className="text-xl font-bold mb-4">{t.addReminder || "Add Scheduled Reminder"}</h2>
 
             <form onSubmit={handleAdd} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                  Title
+                  {t.newReminderTitle || "Title"}
                 </label>
                 <input
                   type="text"
@@ -329,13 +331,13 @@ export default function CaregiverReminders() {
                   onClick={() => setShowModal(false)}
                   className="flex-1 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 font-bold text-sm transition"
                 >
-                  Cancel
+                  {t.cancel || "Cancel"}
                 </button>
                 <button
                   type="submit"
                   className="flex-1 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-bold text-sm text-white transition"
                 >
-                  Save Reminder
+                  {t.saveReminder || t.save || "Save Reminder"}
                 </button>
               </div>
             </form>

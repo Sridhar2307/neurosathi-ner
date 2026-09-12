@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAccessibility } from '../../context/AccessibilityContext';
 import { api } from '../../services/api';
 import {
   ShieldCheck, Eye, EyeOff, LogIn, UserPlus, ChevronDown, ChevronUp,
   Phone, Mail, Lock, User, MapPin, Heart, Stethoscope, AlertCircle,
-  Loader2, ArrowLeft, Sparkles
+  Loader2, ArrowLeft, Sparkles, Users, CheckCircle2, ArrowRight
 } from 'lucide-react';
 
 const INPUT_BASE =
@@ -23,6 +24,7 @@ function Field({ label, children }) {
 
 export default function CaregiverLogin() {
   const { navigateTo, setCaregiverSession, showToast } = useApp();
+  const { t } = useAccessibility();
 
   // Login form
   const [contact, setContact] = useState('');
@@ -30,6 +32,10 @@ export default function CaregiverLogin() {
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Disambiguation for multiple patients under the same caregiver contact
+  const [multiplePatients, setMultiplePatients] = useState(null);
+  const [pendingCaregiver, setPendingCaregiver] = useState(null);
 
   // Register patient toggle
   const [showRegister, setShowRegister] = useState(false);
@@ -77,7 +83,15 @@ export default function CaregiverLogin() {
       return;
     }
 
-    // Store session
+    // If caregiver manages multiple patients, let them choose which patient to open
+    if (result.all_patients && result.all_patients.length > 1) {
+      setMultiplePatients(result.all_patients);
+      setPendingCaregiver(result.caregiver);
+      showToast(`Welcome back, ${result.caregiver?.name || 'Caregiver'}! Please select a patient.`);
+      return;
+    }
+
+    // Single patient: store session directly and navigate to dashboard
     setCaregiverSession({
       caregiver: result.caregiver,
       activePatient: result.active_patient,
@@ -85,6 +99,16 @@ export default function CaregiverLogin() {
     });
 
     showToast(`Welcome back, ${result.caregiver?.name || 'Caregiver'}! 👋`);
+    navigateTo('caregiver', 'dashboard');
+  };
+
+  const selectPatientAndLogin = (selectedPatient) => {
+    setCaregiverSession({
+      caregiver: pendingCaregiver,
+      activePatient: selectedPatient,
+      allPatients: multiplePatients || [selectedPatient],
+    });
+    showToast(`Opening profile for ${selectedPatient.name} 👋`);
     navigateTo('caregiver', 'dashboard');
   };
 
@@ -105,12 +129,27 @@ export default function CaregiverLogin() {
 
     setRegistering(false);
 
-    if (result.success) {
+    if (result.success && result.patient) {
       setRegisterSuccess(true);
       setContact(form.emergency_contact_phone || form.emergency_contact_email || '');
       setPin(form.caregiver_pin || '1234');
-      showToast(`Patient "${form.name}" registered successfully! You can now log in.`);
+      showToast(`Patient "${result.patient.name}" registered successfully!`);
       setShowRegister(false);
+
+      // Auto-authenticate into this newly registered patient immediately
+      setCaregiverSession({
+        caregiver: {
+          name: form.emergency_contact_name || 'Primary Caregiver',
+          relation: form.emergency_contact_relation || 'Family',
+          phone: form.emergency_contact_phone,
+          email: form.emergency_contact_email
+        },
+        activePatient: result.patient,
+        allPatients: [result.patient]
+      });
+
+      showToast(`Welcome! Portal activated for patient "${result.patient.name}" 🎉`);
+      navigateTo('caregiver', 'dashboard');
     } else {
       setError('Registration failed. Please try again.');
     }
@@ -148,7 +187,7 @@ export default function CaregiverLogin() {
             </div>
             <div className="inline-flex items-center gap-1.5 bg-cyan-950/60 border border-cyan-700/40 rounded-full px-3 py-1 text-[11px] text-cyan-300 font-semibold">
               <Sparkles className="w-3 h-3" />
-              Demo: contact <span className="font-mono mx-1">demo@care.in</span> • PIN <span className="font-mono mx-1">1234</span>
+              Secure Clinical Authentication
             </div>
           </div>
 
@@ -168,60 +207,114 @@ export default function CaregiverLogin() {
             </div>
           )}
 
-          {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Field label="Phone Number or Email">
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                  <Phone className="w-4 h-4" />
-                </span>
-                <input
-                  type="text"
-                  placeholder="e.g. 9876543210 or caregiver@email.com"
-                  value={contact}
-                  onChange={e => setContact(e.target.value)}
-                  className={`${INPUT_BASE} pl-10`}
-                  autoComplete="username"
-                />
+          {multiplePatients ? (
+            <div className="space-y-4">
+              <div className="bg-cyan-950/40 border border-cyan-700/60 rounded-2xl p-4">
+                <h3 className="text-base font-bold text-cyan-200 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-cyan-400" />
+                  Select Patient Profile
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  We found {multiplePatients.length} patient profiles linked to your caregiver credentials. Please select which patient you want to manage:
+                </p>
               </div>
-            </Field>
 
-            <Field label="Caregiver PIN (4 digits)">
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
-                  <Lock className="w-4 h-4" />
-                </span>
-                <input
-                  type={showPin ? 'text' : 'password'}
-                  placeholder="Enter your PIN"
-                  value={pin}
-                  maxLength={6}
-                  onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-                  className={`${INPUT_BASE} pl-10 pr-10 tracking-[0.4em] text-lg`}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPin(!showPin)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition"
-                >
-                  {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                {multiplePatients.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={() => selectPatientAndLogin(p)}
+                    className="w-full text-left p-4 rounded-2xl bg-slate-800/80 hover:bg-cyan-950/60 border border-slate-700 hover:border-cyan-500/60 transition group flex items-center justify-between shadow-md"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white group-hover:text-cyan-300 transition text-base">
+                          {p.name}
+                        </span>
+                        {p.age && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">
+                            Age {p.age}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span>{p.location || 'Guwahati, Assam'}</span>
+                        <span className="text-slate-600">•</span>
+                        <span className="text-cyan-400 font-medium">{p.medical_stage || 'Dementia Care'}</span>
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-xl bg-cyan-600/20 group-hover:bg-cyan-600 text-cyan-400 group-hover:text-white flex items-center justify-center transition shrink-0 ml-3">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </button>
+                ))}
               </div>
-            </Field>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-base flex items-center justify-center gap-2 transition shadow-lg shadow-cyan-900/30"
-            >
-              {loading ? (
-                <><Loader2 className="w-5 h-5 animate-spin" /> Authenticating...</>
-              ) : (
-                <><LogIn className="w-5 h-5" /> Sign In to Portal</>
-              )}
-            </button>
-          </form>
+              <button
+                type="button"
+                onClick={() => { setMultiplePatients(null); setPendingCaregiver(null); }}
+                className="w-full py-2.5 text-xs text-slate-400 hover:text-slate-200 text-center transition font-semibold"
+              >
+                ← Back to Login with Different Account
+              </button>
+            </div>
+          ) : (
+            /* Login Form */
+            <form onSubmit={handleLogin} className="space-y-4">
+              <Field label="Phone Number or Email">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    <Phone className="w-4 h-4" />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="e.g. 9876543210 or caregiver@email.com"
+                    value={contact}
+                    onChange={e => setContact(e.target.value)}
+                    className={`${INPUT_BASE} pl-10`}
+                    autoComplete="username"
+                  />
+                </div>
+              </Field>
+
+              <Field label="Caregiver PIN (4 digits)">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                    <Lock className="w-4 h-4" />
+                  </span>
+                  <input
+                    type={showPin ? 'text' : 'password'}
+                    placeholder="Enter your PIN"
+                    value={pin}
+                    maxLength={6}
+                    onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+                    className={`${INPUT_BASE} pl-10 pr-10 tracking-[0.4em] text-lg`}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition"
+                  >
+                    {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </Field>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-base flex items-center justify-center gap-2 transition shadow-lg shadow-cyan-900/30"
+              >
+                {loading ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Authenticating...</>
+                ) : (
+                  <><LogIn className="w-5 h-5" /> {t.signInBtn || "Sign In to Portal"}</>
+                )}
+              </button>
+            </form>
+          )}
 
           {/* Divider */}
           <div className="flex items-center gap-3">
@@ -237,7 +330,7 @@ export default function CaregiverLogin() {
             className="w-full py-3 rounded-xl border border-slate-600 hover:border-cyan-500 text-slate-300 hover:text-white font-bold text-sm flex items-center justify-center gap-2 transition"
           >
             <UserPlus className="w-4 h-4 text-cyan-400" />
-            Register a New Patient
+            {t.addNewPatient || "Register a New Patient"}
             {showRegister ? <ChevronUp className="w-4 h-4 ml-auto" /> : <ChevronDown className="w-4 h-4 ml-auto" />}
           </button>
         </div>
@@ -265,7 +358,7 @@ export default function CaregiverLogin() {
                   <Field label="Full Name *">
                     <input
                       className={INPUT_BASE}
-                      placeholder="e.g. Bhaben Kalita"
+                      placeholder="e.g. Patient Full Name"
                       value={form.name}
                       onChange={e => updateForm('name', e.target.value)}
                       required
@@ -465,7 +558,7 @@ export default function CaregiverLogin() {
                 {registering ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /> Registering Patient...</>
                 ) : (
-                  <><UserPlus className="w-5 h-5" /> Register Patient</>
+                  <><UserPlus className="w-5 h-5" /> {t.registerBtn || "Register Patient"}</>
                 )}
               </button>
             </form>

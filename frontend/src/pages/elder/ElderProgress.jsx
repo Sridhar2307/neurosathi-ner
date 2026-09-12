@@ -22,8 +22,8 @@ export default function ElderProgress() {
     fetchGames();
   }, [activePatientId]);
 
-  const totalStars = userProfile?.total_stars ?? 56;
-  const streak = userProfile?.current_streak ?? 4;
+  const totalStars = userProfile?.total_stars ?? 0;
+  const streak = userProfile?.current_streak ?? 0;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
@@ -110,33 +110,39 @@ export default function ElderProgress() {
           {t.recentPerformance || "Recent Mind Game History"}
         </h2>
 
-        <div className="space-y-3">
-          {games.slice(0, 5).map(g => (
-            <div
-              key={g.id}
-              className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-lg">
-                  🧠
+        {games.length === 0 ? (
+          <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-500 font-medium">
+            {t.noGamesPlayedYet || "No mind games played yet. Play any cognitive game from the games menu to record progress and earn stars!"}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {games.slice(0, 5).map(g => (
+              <div
+                key={g.id}
+                className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-lg">
+                    🧠
+                  </div>
+                  <div>
+                    <h4 className="text-base font-bold text-slate-900 capitalize">
+                      {g.game_type.replace('_', ' ')} ({g.difficulty})
+                    </h4>
+                    <p className="text-xs font-semibold text-slate-500">
+                      {g.cultural_theme || "North East Heritage"}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-900 capitalize">
-                    {g.game_type.replace('_', ' ')} ({g.difficulty})
-                  </h4>
-                  <p className="text-xs font-semibold text-slate-500">
-                    {g.cultural_theme || "North East Heritage"}
-                  </p>
-                </div>
-              </div>
 
-              <div className="text-right">
-                <span className="text-lg font-black text-teal-700">{g.score}%</span>
-                <span className="text-xs font-bold text-amber-600 block">+5 Stars</span>
+                <div className="text-right">
+                  <span className="text-lg font-black text-teal-700">{g.score}%</span>
+                  <span className="text-xs font-bold text-amber-600 block">+5 Stars</span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

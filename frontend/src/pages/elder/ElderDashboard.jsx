@@ -62,17 +62,24 @@ export default function ElderDashboard() {
     day: 'numeric'
   });
 
-  const patientFirstName = (profile?.name || 'Elder').split(' ')[0];
+  const hasProfile = Boolean(profile?.name && !['demo-user-123', 'patient-lakshmi-demo'].includes(profile?.id));
+  const patientFirstName = hasProfile ? profile.name.trim().split(' ')[0] : '';
   const welcomeText = (() => {
-    const raw = t.welcome || `Good Day, ${patientFirstName}!`;
-    if (patientFirstName.toLowerCase() !== 'bhaben') {
-      return raw
-        .replace(/Bhaben/gi, patientFirstName)
-        .replace(/ভবেন/g, patientFirstName)
-        .replace(/भवेन/g, patientFirstName)
-        .replace(/भबेन/g, patientFirstName);
+    if (!hasProfile || !patientFirstName) {
+      return t.welcomeGeneric || "Welcome to NeuroSathi";
     }
-    return raw;
+    const template = t.welcome || "Good Day, {name}!";
+    return template
+      .replace(/\{name\}/g, patientFirstName)
+      .replace(/Bhaben/gi, patientFirstName)
+      .replace(/ভবেন দেউতা/g, patientFirstName)
+      .replace(/ভবেন বাবু/g, patientFirstName)
+      .replace(/ভবেন/g, patientFirstName)
+      .replace(/ভবেন ইবুংঙো/g, patientFirstName)
+      .replace(/भवेन जी/g, patientFirstName)
+      .replace(/भवेन/g, patientFirstName)
+      .replace(/भबेन/g, patientFirstName)
+      .replace(/Pu Bhaben/g, patientFirstName);
   })();
 
   const handleCardClick = (view, spokenText) => {
@@ -162,33 +169,41 @@ export default function ElderDashboard() {
             </p>
 
             {/* Patient Details Sub-banner */}
-            <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm font-semibold text-teal-200/90 pt-1">
-              {profile?.age && (
-                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30">
-                  {profile.age} Years
+            {hasProfile ? (
+              <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm font-semibold text-teal-200/90 pt-1">
+                {profile?.age && (
+                  <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30">
+                    {profile.age} Years
+                  </span>
+                )}
+                {profile?.gender && (
+                  <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30">
+                    {profile.gender}
+                  </span>
+                )}
+                {profile?.blood_group && (
+                  <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30 text-rose-300">
+                    Blood: {profile.blood_group}
+                  </span>
+                )}
+                {profile?.location && (
+                  <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30">
+                    📍 {profile.location}
+                  </span>
+                )}
+                {profile?.medical_stage && (
+                  <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30 text-amber-300">
+                    ⚕️ {profile.medical_stage}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm font-semibold text-teal-200/90 pt-1">
+                <span className="bg-teal-900/60 px-3 py-1 rounded-xl border border-teal-500/30">
+                  🌿 North East Regional Cognitive Companion
                 </span>
-              )}
-              {profile?.gender && (
-                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30">
-                  {profile.gender}
-                </span>
-              )}
-              {profile?.blood_group && (
-                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30 text-rose-300">
-                  Blood: {profile.blood_group}
-                </span>
-              )}
-              {profile?.location && (
-                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30">
-                  📍 {profile.location}
-                </span>
-              )}
-              {profile?.medical_stage && (
-                <span className="bg-teal-900/60 px-2.5 py-1 rounded-xl border border-teal-500/30 text-amber-300">
-                  ⚕️ {profile.medical_stage}
-                </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Streak & Stars Counter Badge */}
@@ -196,7 +211,7 @@ export default function ElderDashboard() {
             <div className="text-center px-3 border-r border-teal-700">
               <div className="flex items-center justify-center gap-1.5 text-amber-400">
                 <Flame className="w-7 h-7 fill-amber-400 animate-gentle-float" />
-                <span className="text-3xl sm:text-4xl font-black">{profile?.current_streak || 4}</span>
+                <span className="text-3xl sm:text-4xl font-black">{hasProfile ? (profile?.current_streak ?? 0) : 0}</span>
               </div>
               <span className="text-xs sm:text-sm font-bold text-teal-200 uppercase tracking-wider">{t.streak || 'Day Streak'}</span>
             </div>
@@ -204,7 +219,7 @@ export default function ElderDashboard() {
             <div className="text-center px-3">
               <div className="flex items-center justify-center gap-1.5 text-amber-300">
                 <Award className="w-7 h-7 fill-amber-300" />
-                <span className="text-3xl sm:text-4xl font-black">{profile?.total_stars || 56}</span>
+                <span className="text-3xl sm:text-4xl font-black">{hasProfile ? (profile?.total_stars ?? 0) : 0}</span>
               </div>
               <span className="text-xs sm:text-sm font-bold text-teal-200 uppercase tracking-wider">{t.stars || 'Stars'}</span>
             </div>

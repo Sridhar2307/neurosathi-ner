@@ -207,7 +207,16 @@ mni: {
 
 export default function VoiceAssistantModal() {
   const { isVoiceAssistantOpen, setIsVoiceAssistantOpen, navigateTo, activePatientId } = useApp();
-  const { speakText, stopSpeaking, cycleTheme, cycleFontSize, language } = useAccessibility();
+  const {
+    speakText,
+    stopSpeaking,
+    cycleTheme,
+    cycleFontSize,
+    language,
+    changeLanguage,
+    availableLanguages,
+    t
+  } = useAccessibility();
 
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -471,7 +480,7 @@ export default function VoiceAssistantModal() {
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg">
             <Sparkles className="w-8 h-8" />
           </div>
@@ -482,6 +491,46 @@ export default function VoiceAssistantModal() {
             <p className="text-sm sm:text-base text-slate-600 font-medium">
               {dict.headerSub}
             </p>
+          </div>
+        </div>
+
+        {/* In-Modal Native Language Selector Bar */}
+        <div className="mb-5 bg-slate-100/90 p-2.5 rounded-2xl border border-slate-200">
+          <div className="flex items-center justify-between gap-2 mb-2 px-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              🌐 {dict.voiceLanguagePrompt || t.voiceLanguagePrompt || "Voice Language"}:
+            </span>
+            <span className="text-xs font-bold text-teal-900 bg-teal-100 px-2.5 py-0.5 rounded-full border border-teal-300">
+              {availableLanguages?.find(l => l.code === language)?.native || 'English'}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+            {availableLanguages && availableLanguages.map((langItem) => {
+              const isActive = language === langItem.code;
+              return (
+                <button
+                  key={langItem.code}
+                  type="button"
+                  onClick={() => {
+                    changeLanguage(langItem.code);
+                    const newDict = VOICE_I18N[langItem.code] || VOICE_I18N.en;
+                    setResponseMessage(newDict.greeting);
+                    speakText(newDict.greeting, { lang: langItem.code });
+                  }}
+                  className={`px-2 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
+                    isActive
+                      ? 'bg-teal-700 text-white shadow-md ring-2 ring-teal-400'
+                      : 'bg-white hover:bg-slate-200 text-slate-800 border border-slate-300'
+                  }`}
+                  aria-label={`Switch voice assistant to ${langItem.name}`}
+                >
+                  <span className="font-black text-xs sm:text-sm leading-tight">{langItem.native}</span>
+                  <span className={`text-[10px] mt-0.5 ${isActive ? 'text-teal-200' : 'text-slate-500'}`}>
+                    {langItem.name}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

@@ -51,6 +51,21 @@ def to_uuid(uid: str) -> str:
 def from_uuid(uuid_str: str) -> str:
     return UUID_TO_ID.get(str(uuid_str), str(uuid_str))
 
+import re
+
+def extract_pin_and_address(raw_address: Optional[str], fallback_pin: str = "1234") -> tuple[str, str]:
+    if not raw_address:
+        return ("Guwahati, Assam", fallback_pin)
+    match = re.search(r'\[PIN:([a-zA-Z0-9]+)\]', raw_address)
+    pin = match.group(1) if match else fallback_pin
+    clean_address = re.sub(r'\s*\[PIN:[a-zA-Z0-9]+\]', '', raw_address).strip()
+    return (clean_address or "Guwahati, Assam", pin)
+
+def format_address_with_pin(address: Optional[str], pin: str = "1234") -> str:
+    clean = re.sub(r'\s*\[PIN:[a-zA-Z0-9]+\]', '', address or "Guwahati, Assam").strip()
+    safe_pin = str(pin or "1234").strip()
+    return f"{clean} [PIN:{safe_pin}]"
+
 supabase = None
 if SUPABASE_URL and SUPABASE_ANON_KEY and "http" in SUPABASE_URL:
     try:
@@ -113,6 +128,7 @@ class HybridDatabase:
                 p_res = supabase.table("profiles").select("*").execute()
                 for row in p_res.data:
                     app_uid = from_uuid(row.get("id"))
+                    clean_addr, c_pin = extract_pin_and_address(row.get("emergency_contact_address"), "1234")
                     self.users[app_uid] = UserProfile(
                         id=app_uid,
                         name=row.get("name", "Patient"),
@@ -132,10 +148,10 @@ class HybridDatabase:
                         emergency_contact_relation=row.get("emergency_contact_relation", "Family"),
                         emergency_contact_phone=row.get("emergency_contact_phone", "+91 98765 43210"),
                         emergency_contact_email=row.get("emergency_contact_email", "caregiver@neurosathi.in"),
-                        emergency_contact_address=row.get("emergency_contact_address", "Guwahati, Assam"),
+                        emergency_contact_address=clean_addr,
                         current_streak=row.get("streak_count", 4),
                         total_stars=row.get("total_stars", 56),
-                        caregiver_pin=row.get("caregiver_pin", "1234"),
+                        caregiver_pin=c_pin,
                         created_at=row.get("created_at", datetime.now().isoformat()),
                         avatar_url=row.get("avatar_url", "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80")
                     )
@@ -230,6 +246,7 @@ class HybridDatabase:
         # Sync to Supabase
         if supabase:
             try:
+                enc_addr = format_address_with_pin(new_user.emergency_contact_address or new_user.location, new_user.caregiver_pin)
                 supabase.table("profiles").upsert({
                     "id": to_uuid(new_id),
                     "name": new_user.name,
@@ -243,7 +260,7 @@ class HybridDatabase:
                     "emergency_contact_name": new_user.emergency_contact_name,
                     "emergency_contact_phone": new_user.emergency_contact_phone,
                     "emergency_contact_email": new_user.emergency_contact_email,
-                    "emergency_contact_address": new_user.emergency_contact_address,
+                    "emergency_contact_address": enc_addr,
                     "streak_count": new_user.current_streak,
                     "total_stars": new_user.total_stars
                 }).execute()
@@ -284,7 +301,10 @@ class HybridDatabase:
                 if update_in.emergency_contact_relation is not None: supa_update["emergency_contact_relation"] = update_in.emergency_contact_relation
                 if update_in.emergency_contact_phone is not None: supa_update["emergency_contact_phone"] = update_in.emergency_contact_phone
                 if update_in.emergency_contact_email is not None: supa_update["emergency_contact_email"] = update_in.emergency_contact_email
-                if update_in.emergency_contact_address is not None: supa_update["emergency_contact_address"] = update_in.emergency_contact_address
+                if update_in.emergency_contact_address is not None or update_in.caregiver_pin is not None:
+                    c_pin = update_in.caregiver_pin or user.caregiver_pin or "1234"
+                    c_addr = update_in.emergency_contact_address or user.emergency_contact_address or user.location or "Guwahati, Assam"
+                    supa_update["emergency_contact_address"] = format_address_with_pin(c_addr, c_pin)
                 if supa_update:
                     supabase.table("profiles").update(supa_update).eq("id", to_uuid(user_id)).execute()
             except Exception as e:
@@ -364,6 +384,42 @@ class HybridDatabase:
         return True
 
     def authenticate_caregiver(self, req: CaregiverLoginRequest) -> CaregiverLoginResponse:
+        # Sync latest profiles from Supabase if connected
+        if supabase:
+            try:
+                p_res = supabase.table("profiles").select("*").execute()
+                for row in p_res.data:
+                    app_uid = from_uuid(row.get("id"))
+                    clean_addr, c_pin = extract_pin_and_address(row.get("emergency_contact_address"), "1234")
+                    self.users[app_uid] = UserProfile(
+                        id=app_uid,
+                        name=row.get("name", "Patient"),
+                        email=row.get("emergency_contact_email") or f"{app_uid}@neurosathi.in",
+                        role=row.get("role", "elder"),
+                        age=row.get("age", 74),
+                        gender=row.get("gender", "Female"),
+                        blood_group=row.get("blood_group", "O+"),
+                        location=row.get("location", "Guwahati, Assam"),
+                        language_preference=row.get("preferred_language", "en"),
+                        medical_stage=row.get("medical_stage", "Early-stage Dementia / MCI"),
+                        allergies=row.get("allergies", "None reported"),
+                        doctor_name=row.get("doctor_name", "Dr. Anupam Sarma (Neurologist)"),
+                        doctor_phone=row.get("doctor_phone", "+91 98640 12345"),
+                        doctor_hospital=row.get("doctor_hospital", "Guwahati Neurological Center, Assam"),
+                        emergency_contact_name=row.get("emergency_contact_name", "Primary Caregiver"),
+                        emergency_contact_relation=row.get("emergency_contact_relation", "Family"),
+                        emergency_contact_phone=row.get("emergency_contact_phone", "+91 98765 43210"),
+                        emergency_contact_email=row.get("emergency_contact_email", "caregiver@neurosathi.in"),
+                        emergency_contact_address=clean_addr,
+                        current_streak=row.get("streak_count", 4),
+                        total_stars=row.get("total_stars", 56),
+                        caregiver_pin=c_pin,
+                        created_at=row.get("created_at", datetime.now().isoformat()),
+                        avatar_url=row.get("avatar_url", "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80")
+                    )
+            except Exception as e:
+                print(f"Supabase caregiver auth sync notice: {e}")
+
         all_users = self.get_all_users()
         email_or_contact = (req.email or req.contact or "demo").strip()
         
@@ -390,22 +446,17 @@ class HybridDatabase:
             )
             email_match = bool(u_email and u_email == email_or_contact.lower())
             pin_match = bool(u_pin and (u_pin == c_clean or (req_pin and u_pin == req_pin and req_pin != '1234')))
-            is_demo = c_clean in ["demo", "democarein", "9876543210", "caregiverneurosathiin"]
-
-            if phone_match or email_match or pin_match or (is_demo and u.id in [DEMO_USER_ID, LAKSHMI_USER_ID]):
+            if phone_match or email_match:
                 matched.append(u)
         
         if not matched:
-            if c_clean in ["demo", ""]:
-                matched = all_users
-            else:
-                return CaregiverLoginResponse(
-                    success=False,
-                    message="No patient record found matching the entered contact or PIN.",
-                    caregiver=None,
-                    active_patient=None,
-                    all_patients=[]
-                )
+            return CaregiverLoginResponse(
+                success=False,
+                message="No patient record found matching the entered contact.",
+                caregiver=None,
+                active_patient=None,
+                all_patients=[]
+            )
 
         # Select requested patient or default to the matched patient
         active_patient = None
@@ -414,13 +465,19 @@ class HybridDatabase:
         if not active_patient and matched:
             active_patient = matched[0]
         if not active_patient:
-            active_patient = get_initial_lakshmi()
+            return CaregiverLoginResponse(
+                success=False,
+                message="No active patient found for this account.",
+                caregiver=None,
+                active_patient=None,
+                all_patients=[]
+            )
 
         # Check PIN if provided
-        if req.pin and c_clean not in ["demo", "democarein"]:
+        if req.pin:
             entered_pin = str(req.pin).strip()
-            allowed_pins = ["1234", str(active_patient.caregiver_pin or "").strip()]
-            if entered_pin not in allowed_pins:
+            stored_pin = str(active_patient.caregiver_pin or "").strip()
+            if stored_pin and entered_pin != stored_pin:
                 return CaregiverLoginResponse(
                     success=False,
                     message="Incorrect PIN entered for this caregiver account.",

@@ -13,12 +13,13 @@ import {
   Home,
   Layers,
   Sparkles,
-  PhoneCall
+  PhoneCall,
+  Globe
 } from 'lucide-react';
 
 export default function Navbar() {
-  const { appMode, currentView, navigateTo, setIsVoiceAssistantOpen, userProfile, activePatient } = useApp();
-  const { speakText, autoVoiceRead, t } = useAccessibility();
+  const { appMode, currentView, navigateTo, setIsVoiceAssistantOpen, userProfile, activePatient, caregiverSession } = useApp();
+  const { speakText, autoVoiceRead, t, language, changeLanguage, availableLanguages } = useAccessibility();
 
   const currentPatient = activePatient || userProfile;
 
@@ -169,12 +170,14 @@ export default function Navbar() {
   }
 
   // --- Caregiver Mode Navbar ---
+  const isCaregiverLoggedIn = Boolean(caregiverSession && currentView !== 'login');
+
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-[41px] z-40 px-4 sm:px-8 py-3 shadow-md">
       <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => handleNavClick('caregiver', 'dashboard')}
+            onClick={() => handleNavClick('caregiver', isCaregiverLoggedIn ? 'dashboard' : 'login')}
             className="flex items-center gap-3 text-left"
           >
             <div className="w-10 h-10 rounded-xl bg-cyan-600 p-1.5 flex items-center justify-center">
@@ -183,69 +186,104 @@ export default function Navbar() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold tracking-tight text-cyan-300 font-sans">
-                  NeuroSathi <span className="text-amber-400">Clinical Hub</span>
+                  NeuroSathi <span className="text-amber-400">{t.clinicalHub || "Clinical Hub"}</span>
                 </h1>
                 <span className="bg-cyan-900/80 text-cyan-200 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-700">
-                  Caregiver Portal
+                  {t.caregiverPortal || t.caregiverMode || "Caregiver Portal"}
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Patient: <strong className="text-slate-200">{currentPatient?.name || 'Patient'}</strong>{currentPatient?.age ? ` (Age ${currentPatient.age})` : ''} • {currentPatient?.location || 'Guwahati, Assam'}
+                {isCaregiverLoggedIn ? (
+                  <>
+                    {t.patient || "Patient"}: <strong className="text-slate-200">{activePatient?.name || 'Patient'}</strong>
+                    {activePatient?.age ? ` (${t.age || 'Age'} ${activePatient.age} ${t.years || 'Years'})` : ''} • {activePatient?.location || 'Guwahati, Assam'}
+                  </>
+                ) : (
+                  <span className="text-cyan-400/90 font-medium">{t.secureSignIn || "Caregiver Portal • Secure Clinical Sign In"}</span>
+                )}
               </p>
             </div>
           </button>
         </div>
 
-        {/* Caregiver Nav links */}
+        {/* Caregiver Nav links (Only shown after authenticated login) */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => handleNavClick('caregiver', 'dashboard')}
-            className={`px-3 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-1.5 ${
-              currentView === 'dashboard' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span>Overview</span>
-          </button>
+          {/* Quick Language Selector in Caregiver Header */}
+          <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-700">
+            <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <select
+              value={language}
+              onChange={(e) => changeLanguage(e.target.value)}
+              className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer font-bold"
+              aria-label={t.selectLanguage || "Select Language"}
+            >
+              {availableLanguages && availableLanguages.map((l) => (
+                <option key={l.code} value={l.code} className="bg-slate-900 text-white">
+                  {l.native} ({l.name})
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <button
-            onClick={() => handleNavClick('caregiver', 'analytics')}
-            className={`px-3 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-1.5 ${
-              currentView === 'analytics' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-            }`}
-          >
-            <Brain className="w-4 h-4 text-purple-400" />
-            <span>Cognitive Trends</span>
-          </button>
+          {isCaregiverLoggedIn ? (
+            <>
+              <button
+                onClick={() => handleNavClick('caregiver', 'dashboard')}
+                className={`px-3 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-1.5 ${
+                  currentView === 'dashboard' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>{t.overview || "Overview"}</span>
+              </button>
 
-          <button
-            onClick={() => handleNavClick('caregiver', 'reminders_mgr')}
-            className={`px-3 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-1.5 ${
-              currentView === 'reminders_mgr' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-            }`}
-          >
-            <Bell className="w-4 h-4 text-emerald-400" />
-            <span>Schedule & Meds</span>
-          </button>
+              <button
+                onClick={() => handleNavClick('caregiver', 'analytics')}
+                className={`px-3 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-1.5 ${
+                  currentView === 'analytics' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <Brain className="w-4 h-4 text-purple-400" />
+                <span>{t.cognitiveTrends || "Cognitive Trends"}</span>
+              </button>
 
-          <button
-            onClick={() => handleNavClick('caregiver', 'ai_view')}
-            className={`px-3 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-1.5 ${
-              currentView === 'ai_view' ? 'bg-cyan-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>AI Insights</span>
-          </button>
+              <button
+                onClick={() => handleNavClick('caregiver', 'reminders_mgr')}
+                className={`px-3 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-1.5 ${
+                  currentView === 'reminders_mgr' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <Bell className="w-4 h-4 text-emerald-400" />
+                <span>{t.scheduleMeds || "Schedule & Meds"}</span>
+              </button>
 
-          {/* Switch to Elder View */}
-          <button
-            onClick={() => handleNavClick('elder', 'dashboard', 'Switching to Elder Mode')}
-            className="bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold px-3 py-2 rounded-xl ml-2 transition flex items-center gap-1"
-          >
-            <Heart className="w-3.5 h-3.5 fill-current" />
-            <span>Elder View</span>
-          </button>
+              <button
+                onClick={() => handleNavClick('caregiver', 'ai_view')}
+                className={`px-3 py-2 rounded-xl font-semibold text-sm transition flex items-center gap-1.5 ${
+                  currentView === 'ai_view' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>{t.aiInsights || "AI Insights"}</span>
+              </button>
+
+              {/* Switch to Elder View */}
+              <button
+                onClick={() => handleNavClick('elder', 'dashboard', t.elderView || 'Switching to Elder Mode')}
+                className="bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold px-3 py-2 rounded-xl ml-1 transition flex items-center gap-1 shadow-sm"
+              >
+                <Heart className="w-3.5 h-3.5 fill-current" />
+                <span>{t.elderView || "Elder View"}</span>
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => handleNavClick('landing', 'landing')}
+              className="text-xs font-semibold text-slate-400 hover:text-slate-200 bg-slate-800/80 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-700 transition flex items-center gap-1.5"
+            >
+              <span>{t.backToHome || "Back to Home"}</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

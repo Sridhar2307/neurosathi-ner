@@ -1,17 +1,33 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { api, DEMO_USER_ID } from '../services/api';
+import { useAccessibility } from './AccessibilityContext';
+import { api, cleanupDemoData } from '../services/api';
 import { isReminderDueNow } from '../services/reminderScheduler';
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
+  // Ensure demo mock data is cleaned on startup while preserving real user sessions
+  cleanupDemoData();
+
+  const { language, setLanguage } = useAccessibility();
   // Current active mode: 'elder' | 'caregiver' | 'landing'
   const [appMode, setAppMode] = useState(() => localStorage.getItem('ns_appMode') || 'landing');
   
   // Current active page view within the mode
   const [currentView, setCurrentView] = useState('dashboard');
 
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const stored = localStorage.getItem('ns_profile');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && !['demo-user-123', 'patient-lakshmi-demo'].includes(parsed.id) && !['Bhaben Kalita', 'Lakshmi Devi'].includes(parsed.name)) {
+          return parsed;
+        }
+      }
+      return null;
+    } catch { return null; }
+  });
   const [isOnline, setIsOnline] = useState(true);
   const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null); // string or { message, type }
@@ -24,7 +40,13 @@ export const AppProvider = ({ children }) => {
   const [caregiverSession, setCaregiverSessionRaw] = useState(() => {
     try {
       const stored = localStorage.getItem('ns_caregiver_session');
-      return stored ? JSON.parse(stored) : null;
+      if (stored) {
+        const session = JSON.parse(stored);
+        if (session?.activePatient?.id && !['demo-user-123', 'patient-lakshmi-demo'].includes(session.activePatient.id)) {
+          return session;
+        }
+      }
+      return null;
     } catch { return null; }
   });
 
@@ -34,11 +56,17 @@ export const AppProvider = ({ children }) => {
       const storedSession = localStorage.getItem('ns_caregiver_session');
       if (storedSession) {
         const parsed = JSON.parse(storedSession);
-        if (parsed?.activePatient?.id) return parsed.activePatient.id;
+        if (parsed?.activePatient?.id && !['demo-user-123', 'patient-lakshmi-demo'].includes(parsed.activePatient.id)) {
+          return parsed.activePatient.id;
+        }
       }
-      return localStorage.getItem('ns_active_patient_id') || DEMO_USER_ID;
+      const rawActive = localStorage.getItem('ns_active_patient_id');
+      if (rawActive && !['demo-user-123', 'patient-lakshmi-demo'].includes(rawActive)) {
+        return rawActive;
+      }
+      return null;
     } catch {
-      return DEMO_USER_ID;
+      return null;
     }
   });
 
@@ -51,14 +79,23 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem('ns_active_patient_id', session.activePatient.id);
         localStorage.setItem('ns_profile', JSON.stringify(session.activePatient));
         setUserProfile(session.activePatient);
+
+        // Auto-sync UI and voice language to patient's language preference
+        const pLang = session.activePatient.language_preference;
+        if (pLang && ['en', 'as', 'bn', 'hi', 'mni', 'lus'].includes(pLang)) {
+          setLanguage(pLang);
+          localStorage.setItem('ns_language', pLang);
+        }
       }
     } else {
       localStorage.removeItem('ns_caregiver_session');
     }
   };
 
-  // Active patient derived from session or userProfile
-  const activePatient = caregiverSession?.activePatient || userProfile || null;
+  // In Caregiver mode, active patient strictly derives from the authenticated session
+  // In Elder mode, fallback to userProfile if logged in
+  const activePatient = caregiverSession?.activePatient || (appMode === 'elder' ? (userProfile || null) : null);
+  const allPatients = caregiverSession?.allPatients || [];
 
   const switchPatient = (patient) => {
     if (!patient) return;
@@ -68,6 +105,13 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('ns_active_patient_id', patient.id);
     localStorage.setItem('ns_profile', JSON.stringify(patient));
     setUserProfile(patient);
+
+    const pLang = patient.language_preference;
+    if (pLang && ['en', 'as', 'bn', 'hi', 'mni', 'lus'].includes(pLang)) {
+      setLanguage(pLang);
+      localStorage.setItem('ns_language', pLang);
+    }
+
     showToast(`Active patient switched to ${patient.name}`);
     setCurrentView('dashboard');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -75,9 +119,15 @@ export const AppProvider = ({ children }) => {
 
   const caregiverLogout = () => {
     setCaregiverSession(null);
+    localStorage.removeItem('ns_caregiver_session');
+    localStorage.removeItem('ns_active_patient_id');
+    localStorage.removeItem('ns_profile');
     localStorage.removeItem('ns_appMode');
+    setUserProfile(null);
+    setActivePatientId(null);
     setAppMode('landing');
     setCurrentView('dashboard');
+    showToast('Logged out of caregiver portal');
   };
 
   // Load user data and check backend connectivity
@@ -85,11 +135,18 @@ export const AppProvider = ({ children }) => {
     const health = await api.checkHealth();
     setIsOnline(health.online);
 
-    const uid = activePatientId || DEMO_USER_ID;
-    const profile = await api.getUserProfile(uid);
-    if (profile) {
-      setUserProfile(profile);
-      localStorage.setItem('ns_profile', JSON.stringify(profile));
+    // Only load profile if activePatientId is known and not demo
+    const uid = activePatientId;
+    if (uid && !['demo-user-123', 'patient-lakshmi-demo'].includes(uid)) {
+      const profile = await api.getUserProfile(uid);
+      if (profile) {
+        setUserProfile(profile);
+        localStorage.setItem('ns_profile', JSON.stringify(profile));
+      }
+    } else {
+      if (appMode === 'caregiver' && !caregiverSession) {
+        setUserProfile(null);
+      }
     }
   };
 
@@ -101,8 +158,8 @@ export const AppProvider = ({ children }) => {
   // Real-time Reminder Scheduler: Checks every 5 seconds if any scheduled reminder is due
   useEffect(() => {
     const checkScheduledReminders = async () => {
-      // Don't interrupt if an alert popup is already open
-      if (activeReminderAlert) return;
+      // Don't interrupt if an alert popup is already open or no active patient logged in
+      if (activeReminderAlert || !activePatientId) return;
 
       try {
         const reminders = await api.getReminders(activePatientId);
@@ -176,6 +233,7 @@ export const AppProvider = ({ children }) => {
         setCaregiverSession,
         activePatient,
         activePatientId,
+        allPatients,
         switchPatient,
         caregiverLogout,
       }}

@@ -40,6 +40,21 @@ export function fromSupabaseUuid(uuidStr) {
   return UUID_TO_ID_MAP[uuidStr] || uuidStr;
 }
 
+// PIN persistence helper: safely encodes/extracts caregiver PIN via address field since Supabase profiles lacks caregiver_pin column
+export function extractPinAndAddress(rawAddress, fallbackPin = '1234') {
+  if (!rawAddress) return { address: 'Guwahati, Assam', pin: fallbackPin };
+  const pinMatch = rawAddress.match(/\[PIN:([a-zA-Z0-9]+)\]/);
+  const pin = pinMatch ? pinMatch[1] : fallbackPin;
+  const cleanAddress = rawAddress.replace(/\s*\[PIN:[a-zA-Z0-9]+\]/, '').trim();
+  return { address: cleanAddress || 'Guwahati, Assam', pin };
+}
+
+export function formatAddressWithPin(address, pin = '1234') {
+  const clean = (address || 'Guwahati, Assam').replace(/\s*\[PIN:[a-zA-Z0-9]+\]/, '').trim();
+  const safePin = String(pin || '1234').trim();
+  return `${clean} [PIN:${safePin}]`;
+}
+
 // Per-patient storage key helpers
 function patientKey(baseKey, userId) {
   return `${baseKey}_${userId || DEMO_USER_ID}`;
@@ -320,30 +335,102 @@ function saveDifficulty(userId, gameType, difficulty) {
   setLocal(difficultyKey(userId, gameType), difficulty);
 }
 
-// Initialise storage with defaults if empty
-if (!localStorage.getItem(STORAGE_KEYS.REMINDERS)) setLocal(STORAGE_KEYS.REMINDERS, DEFAULT_REMINDERS);
-if (!localStorage.getItem(STORAGE_KEYS.GAME_RESULTS)) setLocal(STORAGE_KEYS.GAME_RESULTS, DEFAULT_GAME_RESULTS);
-if (!localStorage.getItem(STORAGE_KEYS.ALERTS)) setLocal(STORAGE_KEYS.ALERTS, DEFAULT_ALERTS);
-if (!localStorage.getItem(STORAGE_KEYS.PROFILE)) setLocal(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE);
-if (!localStorage.getItem(STORAGE_KEYS.PATIENTS)) setLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+// Helper: Purge legacy/mock demo data while strictly preserving real logged-in patient & caregiver data
+export function cleanupDemoData() {
+  try {
+    const DEMO_IDS = ['demo-user-123', 'patient-lakshmi-demo'];
 
-// Seed patient-specific stores if empty
-if (!localStorage.getItem(patientKey(STORAGE_KEYS.PROFILE, DEMO_USER_ID))) {
-  setLocal(patientKey(STORAGE_KEYS.PROFILE, DEMO_USER_ID), DEFAULT_PROFILE);
-}
-if (!localStorage.getItem(patientKey(STORAGE_KEYS.REMINDERS, DEMO_USER_ID))) {
-  setLocal(patientKey(STORAGE_KEYS.REMINDERS, DEMO_USER_ID), DEFAULT_REMINDERS);
-}
-if (!localStorage.getItem(patientKey(STORAGE_KEYS.GAME_RESULTS, DEMO_USER_ID))) {
-  setLocal(patientKey(STORAGE_KEYS.GAME_RESULTS, DEMO_USER_ID), DEFAULT_GAME_RESULTS);
+    // 1. If caregiver session active patient is a demo user, clear it; otherwise preserve real caregiver session!
+    const rawSession = localStorage.getItem('ns_caregiver_session');
+    if (rawSession) {
+      try {
+        const session = JSON.parse(rawSession);
+        if (session?.activePatient?.id && DEMO_IDS.includes(session.activePatient.id)) {
+          localStorage.removeItem('ns_caregiver_session');
+        } else if (session?.allPatients) {
+          session.allPatients = session.allPatients.filter(p => p && !DEMO_IDS.includes(p.id) && !['Bhaben Kalita', 'Lakshmi Devi'].includes(p.name));
+          localStorage.setItem('ns_caregiver_session', JSON.stringify(session));
+        }
+      } catch (e) {}
+    }
+
+    // 2. Active patient ID: clear if demo, preserve if real
+    const activePatId = localStorage.getItem('ns_active_patient_id');
+    if (activePatId && DEMO_IDS.includes(activePatId)) {
+      localStorage.removeItem('ns_active_patient_id');
+      localStorage.removeItem('ns_profile');
+    }
+
+    // 3. Remove all mock / demo-specific storage keys
+    DEMO_IDS.forEach(demoId => {
+      localStorage.removeItem(`neurosathi_profile_${demoId}`);
+      localStorage.removeItem(`neurosathi_reminders_${demoId}`);
+      localStorage.removeItem(`neurosathi_game_results_${demoId}`);
+      localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_memory_match`);
+      localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_sequence_recall`);
+      localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_object_recognition`);
+      localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_daily_life_sequence`);
+    });
+
+    // 4. Clean global patients roster: keep ONLY real registered patients
+    const rawPatients = localStorage.getItem('ns_all_patients');
+    if (rawPatients) {
+      try {
+        const parsed = JSON.parse(rawPatients);
+        if (Array.isArray(parsed)) {
+          const realPatients = parsed.filter(p => p && !DEMO_IDS.includes(p.id) && !['Bhaben Kalita', 'Lakshmi Devi'].includes(p.name));
+          localStorage.setItem('ns_all_patients', JSON.stringify(realPatients));
+        }
+      } catch (e) {}
+    }
+
+    // 5. Clean generic fallback keys if they contain demo mock data
+    const rawProfile = localStorage.getItem('neurosathi_profile');
+    if (rawProfile) {
+      try {
+        const p = JSON.parse(rawProfile);
+        if (p && (DEMO_IDS.includes(p.id) || ['Bhaben Kalita', 'Lakshmi Devi'].includes(p.name))) {
+          localStorage.removeItem('neurosathi_profile');
+        }
+      } catch (e) {}
+    }
+
+    const rawReminders = localStorage.getItem('neurosathi_reminders');
+    if (rawReminders) {
+      try {
+        const rems = JSON.parse(rawReminders);
+        if (Array.isArray(rems) && rems.some(r => r.id === 'rem-1' || r.id === 'rem-lakshmi-1' || DEMO_IDS.includes(r.user_id))) {
+          localStorage.removeItem('neurosathi_reminders');
+        }
+      } catch (e) {}
+    }
+
+    const rawGames = localStorage.getItem('neurosathi_game_results');
+    if (rawGames) {
+      try {
+        const games = JSON.parse(rawGames);
+        if (Array.isArray(games) && games.some(g => g.id === 'gr-1' || DEMO_IDS.includes(g.user_id))) {
+          localStorage.removeItem('neurosathi_game_results');
+        }
+      } catch (e) {}
+    }
+
+    const rawAlerts = localStorage.getItem('neurosathi_alerts');
+    if (rawAlerts) {
+      try {
+        const alerts = JSON.parse(rawAlerts);
+        if (Array.isArray(alerts) && alerts.some(a => a.id === 'alt-1' || DEMO_IDS.includes(a.user_id))) {
+          localStorage.removeItem('neurosathi_alerts');
+        }
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.warn('cleanupDemoData notice:', err);
+  }
 }
 
-if (!localStorage.getItem(patientKey(STORAGE_KEYS.PROFILE, LAKSHMI_USER_ID))) {
-  setLocal(patientKey(STORAGE_KEYS.PROFILE, LAKSHMI_USER_ID), LAKSHMI_PROFILE);
-}
-if (!localStorage.getItem(patientKey(STORAGE_KEYS.REMINDERS, LAKSHMI_USER_ID))) {
-  setLocal(patientKey(STORAGE_KEYS.REMINDERS, LAKSHMI_USER_ID), LAKSHMI_REMINDERS);
-}
+// Run cleanup immediately on script execution to ensure completely clean slate for user data
+cleanupDemoData();
 
 export const api = {
   // Check backend health & database connectivity
@@ -384,15 +471,10 @@ export const api = {
   },
 
   // Reminders — per-patient namespaced with live Supabase & offline-first sync
-  async getReminders(userId = DEMO_USER_ID) {
-    const uid = userId || DEMO_USER_ID;
+  async getReminders(userId) {
+    if (!userId) return [];
+    const uid = userId;
     const key = patientKey(STORAGE_KEYS.REMINDERS, uid);
-    // Seed defaults for demo and lakshmi patients if not present
-    if (uid === DEMO_USER_ID && !localStorage.getItem(key)) {
-      setLocal(key, DEFAULT_REMINDERS);
-    } else if (uid === LAKSHMI_USER_ID && !localStorage.getItem(key)) {
-      setLocal(key, LAKSHMI_REMINDERS);
-    }
 
     // Try live FastAPI endpoint
     try {
@@ -414,7 +496,7 @@ export const api = {
           .eq('user_id', targetUuid)
           .order('created_at', { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped = data.map(r => ({
             id: r.id,
             user_id: uid,
@@ -435,12 +517,12 @@ export const api = {
       }
     }
 
-    const defaultList = uid === LAKSHMI_USER_ID ? LAKSHMI_REMINDERS : (uid === DEMO_USER_ID ? DEFAULT_REMINDERS : []);
-    return getLocal(key, defaultList);
+    return getLocal(key, []);
   },
 
   async createReminder(reminderData) {
-    const uid = reminderData.user_id || DEMO_USER_ID;
+    const uid = reminderData.user_id;
+    if (!uid) return { success: false, message: 'No patient selected' };
     const key = patientKey(STORAGE_KEYS.REMINDERS, uid);
     const localReminders = getLocal(key, []);
     
@@ -548,7 +630,8 @@ export const api = {
     return reminders;
   },
 
-  async updateReminder(id, updates, userId = DEMO_USER_ID) {
+  async updateReminder(id, updates, userId) {
+    if (!userId) return null;
     const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
     const localReminders = getLocal(key, []);
     const index = localReminders.findIndex(r => r.id === id);
@@ -557,9 +640,11 @@ export const api = {
       if (updates.is_completed) {
         localReminders[index].completed_at = new Date().toISOString();
         const profileKey = patientKey(STORAGE_KEYS.PROFILE, userId);
-        const profile = getLocal(profileKey, DEFAULT_PROFILE);
-        profile.total_stars = (profile.total_stars || 0) + 2;
-        setLocal(profileKey, profile);
+        const profile = getLocal(profileKey, null);
+        if (profile) {
+          profile.total_stars = (profile.total_stars || 0) + 2;
+          setLocal(profileKey, profile);
+        }
         
         // If this is a recurring instance, create the next occurrence
         if (localReminders[index].is_recurring_instance && localReminders[index].parent_id) {
@@ -609,7 +694,8 @@ export const api = {
   },
 
   // Snooze reminder - updates time to now + specified minutes
-  async snoozeReminder(id, minutes, userId = DEMO_USER_ID) {
+  async snoozeReminder(id, minutes, userId) {
+    if (!userId) return null;
     const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
     const localReminders = getLocal(key, []);
     const index = localReminders.findIndex(r => r.id === id);
@@ -640,7 +726,8 @@ export const api = {
   },
 
   // Mark as "take later" - updates time to 08:00 PM tonight
-  async takeLaterReminder(id, userId = DEMO_USER_ID) {
+  async takeLaterReminder(id, userId) {
+    if (!userId) return null;
     const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
     const localReminders = getLocal(key, []);
     const index = localReminders.findIndex(r => r.id === id);
@@ -705,7 +792,8 @@ export const api = {
     return null;
   },
 
-  async deleteReminder(id, userId = DEMO_USER_ID) {
+  async deleteReminder(id, userId) {
+    if (!userId) return { success: false };
     const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
     const localReminders = getLocal(key, []);
     const filtered = localReminders.filter(r => r.id !== id);
@@ -730,9 +818,9 @@ export const api = {
 
   // Games
   async recordGameResult(resultData) {
-    const userId = resultData.user_id || DEMO_USER_ID;
+    const userId = resultData.user_id || 'guest';
     const gameResultsKey = patientKey(STORAGE_KEYS.GAME_RESULTS, userId);
-    const localResults = getLocal(gameResultsKey, userId === DEMO_USER_ID ? DEFAULT_GAME_RESULTS : []);
+    const localResults = getLocal(gameResultsKey, []);
     const gameType = resultData.game_type;
     
     // Get saved difficulty for this game type
@@ -766,22 +854,22 @@ export const api = {
     setLocal(gameResultsKey, localResults);
     setLocal(STORAGE_KEYS.GAME_RESULTS, localResults);
 
-    // Update stars on patient profile
-    const profileKey = patientKey(STORAGE_KEYS.PROFILE, userId);
-    const defaultProf = userId === LAKSHMI_USER_ID ? LAKSHMI_PROFILE : DEFAULT_PROFILE;
-    const profile = getLocal(profileKey, defaultProf);
-    profile.total_stars = (profile.total_stars || 0) + (resultData.score >= 80 ? 5 : 3);
-    setLocal(profileKey, profile);
-    if (userId === DEMO_USER_ID) {
-      setLocal(STORAGE_KEYS.PROFILE, profile);
-    }
+    // Update stars on patient profile if user exists
+    if (userId && userId !== 'guest') {
+      const profileKey = patientKey(STORAGE_KEYS.PROFILE, userId);
+      const profile = getLocal(profileKey, null);
+      if (profile) {
+        profile.total_stars = (profile.total_stars || 0) + (resultData.score >= 80 ? 5 : 3);
+        setLocal(profileKey, profile);
+      }
 
-    // Also update in allPatients list
-    const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
-    const pIdx = patients.findIndex(p => p.id === userId);
-    if (pIdx !== -1) {
-      patients[pIdx].total_stars = profile.total_stars;
-      setLocal(STORAGE_KEYS.PATIENTS, patients);
+      // Also update in allPatients list
+      const patients = getLocal(STORAGE_KEYS.PATIENTS, []);
+      const pIdx = patients.findIndex(p => p.id === userId);
+      if (pIdx !== -1) {
+        patients[pIdx].total_stars = (patients[pIdx].total_stars || 0) + (resultData.score >= 80 ? 5 : 3);
+        setLocal(STORAGE_KEYS.PATIENTS, patients);
+      }
     }
 
     try {
@@ -795,7 +883,7 @@ export const api = {
     } catch (e) {}
 
     // Direct Supabase telemetry sync
-    if (supabase) {
+    if (supabase && userId && userId !== 'guest') {
       try {
         const targetUuid = toSupabaseUuid(userId);
         const validDiff = ['easy', 'medium', 'hard'].includes(resultData.difficulty) ? resultData.difficulty : 'easy';
@@ -817,16 +905,14 @@ export const api = {
   },
 
   // Get saved difficulty for a game type
-  async getSavedDifficulty(userId = DEMO_USER_ID, gameType) {
+  async getSavedDifficulty(userId = 'guest', gameType) {
     return getSavedDifficulty(userId, gameType);
   },
 
-  async getGameResults(userId = DEMO_USER_ID) {
-    const uid = userId || DEMO_USER_ID;
+  async getGameResults(userId) {
+    if (!userId) return [];
+    const uid = userId;
     const key = patientKey(STORAGE_KEYS.GAME_RESULTS, uid);
-    if (uid === DEMO_USER_ID && !localStorage.getItem(key)) {
-      setLocal(key, DEFAULT_GAME_RESULTS);
-    }
     try {
       const res = await fetch(`${API_BASE}/games/results/${uid}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
@@ -846,7 +932,7 @@ export const api = {
           .eq('user_id', targetUuid)
           .order('played_at', { ascending: false });
 
-        if (!error && data && data.length > 0) {
+        if (!error && data) {
           const mapped = data.map(g => ({
             id: g.id,
             user_id: uid,
@@ -867,12 +953,27 @@ export const api = {
       }
     }
 
-    return getLocal(key, uid === DEMO_USER_ID ? DEFAULT_GAME_RESULTS : []);
+    return getLocal(key, []);
   },
 
   // Caregiver Summary & AI
-  async getCaregiverDashboard(userId = DEMO_USER_ID) {
-    const uid = userId || DEMO_USER_ID;
+  async getCaregiverDashboard(userId) {
+    if (!userId) {
+      return {
+        patient_profile: null,
+        today_activity_count: 0,
+        adherence_percentage: 100,
+        average_cognitive_score: 0,
+        cognitive_trend: "No data",
+        recent_game_scores: [],
+        today_reminders: [],
+        missed_reminders_count: 0,
+        active_alerts: [],
+        recent_activity_timeline: [],
+        score_history_by_game: {}
+      };
+    }
+    const uid = userId;
     try {
       const res = await fetch(`${API_BASE}/caregiver/dashboard/${uid}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) return await res.json();
@@ -881,33 +982,30 @@ export const api = {
     const profile = await this.getUserProfile(uid);
     const reminders = await this.getReminders(uid);
     const games = await this.getGameResults(uid);
-    const alerts = getLocal(STORAGE_KEYS.ALERTS, DEFAULT_ALERTS);
+    const alerts = getLocal(STORAGE_KEYS.ALERTS, []);
 
     const completed = reminders.filter(r => r.is_completed).length;
-    const adherence = Math.round((completed / Math.max(reminders.length, 1)) * 100);
-    const avgScore = games.length > 0 ? Math.round(games.reduce((acc, g) => acc + g.score, 0) / games.length) : 85;
+    const adherence = reminders.length > 0 ? Math.round((completed / reminders.length) * 100) : 100;
+    const avgScore = games.length > 0 ? Math.round(games.reduce((acc, g) => acc + g.score, 0) / games.length) : 0;
 
     return {
       patient_profile: profile,
       today_activity_count: reminders.length + games.length,
       adherence_percentage: adherence,
       average_cognitive_score: avgScore,
-      cognitive_trend: avgScore >= 88 ? "Improving" : (avgScore >= 70 ? "Stable" : "Needs Attention"),
+      cognitive_trend: games.length === 0 ? "No Sessions" : (avgScore >= 88 ? "Improving" : (avgScore >= 70 ? "Stable" : "Needs Attention")),
       recent_game_scores: games.slice(0, 5),
       today_reminders: reminders,
       missed_reminders_count: reminders.filter(r => !r.is_completed).length,
       active_alerts: alerts,
-      recent_activity_timeline: [
-        { id: "log-1", action: "Completed Morning BP Medicine", category: "health", timestamp: "08:32 AM", status: "completed" },
-        { id: "log-2", action: "Played Heritage Memory Match (Easy) - 95%", category: "game", timestamp: "10:15 AM", status: "completed" },
-        { id: "log-3", action: "Drank Fresh Copper Glass Water", category: "hydration", timestamp: "11:02 AM", status: "completed" },
-        { id: "log-4", action: "Voice Query: 'Read my daily reminders'", category: "voice", timestamp: "01:20 PM", status: "completed" },
-      ],
-      score_history_by_game: {
-        "Memory Match": [92, 95, 90, 96, 94],
-        "Sequence Recall": [80, 85, 88, 84, 89],
-        "Object Recognition": [90, 94, 92, 98, 95]
-      }
+      recent_activity_timeline: games.length > 0 || reminders.length > 0 ? reminders.map(r => ({
+        id: `log-${r.id}`,
+        action: `${r.title} (${r.category})`,
+        category: r.category,
+        timestamp: r.time,
+        status: r.is_completed ? "completed" : "pending"
+      })) : [],
+      score_history_by_game: {}
     };
   },
 
@@ -917,108 +1015,71 @@ export const api = {
     const cleanStr = (str) => (str || '').toString().toLowerCase().trim();
     const enteredContact = cleanStr(contact);
     const enteredDigits = cleanDigits(contact);
+    const enteredDigitsShort = enteredDigits.slice(-10);
     const enteredPin = (pin || '').toString().trim();
 
-    try {
-      const res = await fetch(`${API_BASE}/auth/caregiver-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact, pin }),
-        signal: AbortSignal.timeout(3000)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.active_patient) {
-          const act = data.active_patient;
-          setLocal(patientKey(STORAGE_KEYS.PROFILE, act.id), act);
-          setLocal(STORAGE_KEYS.PROFILE, act);
-          localStorage.setItem('ns_profile', JSON.stringify(act));
-          localStorage.setItem('ns_active_patient_id', act.id);
-          if (data.all_patients) setLocal(STORAGE_KEYS.PATIENTS, data.all_patients);
-        }
-        return data;
-      }
-    } catch (e) {}
-
-    // Offline & Supabase Direct Fallback: match contact or PIN against all stored patients
-    const allPatients = getLocal(STORAGE_KEYS.PATIENTS, []);
-    const demoProfile = getLocal(STORAGE_KEYS.PROFILE, null);
-    const nsProfile = getLocal('ns_profile', null);
-    const pDemo = getLocal(patientKey(STORAGE_KEYS.PROFILE, DEMO_USER_ID), null);
-    const pLakshmi = getLocal(patientKey(STORAGE_KEYS.PROFILE, LAKSHMI_USER_ID), null);
-
-    // Combine all patient candidates
+    // 1. Primary Source: Fetch live patient records from Supabase cloud so any device accesses real-time data
     const patientMap = new Map();
-    // Default seed patients
-    INITIAL_PATIENTS.forEach(p => { if (p && p.id) patientMap.set(p.id, p); });
 
-    // Overlay cached profiles
-    if (demoProfile && demoProfile.id) patientMap.set(demoProfile.id, demoProfile);
-    if (nsProfile && nsProfile.id) patientMap.set(nsProfile.id, nsProfile);
-    if (pDemo && pDemo.id) patientMap.set(pDemo.id, pDemo);
-    if (pLakshmi && pLakshmi.id) patientMap.set(pLakshmi.id, pLakshmi);
-    allPatients.forEach(p => { if (p && p.id) patientMap.set(p.id, p); });
-
-    // If Supabase is available, query cloud profiles too
     if (supabase) {
       try {
-        const { data: supaProfiles } = await supabase.from('profiles').select('*').limit(20);
-        if (supaProfiles && supaProfiles.length > 0) {
+        const { data: supaProfiles, error: supaErr } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (!supaErr && supaProfiles && supaProfiles.length > 0) {
           supaProfiles.forEach(sp => {
+            if (sp.role === 'caregiver') return; // Ignore pure caregiver accounts
             const uid = fromSupabaseUuid(sp.id);
-            const localP = patientMap.get(uid) || {};
-            const merged = {
+            const { address: cleanAddress, pin: caregiverPin } = extractPinAndAddress(sp.emergency_contact_address, '1234');
+            patientMap.set(uid, {
               id: uid,
-              name: sp.name || localP.name || 'Patient',
-              email: sp.emergency_contact_email || localP.email || `${uid}@neurosathi.in`,
-              role: sp.role || 'elder',
-              age: sp.age || localP.age || 74,
-              gender: sp.gender || localP.gender || 'Female',
-              blood_group: sp.blood_group || localP.blood_group || 'O+',
-              location: sp.location || localP.location || 'Guwahati, Assam',
-              language_preference: sp.preferred_language || localP.language_preference || 'en',
-              medical_stage: sp.medical_stage || localP.medical_stage || 'Early-stage Dementia / MCI',
-              allergies: sp.allergies || localP.allergies || 'None reported',
-              doctor_name: sp.doctor_name || localP.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
-              doctor_phone: sp.doctor_phone || localP.doctor_phone || '+91 98640 12345',
-              doctor_hospital: sp.doctor_hospital || localP.doctor_hospital || 'Guwahati Neurological Center, Assam',
-              emergency_contact_name: sp.emergency_contact_name || localP.emergency_contact_name || 'Primary Caregiver',
-              emergency_contact_relation: sp.emergency_contact_relation || localP.emergency_contact_relation || 'Family',
-              emergency_contact_phone: sp.emergency_contact_phone || localP.emergency_contact_phone || '+91 98765 43210',
-              emergency_contact_email: sp.emergency_contact_email || localP.emergency_contact_email || 'caregiver@neurosathi.in',
-              emergency_contact_address: sp.emergency_contact_address || localP.emergency_contact_address || 'Guwahati, Assam',
-              current_streak: sp.streak_count || localP.current_streak || 4,
-              total_stars: sp.total_stars || localP.total_stars || 56,
-              caregiver_pin: sp.caregiver_pin || localP.caregiver_pin || '1234',
-              caregiver_notes: localP.caregiver_notes || '',
-              avatar_url: sp.avatar_url || localP.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
-            };
-            patientMap.set(uid, merged);
+              name: sp.name || 'Patient',
+              email: sp.emergency_contact_email || `${uid}@neurosathi.in`,
+              role: 'elder',
+              age: sp.age || 70,
+              gender: sp.gender || 'Female',
+              blood_group: sp.blood_group || 'O+',
+              location: sp.location || 'Guwahati, Assam',
+              language_preference: sp.preferred_language || 'en',
+              medical_stage: sp.medical_stage || 'Early-stage Dementia / MCI',
+              allergies: sp.allergies || 'None reported',
+              doctor_name: sp.doctor_name || '',
+              doctor_phone: sp.doctor_phone || '',
+              doctor_hospital: sp.doctor_hospital || '',
+              emergency_contact_name: sp.emergency_contact_name || 'Primary Caregiver',
+              emergency_contact_relation: sp.emergency_contact_relation || 'Family',
+              emergency_contact_phone: sp.emergency_contact_phone || '',
+              emergency_contact_email: sp.emergency_contact_email || '',
+              emergency_contact_address: cleanAddress,
+              current_streak: sp.streak_count || 1,
+              total_stars: sp.total_stars || 10,
+              caregiver_pin: caregiverPin,
+              avatar_url: sp.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+            });
           });
         }
       } catch (sbErr) {
-        console.warn('Supabase login check notice:', sbErr);
+        console.warn('Supabase login cloud check notice:', sbErr);
       }
     }
 
-    // Rehydrate each candidate with the most granular patient-specific local store
-    for (const [id, p] of patientMap.entries()) {
-      const specific = getLocal(patientKey(STORAGE_KEYS.PROFILE, id), null);
-      if (specific) {
-        patientMap.set(id, { ...p, ...specific });
+    // 2. Also query local storage patients for offline fallback or newly registered local profiles
+    const localPatients = getLocal(STORAGE_KEYS.PATIENTS, []);
+    localPatients.forEach(p => {
+      if (p && p.id && p.role !== 'caregiver' && !patientMap.has(p.id)) {
+        patientMap.set(p.id, p);
       }
-    }
+    });
 
-    const patients = Array.from(patientMap.values());
-    if (patients.length === 0) patients.push(DEFAULT_PROFILE);
+    const allPatientsList = Array.from(patientMap.values());
 
-    const isDemoContact = ['demo', 'democarein', '9876543210', 'demo@care.in'].includes(enteredContact);
-
-    // Step 1: find all patients whose phone (last 10 digits) or email matches the entered contact
-    const candidates = patients.filter(p => {
+    // 3. Find matching patients strictly by real phone number or email
+    const candidates = allPatientsList.filter(p => {
       const pPhoneDigits = cleanDigits(p.emergency_contact_phone).slice(-10);
       const pEmail = cleanStr(p.emergency_contact_email);
-      const enteredDigitsShort = enteredDigits.slice(-10);
 
       const phoneMatches = Boolean(enteredDigitsShort && pPhoneDigits && pPhoneDigits === enteredDigitsShort);
       const emailMatches = Boolean(pEmail && enteredContact && pEmail === enteredContact);
@@ -1026,57 +1087,36 @@ export const api = {
       return phoneMatches || emailMatches;
     });
 
-    let matchedPatient = null;
-
-    if (candidates.length === 1) {
-      matchedPatient = candidates[0];
-    } else if (candidates.length > 1) {
-      // Multiple patients share this contact — disambiguate strictly by PIN
-      matchedPatient = candidates.find(p => String(p.caregiver_pin || '1234').trim() === enteredPin) || null;
-      if (!matchedPatient) {
-        return {
-          success: false,
-          message: 'Multiple patients found for this contact. Please enter the correct PIN for the patient you want to access.'
-        };
-      }
-    } else if (isDemoContact) {
-      matchedPatient = patients.find(p => p.id === DEMO_USER_ID) || patients[0];
-    }
-
-    if (!matchedPatient) {
+    if (candidates.length === 0) {
       return {
         success: false,
-        message: 'No patient record found matching the entered contact. Please check your credentials.'
+        message: `No registered patient record found for "${contact}". Please check the phone number or register a new patient.`
       };
     }
 
-    // Step 2: validate PIN strictly against the matched patient only
-    const storedPin = String(matchedPatient.caregiver_pin || '1234').trim();
-    const pinOk = isDemoContact || storedPin === enteredPin;
+    // 4. Verify 4-digit PIN against registered patient/caregiver PIN
+    const validPinCandidates = candidates.filter(p => {
+      const storedPin = String(p.caregiver_pin || '1234').trim();
+      return storedPin === enteredPin;
+    });
 
-    if (!pinOk) {
+    if (validPinCandidates.length === 0) {
       return {
         success: false,
-        message: 'Incorrect PIN entered for this caregiver account.'
+        message: 'Incorrect 4-digit PIN entered for this caregiver account.'
       };
     }
 
-    // Persist matched patient into active profiles immediately
+    // 6. Select the matched patient
+    const matchedPatient = validPinCandidates[0];
     const activeId = matchedPatient.id;
+
+    // Cache the authenticated patient and patient roster locally
     setLocal(patientKey(STORAGE_KEYS.PROFILE, activeId), matchedPatient);
     setLocal(STORAGE_KEYS.PROFILE, matchedPatient);
     localStorage.setItem('ns_profile', JSON.stringify(matchedPatient));
     localStorage.setItem('ns_active_patient_id', activeId);
-
-    // Filter candidates strictly to patients belonging to THIS caregiver's contact number
-    const myPatientsMap = new Map();
-    candidates.forEach(p => {
-      if (p && p.id && p.role !== 'caregiver') myPatientsMap.set(p.id, p);
-    });
-    if (!myPatientsMap.has(matchedPatient.id)) {
-      myPatientsMap.set(matchedPatient.id, matchedPatient);
-    }
-    const myPatients = Array.from(myPatientsMap.values());
+    setLocal(STORAGE_KEYS.PATIENTS, allPatientsList);
 
     const caregiverInfo = {
       name: matchedPatient.emergency_contact_name || 'Primary Caregiver',
@@ -1089,7 +1129,7 @@ export const api = {
     const sessionData = {
       caregiver: caregiverInfo,
       activePatient: matchedPatient,
-      allPatients: myPatients
+      allPatients: validPinCandidates
     };
     localStorage.setItem('ns_caregiver_session', JSON.stringify(sessionData));
 
@@ -1098,7 +1138,7 @@ export const api = {
       message: 'Caregiver authenticated successfully.',
       caregiver: caregiverInfo,
       active_patient: matchedPatient,
-      all_patients: myPatients
+      all_patients: validPinCandidates
     };
   },
 
@@ -1121,6 +1161,7 @@ export const api = {
           const mapped = data.map(p => {
             const uid = fromSupabaseUuid(p.id);
             const localP = getLocal(patientKey(STORAGE_KEYS.PROFILE, uid), {});
+            const { address: cleanAddress, pin: caregiverPin } = extractPinAndAddress(p.emergency_contact_address, '1234');
             return {
               id: uid,
               name: p.name || localP.name || 'Patient',
@@ -1140,10 +1181,10 @@ export const api = {
               emergency_contact_relation: p.emergency_contact_relation || localP.emergency_contact_relation || 'Family',
               emergency_contact_phone: p.emergency_contact_phone || localP.emergency_contact_phone || '+91 98765 43210',
               emergency_contact_email: p.emergency_contact_email || localP.emergency_contact_email || 'caregiver@neurosathi.in',
-              emergency_contact_address: p.emergency_contact_address || localP.emergency_contact_address || 'Guwahati, Assam',
+              emergency_contact_address: cleanAddress,
               current_streak: p.streak_count || localP.current_streak || 4,
               total_stars: p.total_stars || localP.total_stars || 56,
-              caregiver_pin: p.caregiver_pin || localP.caregiver_pin || '1234',
+              caregiver_pin: caregiverPin,
               caregiver_notes: localP.caregiver_notes || '',
               avatar_url: p.avatar_url || localP.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
             };
@@ -1154,9 +1195,7 @@ export const api = {
       } catch (sbErr) {
         console.warn('Supabase getAllPatients notice:', sbErr);
       }
-    }
-
-    return getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+    }    return getLocal(STORAGE_KEYS.PATIENTS, []);
   },
 
   // Register new patient
@@ -1197,7 +1236,7 @@ export const api = {
     setLocal(patientKey(STORAGE_KEYS.PROFILE, newPatient.id), newPatient);
 
     // 2. Add to global patients roster
-    const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+    const patients = getLocal(STORAGE_KEYS.PATIENTS, []);
     const existingIdx = patients.findIndex(p => p.id === newPatient.id);
     if (existingIdx !== -1) {
       patients[existingIdx] = newPatient;
@@ -1206,73 +1245,48 @@ export const api = {
     }
     setLocal(STORAGE_KEYS.PATIENTS, patients);
 
-    // 3. Create starter default reminders for this newly registered patient
+    // 3. Initialize fresh empty reminders list for this newly registered patient
     const remKey = patientKey(STORAGE_KEYS.REMINDERS, newPatient.id);
-    const starterReminders = [
-      {
-        id: `rem-${Date.now().toString(36)}-1`,
-        user_id: newPatient.id,
-        title: "Morning Fresh Water & Hydration",
-        category: "water",
-        time: "08:30 AM",
-        dosage_or_detail: "1 glass fresh water to stay hydrated",
-        audio_prompt: `Good morning ${newPatient.name}, please drink a refreshing glass of water.`,
-        is_completed: false,
-        icon_name: "Droplet",
-        created_at: new Date().toISOString()
-      },
-      {
-        id: `rem-${Date.now().toString(36)}-2`,
-        user_id: newPatient.id,
-        title: "Afternoon Memory Routine",
-        category: "daily_task",
-        time: "03:00 PM",
-        dosage_or_detail: "Daily cognitive exercise and music",
-        audio_prompt: `Time for a gentle cognitive exercise, ${newPatient.name}.`,
-        is_completed: false,
-        icon_name: "Brain",
-        created_at: new Date().toISOString()
-      }
-    ];
-    setLocal(remKey, starterReminders);
+    setLocal(remKey, []);
 
-    // 4. Direct Supabase cloud insert / upsert
+    // 4. Direct Supabase cloud insert / upsert (encoded PIN in address so it never fails due to missing column)
     if (supabase) {
       try {
         const targetUuid = toSupabaseUuid(newPatient.id);
+        const encodedAddress = formatAddressWithPin(
+          newPatient.emergency_contact_address || newPatient.location,
+          newPatient.caregiver_pin
+        );
         await supabase.from('profiles').upsert({
           id: targetUuid,
           name: newPatient.name,
           role: 'elder',
-          preferred_language: newPatient.language_preference,
           age: newPatient.age,
           gender: newPatient.gender,
           blood_group: newPatient.blood_group,
           location: newPatient.location,
+          preferred_language: newPatient.language_preference,
           medical_stage: newPatient.medical_stage,
           allergies: newPatient.allergies,
-          doctor_name: newPatient.doctor_name || null,
-          doctor_phone: newPatient.doctor_phone || null,
-          doctor_hospital: newPatient.doctor_hospital || null,
+          doctor_name: newPatient.doctor_name,
+          doctor_phone: newPatient.doctor_phone,
+          doctor_hospital: newPatient.doctor_hospital,
           emergency_contact_name: newPatient.emergency_contact_name,
           emergency_contact_relation: newPatient.emergency_contact_relation,
           emergency_contact_phone: newPatient.emergency_contact_phone,
-          emergency_contact_email: newPatient.emergency_contact_email || null,
-          emergency_contact_address: newPatient.emergency_contact_address || null,
-          caregiver_pin: newPatient.caregiver_pin || '1234',
+          emergency_contact_email: newPatient.emergency_contact_email,
+          emergency_contact_address: encodedAddress,
           streak_count: 1,
           total_stars: 10,
-          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
       } catch (sbErr) {
-        console.warn('Supabase registerPatient cloud insert notice:', sbErr);
+        console.warn('Supabase registerPatient upsert notice:', sbErr);
       }
     }
 
-    // 5. Try live FastAPI backend
     try {
-      const res = await fetch(`${API_BASE}/users`, {
+      const res = await fetch(`${API_BASE}/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newPatient),
@@ -1282,7 +1296,7 @@ export const api = {
         const backendPatient = await res.json();
         const merged = { ...newPatient, ...backendPatient };
         setLocal(patientKey(STORAGE_KEYS.PROFILE, merged.id), merged);
-        const updatedPatients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS).map(p =>
+        const updatedPatients = getLocal(STORAGE_KEYS.PATIENTS, []).map(p =>
           p.id === newPatient.id ? merged : p
         );
         setLocal(STORAGE_KEYS.PATIENTS, updatedPatients);
@@ -1295,8 +1309,9 @@ export const api = {
 
   // Update patient details — two-way synced across Caregiver & Elder views and persisted in Supabase
   async updatePatient(userId, updates) {
+    if (!userId) return { success: false, message: 'No patient selected' };
     const profileKey = patientKey(STORAGE_KEYS.PROFILE, userId);
-    const current = getLocal(profileKey, getLocal(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE));
+    const current = getLocal(profileKey, getLocal(STORAGE_KEYS.PROFILE, {})) || {};
     const updated = { ...current, ...updates, id: userId };
 
     // 1. Save patient-specific store
@@ -1308,7 +1323,7 @@ export const api = {
     localStorage.setItem('ns_active_patient_id', userId);
 
     // 3. Update in allPatients list
-    const patients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+    const patients = getLocal(STORAGE_KEYS.PATIENTS, []);
     const idx = patients.findIndex(p => p.id === userId);
     if (idx !== -1) {
       patients[idx] = updated;
@@ -1350,8 +1365,11 @@ export const api = {
         if (updates.emergency_contact_relation !== undefined) sbUpdates.emergency_contact_relation = updates.emergency_contact_relation;
         if (updates.emergency_contact_phone !== undefined) sbUpdates.emergency_contact_phone = updates.emergency_contact_phone;
         if (updates.emergency_contact_email !== undefined) sbUpdates.emergency_contact_email = updates.emergency_contact_email;
-        if (updates.emergency_contact_address !== undefined) sbUpdates.emergency_contact_address = updates.emergency_contact_address;
-        if (updates.caregiver_pin !== undefined) sbUpdates.caregiver_pin = updates.caregiver_pin;
+        if (updates.emergency_contact_address !== undefined || updates.caregiver_pin !== undefined) {
+          const pinVal = updates.caregiver_pin || updated.caregiver_pin || '1234';
+          const addrVal = updates.emergency_contact_address !== undefined ? updates.emergency_contact_address : (updated.emergency_contact_address || updated.location);
+          sbUpdates.emergency_contact_address = formatAddressWithPin(addrVal, pinVal);
+        }
         if (updates.total_stars !== undefined) sbUpdates.total_stars = updates.total_stars;
         if (updates.current_streak !== undefined) sbUpdates.streak_count = updates.current_streak;
 
@@ -1376,14 +1394,10 @@ export const api = {
   },
 
   // Get user profile — per-patient namespaced with fallback merging
-  async getUserProfile(userId = DEMO_USER_ID) {
-    const uid = userId || DEMO_USER_ID;
+  async getUserProfile(userId) {
+    if (!userId) return null;
+    const uid = userId;
     const key = patientKey(STORAGE_KEYS.PROFILE, uid);
-    if (uid === DEMO_USER_ID && !localStorage.getItem(key)) {
-      setLocal(key, DEFAULT_PROFILE);
-    } else if (uid === LAKSHMI_USER_ID && !localStorage.getItem(key)) {
-      setLocal(key, LAKSHMI_PROFILE);
-    }
 
     // Try FastAPI first
     try {
@@ -1404,29 +1418,30 @@ export const api = {
         const { data, error } = await supabase.from('profiles').select('*').eq('id', targetUuid).single();
         if (!error && data) {
           const localProf = getLocal(key, {});
+          const { address: cleanAddress, pin: caregiverPin } = extractPinAndAddress(data.emergency_contact_address, '1234');
           const profile = {
             id: uid,
             name: data.name || localProf.name || 'Patient',
             email: data.emergency_contact_email || localProf.email || `${uid}@neurosathi.in`,
             role: data.role || 'elder',
-            age: data.age || localProf.age || 74,
+            age: data.age || localProf.age || 70,
             gender: data.gender || localProf.gender || 'Female',
             blood_group: data.blood_group || localProf.blood_group || 'O+',
             location: data.location || localProf.location || 'Guwahati, Assam',
             language_preference: data.preferred_language || localProf.language_preference || 'en',
             medical_stage: data.medical_stage || localProf.medical_stage || 'Early-stage Dementia / MCI',
             allergies: data.allergies || localProf.allergies || 'None reported',
-            doctor_name: data.doctor_name || localProf.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
-            doctor_phone: data.doctor_phone || localProf.doctor_phone || '+91 98640 12345',
-            doctor_hospital: data.doctor_hospital || localProf.doctor_hospital || 'Guwahati Neurological Center, Assam',
+            doctor_name: data.doctor_name || localProf.doctor_name || '',
+            doctor_phone: data.doctor_phone || localProf.doctor_phone || '',
+            doctor_hospital: data.doctor_hospital || localProf.doctor_hospital || '',
             emergency_contact_name: data.emergency_contact_name || localProf.emergency_contact_name || 'Primary Caregiver',
             emergency_contact_relation: data.emergency_contact_relation || localProf.emergency_contact_relation || 'Family',
-            emergency_contact_phone: data.emergency_contact_phone || localProf.emergency_contact_phone || '+91 98765 43210',
-            emergency_contact_email: data.emergency_contact_email || localProf.emergency_contact_email || 'caregiver@neurosathi.in',
-            emergency_contact_address: data.emergency_contact_address || localProf.emergency_contact_address || 'Guwahati, Assam',
-            current_streak: data.streak_count || localProf.current_streak || 4,
-            total_stars: data.total_stars || localProf.total_stars || 56,
-            caregiver_pin: data.caregiver_pin || localProf.caregiver_pin || '1234',
+            emergency_contact_phone: data.emergency_contact_phone || localProf.emergency_contact_phone || '',
+            emergency_contact_email: data.emergency_contact_email || localProf.emergency_contact_email || '',
+            emergency_contact_address: cleanAddress,
+            current_streak: data.streak_count || localProf.current_streak || 1,
+            total_stars: data.total_stars || localProf.total_stars || 10,
+            caregiver_pin: caregiverPin,
             caregiver_notes: localProf.caregiver_notes || '',
             avatar_url: data.avatar_url || localProf.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
           };
@@ -1443,18 +1458,19 @@ export const api = {
     if (cached) return cached;
 
     // Check allPatients
-    const allPatients = getLocal(STORAGE_KEYS.PATIENTS, INITIAL_PATIENTS);
+    const allPatients = getLocal(STORAGE_KEYS.PATIENTS, []);
     const found = allPatients.find(p => p.id === uid);
     if (found) {
       setLocal(key, found);
       return found;
     }
 
-    return uid === LAKSHMI_USER_ID ? LAKSHMI_PROFILE : DEFAULT_PROFILE;
+    return null;
   },
 
-  async getAIRecommendation(userId = DEMO_USER_ID) {
-    const uid = userId || DEMO_USER_ID;
+  async getAIRecommendation(userId) {
+    if (!userId) return null;
+    const uid = userId;
     try {
       const res = await fetch(`${API_BASE}/ai/recommendation`, {
         method: 'POST',

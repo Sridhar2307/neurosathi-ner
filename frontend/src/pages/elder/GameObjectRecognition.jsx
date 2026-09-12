@@ -35,7 +35,7 @@ export default function GameObjectRecognition() {
   // Load saved difficulty on mount
   useEffect(() => {
     const loadDifficulty = async () => {
-      const saved = await api.getSavedDifficulty(activePatientId || "demo-user-123", "object_recognition");
+      const saved = await api.getSavedDifficulty(activePatientId || "guest", "object_recognition");
       setDifficulty(saved);
     };
     loadDifficulty();
@@ -76,7 +76,7 @@ export default function GameObjectRecognition() {
 
       const finalScore = Math.max(50, score);
       const res = await api.recordGameResult({
-        user_id: activePatientId || "demo-user-123",
+        user_id: activePatientId || "guest",
         game_type: "object_recognition",
         difficulty: difficulty,
         score: finalScore,

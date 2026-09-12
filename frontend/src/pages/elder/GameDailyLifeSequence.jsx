@@ -116,11 +116,11 @@ export default function GameDailyLifeSequence() {
   // Load saved difficulty on mount
   useEffect(() => {
     const loadDifficulty = async () => {
-      const saved = await api.getSavedDifficulty("demo-user-123", "daily_life_sequence");
+      const saved = await api.getSavedDifficulty(activePatientId || "guest", "daily_life_sequence");
       setDifficulty(saved);
     };
     loadDifficulty();
-  }, []);
+  }, [activePatientId]);
 
   const startNewGame = () => {
     const sequence = DAILY_LIFE_SEQUENCES[Math.floor(Math.random() * DAILY_LIFE_SEQUENCES.length)];
@@ -192,7 +192,7 @@ export default function GameDailyLifeSequence() {
     const finalScore = Math.max(55, Math.min(100, baseScore - penalty));
 
     const result = await api.recordGameResult({
-      user_id: activePatientId || "demo-user-123",
+      user_id: activePatientId || "guest",
       game_type: "daily_life_sequence",
       difficulty: difficulty,
       score: finalScore,

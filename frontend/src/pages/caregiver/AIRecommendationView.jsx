@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAccessibility } from '../../context/AccessibilityContext';
 import { api } from '../../services/api';
 import {
   ArrowLeft,
@@ -14,6 +15,7 @@ import {
 
 export default function AIRecommendationView() {
   const { navigateTo, activePatientId, activePatient } = useApp();
+  const { t } = useAccessibility();
   const [rec, setRec] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +37,7 @@ export default function AIRecommendationView() {
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700 transition"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Overview</span>
+          <span>{t.overview ? `← ${t.overview}` : (t.backToHome || "Back to Overview")}</span>
         </button>
       </div>
 
