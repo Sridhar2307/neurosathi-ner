@@ -78,48 +78,12 @@ if SUPABASE_URL and SUPABASE_ANON_KEY and "http" in SUPABASE_URL:
 
 class HybridDatabase:
     def __init__(self):
-        lakshmi = get_initial_lakshmi()
-        bhaben = get_initial_user()
-        self.users: Dict[str, UserProfile] = {
-            LAKSHMI_USER_ID: lakshmi,
-            DEMO_USER_ID: bhaben
-        }
-        self.devices: Dict[str, Dict[str, Any]] = {
-            "NS-DEV-LAKSHMI-01": {
-                "device_identifier": "NS-DEV-LAKSHMI-01",
-                "patient_id": LAKSHMI_USER_ID,
-                "device_name": "Lakshmi Living Room Tablet",
-                "paired_at": datetime.now().isoformat(),
-                "active": True,
-                "pin_enabled": False,
-                "hashed_pin": hashlib.sha256("1234".encode()).hexdigest()
-            }
-        }
-        self.reminders: Dict[str, Reminder] = {r.id: r for r in get_initial_reminders()}
-        # Add starter reminder for Lakshmi
-        lakshmi_rem = Reminder(
-            id="rem-lakshmi-1",
-            user_id=LAKSHMI_USER_ID,
-            title="Morning Herbal Tea & Blood Pressure Tablet",
-            category="medicine",
-            time="08:30 AM",
-            dosage_or_detail="1 tablet with fresh morning tea",
-            audio_prompt="Lakshmi, time for your morning tea and medication.",
-            is_completed=True,
-            completed_at=datetime.now().isoformat(),
-            icon_name="Pill",
-            created_at=datetime.now().isoformat()
-        )
-        self.reminders[lakshmi_rem.id] = lakshmi_rem
-        self.game_results: List[GameResult] = get_initial_game_results()
-        self.alerts: List[CaregiverAlert] = get_initial_caregiver_alerts()
-        self.activity_logs: List[Dict[str, Any]] = [
-            {"id": "log-1", "user_id": LAKSHMI_USER_ID, "action": "Device Paired for Lakshmi Devi", "category": "device", "timestamp": "08:00 AM", "status": "completed"},
-            {"id": "log-2", "user_id": LAKSHMI_USER_ID, "action": "Completed Morning Herbal Tea & BP Tablet", "category": "health", "timestamp": "08:32 AM", "status": "completed"},
-            {"id": "log-3", "user_id": DEMO_USER_ID, "action": "Played Memory Match (Easy) - Score: 95%", "category": "game", "timestamp": "10:15 AM", "status": "completed"},
-            {"id": "log-4", "user_id": DEMO_USER_ID, "action": "Drank Fresh Copper Glass Water", "category": "hydration", "timestamp": "11:02 AM", "status": "completed"},
-            {"id": "log-5", "user_id": DEMO_USER_ID, "action": "Voice Query: 'What are my afternoon tasks?'", "category": "voice", "timestamp": "01:20 PM", "status": "completed"},
-        ]
+        self.users: Dict[str, UserProfile] = {}
+        self.devices: Dict[str, Dict[str, Any]] = {}
+        self.reminders: Dict[str, Reminder] = {}
+        self.game_results: List[GameResult] = []
+        self.alerts: List[CaregiverAlert] = []
+        self.activity_logs: List[Dict[str, Any]] = []
 
         # Sync live data from Supabase if connected
         if supabase:

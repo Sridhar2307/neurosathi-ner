@@ -335,33 +335,61 @@ function saveDifficulty(userId, gameType, difficulty) {
   setLocal(difficultyKey(userId, gameType), difficulty);
 }
 
-// Helper: Purge legacy/mock demo data while strictly preserving real logged-in patient & caregiver data
+// Helper: Purge legacy/previous patient records and ensure a clean slate for new patient registrations
 export function cleanupDemoData() {
   try {
-    const DEMO_IDS = ['demo-user-123', 'patient-lakshmi-demo'];
+    const WIPE_VERSION_KEY = 'ns_patient_wipe_v2026_09_12';
 
-    // 1. If caregiver session active patient is a demo user, clear it; otherwise preserve real caregiver session!
-    const rawSession = localStorage.getItem('ns_caregiver_session');
-    if (rawSession) {
-      try {
-        const session = JSON.parse(rawSession);
-        if (session?.activePatient?.id && DEMO_IDS.includes(session.activePatient.id)) {
-          localStorage.removeItem('ns_caregiver_session');
-        } else if (session?.allPatients) {
-          session.allPatients = session.allPatients.filter(p => p && !DEMO_IDS.includes(p.id) && !['Bhaben Kalita', 'Lakshmi Devi'].includes(p.name));
-          localStorage.setItem('ns_caregiver_session', JSON.stringify(session));
-        }
-      } catch (e) {}
-    }
-
-    // 2. Active patient ID: clear if demo, preserve if real
-    const activePatId = localStorage.getItem('ns_active_patient_id');
-    if (activePatId && DEMO_IDS.includes(activePatId)) {
+    if (!localStorage.getItem(WIPE_VERSION_KEY)) {
+      // 1. Remove active patient pointers and caches
       localStorage.removeItem('ns_active_patient_id');
       localStorage.removeItem('ns_profile');
+      localStorage.removeItem('neurosathi_profile');
+      localStorage.removeItem('ns_all_patients');
+      localStorage.removeItem('neurosathi_reminders');
+      localStorage.removeItem('neurosathi_game_results');
+      localStorage.removeItem('neurosathi_alerts');
+
+      // If user was on elder view with old patient, return to landing
+      if (localStorage.getItem('ns_appMode') === 'elder') {
+        localStorage.removeItem('ns_appMode');
+      }
+
+      // 2. Clean caregiver session: preserve caregiver login credentials but reset patient lists
+      const rawSession = localStorage.getItem('ns_caregiver_session');
+      if (rawSession) {
+        try {
+          const session = JSON.parse(rawSession);
+          if (session && typeof session === 'object') {
+            session.activePatient = null;
+            session.allPatients = [];
+            localStorage.setItem('ns_caregiver_session', JSON.stringify(session));
+          }
+        } catch (e) {
+          localStorage.removeItem('ns_caregiver_session');
+        }
+      }
+
+      // 3. Remove all per-patient storage keys
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (
+          k &&
+          (k.startsWith('neurosathi_profile_') ||
+           k.startsWith('neurosathi_reminders_') ||
+           k.startsWith('neurosathi_game_results_') ||
+           k.startsWith('neurosathi_game_difficulty_'))
+        ) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+
+      localStorage.setItem(WIPE_VERSION_KEY, 'true');
     }
 
-    // 3. Remove all mock / demo-specific storage keys
+    const DEMO_IDS = ['demo-user-123', 'patient-lakshmi-demo'];
     DEMO_IDS.forEach(demoId => {
       localStorage.removeItem(`neurosathi_profile_${demoId}`);
       localStorage.removeItem(`neurosathi_reminders_${demoId}`);
@@ -371,59 +399,6 @@ export function cleanupDemoData() {
       localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_object_recognition`);
       localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_daily_life_sequence`);
     });
-
-    // 4. Clean global patients roster: keep ONLY real registered patients
-    const rawPatients = localStorage.getItem('ns_all_patients');
-    if (rawPatients) {
-      try {
-        const parsed = JSON.parse(rawPatients);
-        if (Array.isArray(parsed)) {
-          const realPatients = parsed.filter(p => p && !DEMO_IDS.includes(p.id) && !['Bhaben Kalita', 'Lakshmi Devi'].includes(p.name));
-          localStorage.setItem('ns_all_patients', JSON.stringify(realPatients));
-        }
-      } catch (e) {}
-    }
-
-    // 5. Clean generic fallback keys if they contain demo mock data
-    const rawProfile = localStorage.getItem('neurosathi_profile');
-    if (rawProfile) {
-      try {
-        const p = JSON.parse(rawProfile);
-        if (p && (DEMO_IDS.includes(p.id) || ['Bhaben Kalita', 'Lakshmi Devi'].includes(p.name))) {
-          localStorage.removeItem('neurosathi_profile');
-        }
-      } catch (e) {}
-    }
-
-    const rawReminders = localStorage.getItem('neurosathi_reminders');
-    if (rawReminders) {
-      try {
-        const rems = JSON.parse(rawReminders);
-        if (Array.isArray(rems) && rems.some(r => r.id === 'rem-1' || r.id === 'rem-lakshmi-1' || DEMO_IDS.includes(r.user_id))) {
-          localStorage.removeItem('neurosathi_reminders');
-        }
-      } catch (e) {}
-    }
-
-    const rawGames = localStorage.getItem('neurosathi_game_results');
-    if (rawGames) {
-      try {
-        const games = JSON.parse(rawGames);
-        if (Array.isArray(games) && games.some(g => g.id === 'gr-1' || DEMO_IDS.includes(g.user_id))) {
-          localStorage.removeItem('neurosathi_game_results');
-        }
-      } catch (e) {}
-    }
-
-    const rawAlerts = localStorage.getItem('neurosathi_alerts');
-    if (rawAlerts) {
-      try {
-        const alerts = JSON.parse(rawAlerts);
-        if (Array.isArray(alerts) && alerts.some(a => a.id === 'alt-1' || DEMO_IDS.includes(a.user_id))) {
-          localStorage.removeItem('neurosathi_alerts');
-        }
-      } catch (e) {}
-    }
   } catch (err) {
     console.warn('cleanupDemoData notice:', err);
   }
