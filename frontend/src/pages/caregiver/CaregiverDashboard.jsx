@@ -10,7 +10,7 @@ import {
   ShieldCheck, User, Heart, Brain, Bell, AlertTriangle, Sparkles,
   TrendingUp, Activity, CheckCircle2, Plus,
   ChevronDown, ChevronUp, Stethoscope, MapPin, Droplets, FileText,
-  LogOut, Users, Edit3, Phone, Mail, X,
+  LogOut, Users, Edit3, Phone, Mail, X, UserPlus,
   Download, FileSpreadsheet, FileType, Printer
 } from 'lucide-react';
 
@@ -270,6 +270,150 @@ function EditPatientModal({ patient, onClose, onSave }) {
   );
 }
 
+// ── Register Patient Modal ──────────────────────────────────────────────────
+function RegisterPatientModal({ defaultCaregiver, onClose, onRegister }) {
+  const { t } = useAccessibility();
+  const [form, setForm] = useState({
+    name: '',
+    age: '72',
+    gender: 'Male',
+    blood_group: '',
+    location: 'Guwahati, Assam',
+    medical_stage: 'Early-stage Dementia / MCI',
+    allergies: 'None reported',
+    doctor_name: '',
+    doctor_phone: '',
+    doctor_hospital: '',
+    emergency_contact_name: defaultCaregiver?.name || 'Primary Caregiver',
+    emergency_contact_relation: defaultCaregiver?.relation || 'Family',
+    emergency_contact_phone: defaultCaregiver?.phone || defaultCaregiver?.contact || '',
+    emergency_contact_email: defaultCaregiver?.email || '',
+    emergency_contact_address: 'Guwahati, Assam',
+    caregiver_notes: '',
+    caregiver_pin: '',
+    language_preference: 'en',
+  });
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const upd = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) { setError('Patient name is required.'); return; }
+    if (!form.emergency_contact_phone.trim()) { setError('Caregiver phone number is required.'); return; }
+    if (!form.caregiver_pin?.trim() || form.caregiver_pin.trim().length < 4) {
+      setError('Please set a 4-digit PIN for your caregiver login.');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    await onRegister({ ...form, age: form.age ? parseInt(form.age) : 70 });
+    setSubmitting(false);
+  };
+
+  const INPUT = 'w-full bg-slate-900/70 border border-slate-600 rounded-xl px-3 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm';
+  const LBL = 'text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-8">
+      <div className="bg-slate-800 border border-slate-700 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <UserPlus className="w-5 h-5 text-emerald-400" /> Register New Patient
+          </h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {error && (
+            <div className="p-3 bg-red-900/40 border border-red-500 text-red-200 text-sm rounded-xl">
+              {error}
+            </div>
+          )}
+          <div className="space-y-3">
+            <p className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5" /> Patient Personal Details
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className={LBL}>Full Name *</label>
+                <input className={INPUT} placeholder="e.g. Bhabesh Baruah" value={form.name} onChange={e => upd('name', e.target.value)} required />
+              </div>
+              <div>
+                <label className={LBL}>Age</label>
+                <input type="number" className={INPUT} placeholder="72" value={form.age} onChange={e => upd('age', e.target.value)} />
+              </div>
+              <div>
+                <label className={LBL}>Gender</label>
+                <select className={INPUT} value={form.gender} onChange={e => upd('gender', e.target.value)}>
+                  <option>Male</option><option>Female</option><option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label className={LBL}>Blood Group</label>
+                <select className={INPUT} value={form.blood_group} onChange={e => upd('blood_group', e.target.value)}>
+                  <option value="">Select...</option>
+                  {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(bg => <option key={bg}>{bg}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={LBL}>Location (NER Region)</label>
+                <input className={INPUT} placeholder="e.g. Guwahati, Assam" value={form.location} onChange={e => upd('location', e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <p className="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Stethoscope className="w-3.5 h-3.5" /> Medical Info
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className={LBL}>Medical Stage</label>
+                <select className={INPUT} value={form.medical_stage} onChange={e => upd('medical_stage', e.target.value)}>
+                  <option>Early-stage Dementia / MCI</option>
+                  <option>Moderate Alzheimer's</option>
+                  <option>Advanced Dementia</option>
+                  <option>Post-stroke Cognitive Impairment</option>
+                  <option>Other / Undiagnosed</option>
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className={LBL}>Known Allergies</label>
+                <input className={INPUT} placeholder="e.g. None reported" value={form.allergies} onChange={e => upd('allergies', e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <p className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" /> Caregiver Authentication
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={LBL}>Caregiver Phone *</label>
+                <input className={INPUT} placeholder="e.g. 9876543210" value={form.emergency_contact_phone} onChange={e => upd('emergency_contact_phone', e.target.value)} required />
+              </div>
+              <div>
+                <label className={LBL}>Caregiver PIN (4 digits) *</label>
+                <input type="password" maxLength={6} placeholder="e.g. 1234" className={`${INPUT} tracking-widest`} value={form.caregiver_pin} onChange={e => upd('caregiver_pin', e.target.value.replace(/\D/g, ''))} required />
+              </div>
+            </div>
+          </div>
+          <div className="sticky bottom-0 bg-slate-800 border-t border-slate-700 px-6 py-4 flex gap-3 -mx-6 -mb-6 rounded-b-3xl">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-600 text-slate-300 hover:text-white font-bold text-sm transition">
+              {t.cancel || "Cancel"}
+            </button>
+            <button type="submit" disabled={submitting} className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold text-sm transition">
+              {submitting ? 'Registering...' : (t.registerPatient || 'Register Patient')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function CaregiverDashboard() {
   const {
@@ -285,6 +429,7 @@ export default function CaregiverDashboard() {
   const [showPatientDetails, setShowPatientDetails] = useState(false);
   const [showPatientSwitcher, setShowPatientSwitcher] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Patient shown in dashboard (from session or fallback)
@@ -345,6 +490,27 @@ export default function CaregiverDashboard() {
     const dash = await api.getCaregiverDashboard(activePatientId);
     setData(dash);
     showToast('Patient details updated successfully ✓');
+  };
+
+  const handleRegisterPatient = async (patientData) => {
+    const res = await api.registerPatient(patientData);
+    if (res.success && res.patient) {
+      const newP = res.patient;
+      const updatedAll = [...(caregiverSession?.allPatients || []), newP];
+      const updatedSession = {
+        ...caregiverSession,
+        activePatient: newP,
+        allPatients: updatedAll
+      };
+      setCaregiverSession(updatedSession);
+      setPatientsList(cleanPatients(updatedAll));
+      setShowRegisterModal(false);
+      const dash = await api.getCaregiverDashboard(newP.id);
+      setData(dash);
+      showToast(`✓ Registered and activated profile for ${newP.name}!`);
+    } else {
+      showToast('Registration notice: ' + (res.message || 'Please check input fields'));
+    }
   };
 
   // Export Handlers
@@ -527,6 +693,14 @@ export default function CaregiverDashboard() {
         />
       )}
 
+      {showRegisterModal && (
+        <RegisterPatientModal
+          defaultCaregiver={caregiverSession?.caregiver}
+          onClose={() => setShowRegisterModal(false)}
+          onRegister={handleRegisterPatient}
+        />
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8 bg-slate-900 min-h-screen text-slate-100">
 
         {/* ── Top Patient Summary Card ─────────────────────────────────────── */}
@@ -607,6 +781,14 @@ export default function CaregiverDashboard() {
                   )}
                 </div>
               )}
+
+              <button
+                onClick={() => setShowRegisterModal(true)}
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-700/80 hover:bg-emerald-600 text-white font-bold text-sm flex items-center gap-2 transition border border-emerald-500 shadow-sm"
+              >
+                <UserPlus className="w-4 h-4 text-emerald-300" />
+                <span className="hidden sm:inline">{t.registerPatient || "Register Patient"}</span>
+              </button>
 
               <button
                 onClick={() => setShowEditModal(true)}

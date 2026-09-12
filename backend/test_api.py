@@ -32,12 +32,7 @@ def test_user_profile():
     print("[PASS] User profile check passed.")
 
 def test_reminders_crud():
-    # 1. Get Reminders
-    res = client.get("/reminders/demo-user-123")
-    assert res.status_code == 200
-    assert len(res.json()) >= 1
-    
-    # 2. Create Reminder
+    # 1. Create Reminder
     create_res = client.post("/reminders", json={
         "user_id": "demo-user-123",
         "title": "Evening Assam Tea & Biscuits",
@@ -48,6 +43,11 @@ def test_reminders_crud():
     })
     assert create_res.status_code == 201
     created_id = create_res.json()["id"]
+
+    # 2. Get Reminders (assert at least the newly created one is returned)
+    res = client.get("/reminders/demo-user-123")
+    assert res.status_code == 200
+    assert len(res.json()) >= 1
 
     # 3. Update Reminder
     update_res = client.put(f"/reminders/{created_id}", json={

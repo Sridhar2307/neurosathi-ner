@@ -20,7 +20,8 @@ export default function ReminderAlertModal() {
     activeReminderAlert,
     closeReminderAlert,
     refreshUserData,
-    showToast
+    showToast,
+    activePatientId
   } = useApp();
   const { speakText, stopSpeaking, t } = useAccessibility();
 
@@ -46,6 +47,8 @@ export default function ReminderAlertModal() {
 
   if (!activeReminderAlert) return null;
 
+  const targetUid = activeReminderAlert.user_id || activePatientId;
+
   const handlePlaySound = () => {
     speechService.playHighAlertSound(3);
   };
@@ -59,7 +62,7 @@ export default function ReminderAlertModal() {
   const handleComplete = async () => {
     try {
       if (activeReminderAlert.id) {
-        await api.updateReminder(activeReminderAlert.id, { is_completed: true });
+        await api.updateReminder(activeReminderAlert.id, { is_completed: true }, targetUid);
       }
       speechService.playSuccessChime();
       speakText(`${activeReminderAlert.title} - ${t.done || 'Done'}`);
@@ -75,7 +78,7 @@ export default function ReminderAlertModal() {
   const handleSnooze = async (minutes = 10) => {
     try {
       if (activeReminderAlert.id) {
-        const snoozed = await api.snoozeReminder(activeReminderAlert.id, minutes);
+        const snoozed = await api.snoozeReminder(activeReminderAlert.id, minutes, targetUid);
         const newTime = snoozed?.time || `${minutes}m`;
         speakText(`${t.snooze10m || 'Snooze'}: ${activeReminderAlert.title}`);
         showToast(`⏰ ${t.snooze10m || 'Snooze'}: ${activeReminderAlert.title} (${newTime})`, 4000, 'reminder');

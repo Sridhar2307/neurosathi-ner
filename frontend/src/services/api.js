@@ -593,15 +593,16 @@ export const api = {
   },
 
   async updateReminder(id, updates, userId) {
-    if (!userId) return null;
-    const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
+    const effectiveUserId = userId || updates?.user_id || localStorage.getItem('ns_active_patient_id');
+    if (!effectiveUserId) return null;
+    const key = patientKey(STORAGE_KEYS.REMINDERS, effectiveUserId);
     const localReminders = getLocal(key, []);
     const index = localReminders.findIndex(r => r.id === id);
     if (index !== -1) {
       localReminders[index] = { ...localReminders[index], ...updates };
       if (updates.is_completed) {
         localReminders[index].completed_at = new Date().toISOString();
-        const profileKey = patientKey(STORAGE_KEYS.PROFILE, userId);
+        const profileKey = patientKey(STORAGE_KEYS.PROFILE, effectiveUserId);
         const profile = getLocal(profileKey, null);
         if (profile) {
           profile.total_stars = (profile.total_stars || 0) + 2;
@@ -657,8 +658,9 @@ export const api = {
 
   // Snooze reminder - updates time to now + specified minutes
   async snoozeReminder(id, minutes, userId) {
-    if (!userId) return null;
-    const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
+    const effectiveUserId = userId || localStorage.getItem('ns_active_patient_id');
+    if (!effectiveUserId) return null;
+    const key = patientKey(STORAGE_KEYS.REMINDERS, effectiveUserId);
     const localReminders = getLocal(key, []);
     const index = localReminders.findIndex(r => r.id === id);
     if (index !== -1) {
@@ -689,8 +691,9 @@ export const api = {
 
   // Mark as "take later" - updates time to 08:00 PM tonight
   async takeLaterReminder(id, userId) {
-    if (!userId) return null;
-    const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
+    const effectiveUserId = userId || localStorage.getItem('ns_active_patient_id');
+    if (!effectiveUserId) return null;
+    const key = patientKey(STORAGE_KEYS.REMINDERS, effectiveUserId);
     const localReminders = getLocal(key, []);
     const index = localReminders.findIndex(r => r.id === id);
     if (index !== -1) {
@@ -755,8 +758,9 @@ export const api = {
   },
 
   async deleteReminder(id, userId) {
-    if (!userId) return { success: false };
-    const key = patientKey(STORAGE_KEYS.REMINDERS, userId);
+    const effectiveUserId = userId || localStorage.getItem('ns_active_patient_id');
+    if (!effectiveUserId) return { success: false };
+    const key = patientKey(STORAGE_KEYS.REMINDERS, effectiveUserId);
     const localReminders = getLocal(key, []);
     const filtered = localReminders.filter(r => r.id !== id);
     setLocal(key, filtered);
@@ -853,7 +857,7 @@ export const api = {
           user_id: targetUuid,
           game_slug: resultData.game_type || 'memory_match',
           score: Math.round(resultData.score || 0),
-          duration_seconds: Math.round(resultData.time_taken_seconds || 60),
+          duration_seconds: Math.round(resultData.duration_seconds || resultData.time_taken_seconds || 0),
           difficulty: validDiff,
           mistakes: Math.round(resultData.mistakes || 0),
           stars_earned: (resultData.score >= 80 ? 5 : 3)
