@@ -6,6 +6,11 @@
   publish = "dist"
   command = "npm run build"
 
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+
 # Single Page App (SPA) redirect rule
 [[redirects]]
   from = "/*"
@@ -32,5 +37,3 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-[build.environment]
-  NODE_VERSION = "20"
