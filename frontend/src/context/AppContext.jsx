@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { useAccessibility } from './AccessibilityContext';
 import { api, cleanupDemoData } from '../services/api';
 import { isReminderDueNow } from '../services/reminderScheduler';
+import { notificationService } from '../services/notificationService';
 
 const AppContext = createContext();
 
@@ -169,12 +170,21 @@ export const AppProvider = ({ children }) => {
         for (const rem of pending) {
           if (!rem.time) continue;
 
-          // Check if due right now (at current minute)
-          if (isReminderDueNow(rem.time, 1)) {
-            const triggerKey = `${rem.id}_${rem.time}_${todayStr}`;
+          // Check if due right now (at current minute and matching scheduled date)
+          if (isReminderDueNow(rem.time, rem.date, 1)) {
+            const triggerKey = `${rem.id}_${rem.time}_${rem.date || todayStr}_${todayStr}`;
             if (!triggeredRemindersRef.current.has(triggerKey)) {
               triggeredRemindersRef.current.add(triggerKey);
               setActiveReminderAlert(rem);
+
+              // Trigger native OS notification bar pop-up (visible even if tab is minimized / backgrounded)
+              notificationService.showSystemNotification({
+                title: `🚨 ${rem.title || 'Reminder Alert'}`,
+                body: `${rem.time}${rem.date ? ` (${rem.date})` : ''} - ${rem.dosage_or_detail || 'Please check your scheduled routine.'}`,
+                tag: `reminder-${rem.id}`,
+                data: { reminderId: rem.id, url: '/' }
+              });
+
               break; // Pop up one reminder at a time
             }
           }
@@ -198,6 +208,15 @@ export const AppProvider = ({ children }) => {
 
   const triggerReminderAlert = (reminder) => {
     setActiveReminderAlert(reminder);
+    // Also trigger system notification bar pop-up for manual / test alerts
+    if (reminder) {
+      notificationService.showSystemNotification({
+        title: `🚨 High Alert: ${reminder.title || 'Scheduled Reminder'}`,
+        body: `${reminder.time || 'Due now'} - ${reminder.dosage_or_detail || 'Tap to open NeuroSathi'}`,
+        tag: `manual-reminder-${reminder.id || 'test'}`,
+        data: { reminderId: reminder.id }
+      });
+    }
   };
 
   const closeReminderAlert = () => {

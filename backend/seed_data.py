@@ -57,6 +57,7 @@ def get_initial_user() -> UserProfile:
 
 def get_initial_reminders() -> list[Reminder]:
     now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
     return [
         Reminder(
             id="rem-1",
@@ -64,6 +65,7 @@ def get_initial_reminders() -> list[Reminder]:
             title="Blood Pressure Tablet (Amlodipine)",
             category=ReminderCategory.MEDICINE,
             time="08:30 AM",
+            date=today_str,
             dosage_or_detail="1 tablet after morning tea with water",
             audio_prompt="Please take your Blood Pressure tablet with water.",
             is_completed=True,
@@ -77,6 +79,7 @@ def get_initial_reminders() -> list[Reminder]:
             title="Drink Fresh Water",
             category=ReminderCategory.WATER,
             time="11:00 AM",
+            date=today_str,
             dosage_or_detail="1 full copper glass of filtered water",
             audio_prompt="Time to drink a warm glass of water to stay hydrated.",
             is_completed=True,
@@ -90,6 +93,7 @@ def get_initial_reminders() -> list[Reminder]:
             title="Afternoon Memory Game Session",
             category=ReminderCategory.DAILY_TASK,
             time="03:30 PM",
+            date=today_str,
             dosage_or_detail="Play 1 session of North East Heritage Match",
             audio_prompt="Let's exercise your mind with the Heritage Memory Game.",
             is_completed=False,
@@ -102,6 +106,7 @@ def get_initial_reminders() -> list[Reminder]:
             title="Evening Walk in Garden",
             category=ReminderCategory.DAILY_TASK,
             time="05:30 PM",
+            date=today_str,
             dosage_or_detail="15 minutes gentle stroll in the courtyard",
             audio_prompt="Time for your gentle evening courtyard walk.",
             is_completed=False,
@@ -114,6 +119,7 @@ def get_initial_reminders() -> list[Reminder]:
             title="Night Heart Medication & Milk",
             category=ReminderCategory.MEDICINE,
             time="09:00 PM",
+            date=today_str,
             dosage_or_detail="1 tablet with warm milk before sleep",
             audio_prompt="Take your bedtime medicine with warm milk.",
             is_completed=False,

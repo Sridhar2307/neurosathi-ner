@@ -1,7 +1,53 @@
 /**
- * Reminder Scheduling & Time Utilities
- * Handles parsing, 12h/24h conversion, and due-time checking for elderly reminders.
+ * Reminder Scheduling & Time/Date Utilities
+ * Handles parsing, 12h/24h conversion, date formatting, and due-time checking for elderly reminders.
  */
+
+/**
+ * Get current local date formatted as "YYYY-MM-DD"
+ * @param {number} dayOffset - Days to add/subtract (0 for today, 1 for tomorrow)
+ * @returns {string} e.g. "2026-09-15"
+ */
+export function getTodayDateStr(dayOffset = 0) {
+  const d = new Date();
+  if (dayOffset !== 0) {
+    d.setDate(d.getDate() + dayOffset);
+  }
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Format a YYYY-MM-DD date string into a friendly label (e.g. "Today", "Tomorrow", "Sep 15, 2026")
+ * @param {string} dateStr - e.g. "2026-09-15"
+ * @returns {string} Friendly display date
+ */
+export function formatDateDisplay(dateStr) {
+  if (!dateStr) return "Today";
+  const today = getTodayDateStr(0);
+  const tomorrow = getTodayDateStr(1);
+  const yesterday = getTodayDateStr(-1);
+
+  if (dateStr === today) return "Today";
+  if (dateStr === tomorrow) return "Tomorrow";
+  if (dateStr === yesterday) return "Yesterday";
+
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+  } catch (e) {
+    // fallback
+  }
+  return dateStr;
+}
 
 /**
  * Parse any valid time string (12-hour AM/PM or 24-hour) into minutes from midnight (0 - 1439)
@@ -84,12 +130,64 @@ export function getCurrentTime12Hour(offsetMinutes = 0) {
 }
 
 /**
+ * Convert reminder date & time into a JavaScript Date object for sorting & comparisons
+ * @param {Object} rem - Reminder object with { date, time }
+ * @returns {Date}
+ */
+export function getReminderDateObject(rem) {
+  const today = getTodayDateStr(0);
+  const dateStr = rem.date || today;
+  const mins = parseTimeToMinutes(rem.time) || 0;
+  const hours = Math.floor(mins / 60);
+  const minutes = mins % 60;
+
+  const [y, m, d] = dateStr.split('-').map(num => parseInt(num, 10));
+  return new Date(y, (m || 1) - 1, d || 1, hours, minutes, 0, 0);
+}
+
+/**
+ * Determine if a reminder is "Upcoming"
+ * Criteria:
+ * - NOT completed
+ * - Scheduled date is in the future, OR scheduled for today and scheduled time has not passed (or within recent 15 min buffer)
+ * @param {Object} rem
+ * @returns {boolean}
+ */
+export function isReminderUpcoming(rem) {
+  if (rem.is_completed) return false;
+  const remDate = getReminderDateObject(rem);
+  const now = new Date();
+  // Allow a 10-minute grace window for currently active/due today items
+  const graceNow = new Date(now.getTime() - 10 * 60 * 1000);
+  return remDate >= graceNow;
+}
+
+/**
+ * Determine if a reminder is "Previous"
+ * Criteria:
+ * - Completed (regardless of date)
+ * - OR Scheduled date/time has already passed in the past
+ * @param {Object} rem
+ * @returns {boolean}
+ */
+export function isReminderPast(rem) {
+  return !isReminderUpcoming(rem);
+}
+
+/**
  * Check if a reminder is due right now
  * @param {string} reminderTimeStr - e.g. "11:32 AM"
+ * @param {string} reminderDateStr - optional "YYYY-MM-DD"
  * @param {number} toleranceMinutes - allow trigger if within X minutes
  * @returns {boolean} True if due now
  */
-export function isReminderDueNow(reminderTimeStr, toleranceMinutes = 1) {
+export function isReminderDueNow(reminderTimeStr, reminderDateStr = null, toleranceMinutes = 1) {
+  // If reminder specifies a date, ensure it matches today's date
+  if (reminderDateStr) {
+    const today = getTodayDateStr(0);
+    if (reminderDateStr !== today) return false;
+  }
+
   const reminderMins = parseTimeToMinutes(reminderTimeStr);
   if (reminderMins === null) return false;
 

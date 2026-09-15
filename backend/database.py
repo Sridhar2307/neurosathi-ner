@@ -131,6 +131,7 @@ class HybridDatabase:
                         title=rem_row.get("title", ""),
                         category=rem_row.get("category", "medicine"),
                         time=rem_row.get("time_schedule", "08:30 AM"),
+                        date=rem_row.get("date") or (rem_row.get("created_at") or "")[:10] or datetime.now().strftime("%Y-%m-%d"),
                         dosage_or_detail=rem_row.get("dosage_or_detail", ""),
                         audio_prompt=rem_row.get("audio_prompt", ""),
                         is_completed=rem_row.get("is_completed", False),
@@ -199,6 +200,7 @@ class HybridDatabase:
             title="Drink Fresh Water",
             category="water",
             time="10:00 AM",
+            date=datetime.now().strftime("%Y-%m-%d"),
             dosage_or_detail="1 glass of water to stay hydrated",
             audio_prompt="Time to drink a refreshing glass of water.",
             is_completed=False,
@@ -479,12 +481,14 @@ class HybridDatabase:
         import uuid
         new_id = f"rem-{str(uuid.uuid4())[:8]}"
         now_str = datetime.now().isoformat()
+        assigned_date = reminder_in.date or datetime.now().strftime("%Y-%m-%d")
         new_reminder = Reminder(
             id=new_id,
             user_id=reminder_in.user_id,
             title=reminder_in.title,
             category=reminder_in.category,
             time=reminder_in.time,
+            date=assigned_date,
             dosage_or_detail=reminder_in.dosage_or_detail,
             audio_prompt=reminder_in.audio_prompt or f"Reminder for {reminder_in.title}",
             is_completed=reminder_in.is_completed,
@@ -497,7 +501,7 @@ class HybridDatabase:
         self.activity_logs.insert(0, {
             "id": f"log-{str(uuid.uuid4())[:8]}",
             "user_id": reminder_in.user_id,
-            "action": f"Created Reminder: {reminder_in.title} at {reminder_in.time}",
+            "action": f"Created Reminder: {reminder_in.title} on {assigned_date} at {reminder_in.time}",
             "category": "reminder",
             "timestamp": datetime.now().strftime("%I:%M %p"),
             "status": "pending"

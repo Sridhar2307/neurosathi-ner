@@ -140,6 +140,7 @@ class ReminderCreate(BaseModel):
     title: str
     category: ReminderCategory
     time: str  # Format: "08:00 AM" or "14:30"
+    date: Optional[str] = None  # Format: "YYYY-MM-DD", defaults to current date if omitted
     dosage_or_detail: Optional[str] = None
     audio_prompt: Optional[str] = None
     is_completed: bool = False
@@ -149,6 +150,7 @@ class ReminderUpdate(BaseModel):
     title: Optional[str] = None
     category: Optional[ReminderCategory] = None
     time: Optional[str] = None
+    date: Optional[str] = None
     dosage_or_detail: Optional[str] = None
     audio_prompt: Optional[str] = None
     is_completed: Optional[bool] = None
@@ -161,6 +163,7 @@ class Reminder(BaseModel):
     title: str
     category: ReminderCategory
     time: str
+    date: Optional[str] = None
     dosage_or_detail: Optional[str] = None
     audio_prompt: Optional[str] = None
     is_completed: bool = False
