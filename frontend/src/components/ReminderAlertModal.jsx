@@ -101,27 +101,27 @@ export default function ReminderAlertModal() {
       role="dialog"
       aria-modal="true"
       aria-label="High Alert Reminder Notification"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-red-950/75 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-red-950/75 backdrop-blur-md animate-fadeIn"
     >
       {/* High-Alert Red Notification Window */}
-      <div className="relative w-full max-w-xl bg-white rounded-4xl border-4 border-red-600 shadow-2xl shadow-red-600/40 ring-8 ring-red-500/30 overflow-hidden transform transition-all animate-scaleUp">
+      <div className="relative w-full max-w-xl max-h-[92vh] flex flex-col bg-white rounded-3xl sm:rounded-4xl border-4 border-red-600 shadow-2xl shadow-red-600/40 ring-4 sm:ring-8 ring-red-500/30 overflow-hidden transform transition-all animate-scaleUp">
         
         {/* Red Header Bar */}
-        <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white px-6 py-5 flex items-center justify-between shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 border border-white/40 flex items-center justify-center text-white shadow-inner animate-bounce">
-              <Bell className="w-7 h-7 text-white fill-white" />
+        <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white px-4 sm:px-6 py-3.5 sm:py-5 flex items-center justify-between shadow-md shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/20 border border-white/40 flex items-center justify-center text-white shadow-inner animate-bounce shrink-0">
+              <Bell className="w-6 h-6 sm:w-7 sm:h-7 text-white fill-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="bg-white text-red-700 text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
-                  🚨 {t.highAlertReminder || "HIGH ALERT REMINDER"}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="bg-white text-red-700 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
+                  🚨 {t.highAlertReminder || "HIGH ALERT"}
                 </span>
                 <span className="text-xs font-bold text-red-100 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" /> {activeReminderAlert.time || 'Due Now'}
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5">
+              <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight mt-0.5">
                 {t.attentionRequired || "Attention Required"}
               </h2>
             </div>
@@ -129,16 +129,16 @@ export default function ReminderAlertModal() {
 
           <button
             onClick={closeReminderAlert}
-            className="w-11 h-11 rounded-2xl bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition border border-white/30"
+            className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition border border-white/30 shrink-0"
             title={t.dismissAlert || "Dismiss Alert"}
             aria-label="Close"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        {/* Content Body in Red Tint */}
-        <div className="p-6 sm:p-8 space-y-6 bg-gradient-to-b from-red-50/60 to-white">
+        {/* Content Body in Red Tint (Scrollable) */}
+        <div className="p-4 sm:p-8 space-y-4 sm:space-y-6 bg-gradient-to-b from-red-50/60 to-white overflow-y-auto flex-1">
           
           {/* Main Reminder Card */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border-3 border-red-300 shadow-md flex items-start gap-4">

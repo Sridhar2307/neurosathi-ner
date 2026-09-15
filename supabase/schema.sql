@@ -14,23 +14,23 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     name TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('elder', 'caregiver', 'admin')),
     preferred_language TEXT DEFAULT 'en',
-    age INTEGER DEFAULT 72,
-    gender TEXT DEFAULT 'Female',
-    blood_group TEXT DEFAULT 'O+',
-    location TEXT DEFAULT 'Guwahati, Assam',
-    medical_stage TEXT DEFAULT 'Early-stage Dementia / MCI',
-    allergies TEXT DEFAULT 'None reported',
-    doctor_name TEXT DEFAULT 'Dr. Anupam Sarma (Neurologist)',
-    doctor_phone TEXT DEFAULT '+91 98640 12345',
-    doctor_hospital TEXT DEFAULT 'Guwahati Neurological Center, Assam',
+    age INTEGER,
+    gender TEXT,
+    blood_group TEXT,
+    location TEXT,
+    medical_stage TEXT,
+    allergies TEXT,
+    doctor_name TEXT,
+    doctor_phone TEXT,
+    doctor_hospital TEXT,
     emergency_contact_name TEXT,
     emergency_contact_relation TEXT,
     emergency_contact_phone TEXT,
     emergency_contact_email TEXT,
     emergency_contact_address TEXT,
     caregiver_pin TEXT DEFAULT '1234',
-    streak_count INTEGER DEFAULT 1,
-    total_stars INTEGER DEFAULT 25,
+    streak_count INTEGER DEFAULT 0,
+    total_stars INTEGER DEFAULT 0,
     avatar_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -164,56 +164,7 @@ CREATE POLICY "Allow public all on caregiver_alerts" ON public.caregiver_alerts 
 CREATE POLICY "Allow public all on accessibility_preferences" ON public.accessibility_preferences FOR ALL USING (true);
 CREATE POLICY "Allow public all on activity_logs" ON public.activity_logs FOR ALL USING (true);
 
--- ====================================================================
--- SEED DATA: Demo Patient (Lakshmi) & Demo Caregiver
--- ====================================================================
 
--- Demo Caregiver Profile
-INSERT INTO public.profiles (id, name, role, preferred_language, emergency_contact_name, emergency_contact_phone, emergency_contact_email)
-VALUES (
-    'c0000000-0000-0000-0000-000000000001',
-    'Dr. Priya Sharma (Caregiver)',
-    'caregiver',
-    'en',
-    'Emergency Desk',
-    '+91 98765 43210',
-    'caregiver@neurosathi.in'
-) ON CONFLICT (id) DO NOTHING;
-
--- Demo Elderly Patient Profile (Lakshmi)
-INSERT INTO public.profiles (id, name, role, preferred_language, age, gender, blood_group, location, medical_stage, emergency_contact_name, emergency_contact_phone, emergency_contact_email)
-VALUES (
-    'e0000000-0000-0000-0000-000000000001',
-    'Lakshmi Devi',
-    'elder',
-    'en',
-    72,
-    'Female',
-    'B+',
-    'Guwahati, Assam',
-    'Mild Cognitive Impairment (Early Stage)',
-    'Dr. Priya Sharma (Daughter)',
-    '+91 98765 43210',
-    'caregiver@neurosathi.in'
-) ON CONFLICT (id) DO NOTHING;
-
--- Link Caregiver & Lakshmi
-INSERT INTO public.caregiver_patient (caregiver_id, patient_id, relationship)
-VALUES (
-    'c0000000-0000-0000-0000-000000000001',
-    'e0000000-0000-0000-0000-000000000001',
-    'Daughter & Primary Caregiver'
-) ON CONFLICT DO NOTHING;
-
--- Pair Default Tablet for Lakshmi (PIN 1234 hashed with SHA-256: 03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4)
-INSERT INTO public.patient_devices (patient_id, device_identifier, device_name, pin_enabled, hashed_pin)
-VALUES (
-    'e0000000-0000-0000-0000-000000000001',
-    'NS-DEV-LAKSHMI-01',
-    'Lakshmi Living Room Tablet',
-    false,
-    '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'
-) ON CONFLICT DO NOTHING;
 
 -- ====================================================================
 -- PERMISSIONS: Ensure anon and authenticated roles have table access

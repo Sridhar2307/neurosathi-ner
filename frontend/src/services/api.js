@@ -8,24 +8,11 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 export const DEMO_USER_ID = "demo-user-123";
 export const LAKSHMI_USER_ID = "patient-lakshmi-demo";
 
-// Supabase UUID deterministic mapping
-const ID_TO_UUID_MAP = {
-  [DEMO_USER_ID]: "e0000000-0000-0000-0000-000000000002",
-  [LAKSHMI_USER_ID]: "e0000000-0000-0000-0000-000000000001",
-};
-const UUID_TO_ID_MAP = {
-  "e0000000-0000-0000-0000-000000000002": DEMO_USER_ID,
-  "e0000000-0000-0000-0000-000000000001": LAKSHMI_USER_ID,
-};
-
 export function toSupabaseUuid(id) {
-  if (!id) return "e0000000-0000-0000-0000-000000000002";
-  if (ID_TO_UUID_MAP[id]) return ID_TO_UUID_MAP[id];
-  // If it's already a valid UUID format (8-4-4-4-12)
+  if (!id) return null;
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     return id;
   }
-  // Deterministic valid UUID generation from non-UUID string
   let h = 0;
   for (let i = 0; i < id.length; i++) {
     h = ((h << 5) - h) + id.charCodeAt(i);
@@ -36,31 +23,30 @@ export function toSupabaseUuid(id) {
 }
 
 export function fromSupabaseUuid(uuidStr) {
-  if (!uuidStr) return DEMO_USER_ID;
-  return UUID_TO_ID_MAP[uuidStr] || uuidStr;
+  return uuidStr || null;
 }
 
 // PIN persistence helper: safely encodes/extracts caregiver PIN via address field since Supabase profiles lacks caregiver_pin column
 export function extractPinAndAddress(rawAddress, fallbackPin = '1234') {
-  if (!rawAddress) return { address: 'Guwahati, Assam', pin: fallbackPin };
+  if (!rawAddress) return { address: '', pin: fallbackPin };
   const pinMatch = rawAddress.match(/\[PIN:([a-zA-Z0-9]+)\]/);
   const pin = pinMatch ? pinMatch[1] : fallbackPin;
   const cleanAddress = rawAddress.replace(/\s*\[PIN:[a-zA-Z0-9]+\]/, '').trim();
-  return { address: cleanAddress || 'Guwahati, Assam', pin };
+  return { address: cleanAddress || '', pin };
 }
 
 export function formatAddressWithPin(address, pin = '1234') {
-  const clean = (address || 'Guwahati, Assam').replace(/\s*\[PIN:[a-zA-Z0-9]+\]/, '').trim();
+  const clean = (address || '').replace(/\s*\[PIN:[a-zA-Z0-9]+\]/, '').trim();
   const safePin = String(pin || '1234').trim();
-  return `${clean} [PIN:${safePin}]`;
+  return clean ? `${clean} [PIN:${safePin}]` : `[PIN:${safePin}]`;
 }
 
 // Per-patient storage key helpers
 function patientKey(baseKey, userId) {
-  return `${baseKey}_${userId || DEMO_USER_ID}`;
+  return `${baseKey}_${userId || 'none'}`;
 }
 
-// Initial fallback state stored in localStorage if backend is unreachable
+// Local storage keys
 const STORAGE_KEYS = {
   REMINDERS: 'neurosathi_reminders',
   GAME_RESULTS: 'neurosathi_game_results',
@@ -71,238 +57,6 @@ const STORAGE_KEYS = {
   PATIENTS: 'ns_all_patients',
   GAME_DIFFICULTY: 'neurosathi_game_difficulty',
 };
-
-export const DEFAULT_PROFILE = {
-  id: DEMO_USER_ID,
-  name: "Bhaben Kalita",
-  email: "bhaben.kalita@neurosathi.in",
-  role: "elder",
-  age: 74,
-  gender: "Male",
-  blood_group: "O+",
-  location: "Guwahati, Assam",
-  language_preference: "en",
-  medical_stage: "Early-stage Dementia / MCI",
-  allergies: "None reported",
-  doctor_name: "Dr. Anupam Sarma (Neurologist)",
-  doctor_phone: "+91 98640 12345",
-  doctor_hospital: "Guwahati Neurological Center, Assam",
-  emergency_contact_name: "Priya Sharma (Daughter)",
-  emergency_contact_relation: "Daughter & Caregiver",
-  emergency_contact_phone: "+91 98765 43210",
-  emergency_contact_email: "priya@care.in",
-  caregiver_notes: "Prefers morning tea and Assamese Bihu folk songs.",
-  caregiver_pin: "1234",
-  current_streak: 4,
-  total_stars: 56,
-  avatar_url: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80"
-};
-
-export const LAKSHMI_PROFILE = {
-  id: LAKSHMI_USER_ID,
-  name: "Lakshmi Devi",
-  email: "lakshmi.devi@neurosathi.in",
-  role: "elder",
-  age: 72,
-  gender: "Female",
-  blood_group: "B+",
-  location: "Beltola, Guwahati, Assam",
-  language_preference: "en",
-  medical_stage: "Mild Cognitive Impairment (Early Stage)",
-  allergies: "None reported",
-  doctor_name: "Dr. Anupam Sarma (Neurologist)",
-  doctor_phone: "+91 98640 12345",
-  doctor_hospital: "Guwahati Neurological Center, Assam",
-  emergency_contact_name: "Dr. Priya Sharma (Daughter)",
-  emergency_contact_relation: "Daughter & Primary Caregiver",
-  emergency_contact_phone: "+91 98765 43210",
-  emergency_contact_email: "caregiver@neurosathi.in",
-  emergency_contact_address: "Beltola, Guwahati, Assam",
-  caregiver_notes: "Enjoys Assamese folklore and visual memory matching. Responds well to gentle reminders.",
-  caregiver_pin: "1234",
-  current_streak: 5,
-  total_stars: 62,
-  avatar_url: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80"
-};
-
-export const INITIAL_PATIENTS = [DEFAULT_PROFILE, LAKSHMI_PROFILE];
-
-export const LAKSHMI_REMINDERS = [
-  {
-    id: "rem-lakshmi-1",
-    user_id: LAKSHMI_USER_ID,
-    title: "Donepezil 5mg (Memory Support)",
-    category: "medicine",
-    time: "09:00 AM",
-    dosage_or_detail: "1 tablet with water after breakfast",
-    audio_prompt: "Good morning Lakshmi, please take your Donepezil memory tablet.",
-    is_completed: false,
-    icon_name: "Pill",
-    created_at: new Date(Date.now() - 86400000 * 4).toISOString()
-  },
-  {
-    id: "rem-lakshmi-2",
-    user_id: LAKSHMI_USER_ID,
-    title: "Midday Fresh Water & Tulsi Tea",
-    category: "water",
-    time: "12:30 PM",
-    dosage_or_detail: "1 glass lukewarm water with fresh tulsi leaves",
-    audio_prompt: "Time for a relaxing drink of fresh water and herbal tea, Lakshmi.",
-    is_completed: true,
-    completed_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    icon_name: "Droplet",
-    created_at: new Date(Date.now() - 86400000 * 4).toISOString()
-  },
-  {
-    id: "rem-lakshmi-3",
-    user_id: LAKSHMI_USER_ID,
-    title: "Afternoon Memory Story Recall",
-    category: "daily_task",
-    time: "04:00 PM",
-    dosage_or_detail: "15 minutes North East folk story recall game",
-    audio_prompt: "Lakshmi, let's play your afternoon memory story game!",
-    is_completed: false,
-    icon_name: "Brain",
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString()
-  }
-];
-
-const DEFAULT_REMINDERS = [
-  {
-    id: "rem-1",
-    user_id: DEMO_USER_ID,
-    title: "Blood Pressure Tablet (Amlodipine)",
-    category: "medicine",
-    time: "08:30 AM",
-    dosage_or_detail: "1 tablet after morning tea with water",
-    audio_prompt: "Please take your Blood Pressure tablet with water.",
-    is_completed: true,
-    completed_at: new Date(Date.now() - 3600000 * 3).toISOString(),
-    icon_name: "Pill",
-    created_at: new Date(Date.now() - 86400000 * 5).toISOString()
-  },
-  {
-    id: "rem-2",
-    user_id: DEMO_USER_ID,
-    title: "Drink Fresh Water",
-    category: "water",
-    time: "11:00 AM",
-    dosage_or_detail: "1 full copper glass of filtered water",
-    audio_prompt: "Time to drink a warm glass of water to stay hydrated.",
-    is_completed: true,
-    completed_at: new Date(Date.now() - 3600000 * 1).toISOString(),
-    icon_name: "Droplet",
-    created_at: new Date(Date.now() - 86400000 * 5).toISOString()
-  },
-  {
-    id: "rem-3",
-    user_id: DEMO_USER_ID,
-    title: "Afternoon Memory Game Session",
-    category: "daily_task",
-    time: "03:30 PM",
-    dosage_or_detail: "Play 1 session of North East Heritage Match",
-    audio_prompt: "Let's exercise your mind with the Heritage Memory Game.",
-    is_completed: false,
-    icon_name: "Brain",
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString()
-  },
-  {
-    id: "rem-4",
-    user_id: DEMO_USER_ID,
-    title: "Evening Walk in Courtyard",
-    category: "daily_task",
-    time: "05:30 PM",
-    dosage_or_detail: "15 minutes gentle stroll in the courtyard",
-    audio_prompt: "Time for your gentle evening courtyard walk.",
-    is_completed: false,
-    icon_name: "Footprints",
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString()
-  },
-  {
-    id: "rem-5",
-    user_id: DEMO_USER_ID,
-    title: "Night Heart Medication & Milk",
-    category: "medicine",
-    time: "09:00 PM",
-    dosage_or_detail: "1 tablet with warm milk before sleep",
-    audio_prompt: "Take your bedtime medicine with warm milk.",
-    is_completed: false,
-    icon_name: "Moon",
-    created_at: new Date(Date.now() - 86400000 * 5).toISOString()
-  }
-];
-
-const DEFAULT_GAME_RESULTS = [
-  {
-    id: "gr-1",
-    user_id: DEMO_USER_ID,
-    game_type: "memory_match",
-    difficulty: "easy",
-    score: 95,
-    max_score: 100,
-    attempts: 1,
-    duration_seconds: 34,
-    mistakes: 1,
-    cultural_theme: "NER Heritage Icons",
-    completed: true,
-    timestamp: new Date(Date.now() - 86400000 * 3).toISOString(),
-    encouraging_message: "Shandar! Wonderful memory recall today!",
-    adaptive_next_difficulty: "medium"
-  },
-  {
-    id: "gr-2",
-    user_id: DEMO_USER_ID,
-    game_type: "sequence_recall",
-    difficulty: "easy",
-    score: 88,
-    max_score: 100,
-    attempts: 2,
-    duration_seconds: 42,
-    mistakes: 2,
-    cultural_theme: "Bihu Rhythms & Folk Bells",
-    completed: true,
-    timestamp: new Date(Date.now() - 86400000 * 2).toISOString(),
-    encouraging_message: "Great rhythm recognition! You're keeping your focus sharp.",
-    adaptive_next_difficulty: "medium"
-  },
-  {
-    id: "gr-3",
-    user_id: DEMO_USER_ID,
-    game_type: "object_recognition",
-    difficulty: "easy",
-    score: 92,
-    max_score: 100,
-    attempts: 1,
-    duration_seconds: 28,
-    mistakes: 1,
-    cultural_theme: "Daily North East Utensils & Objects",
-    completed: true,
-    timestamp: new Date(Date.now() - 86400000 * 1).toISOString(),
-    encouraging_message: "Outstanding! You recognized the Japi and Xorai effortlessly!",
-    adaptive_next_difficulty: "medium"
-  }
-];
-
-const DEFAULT_ALERTS = [
-  {
-    id: "alt-1",
-    user_id: DEMO_USER_ID,
-    alert_type: "milestone",
-    severity: "info",
-    message: "Bhaben completed 4 consecutive days of cognitive exercises! Streak active.",
-    timestamp: new Date(Date.now() - 3600000 * 6).toISOString(),
-    is_resolved: true
-  },
-  {
-    id: "alt-2",
-    user_id: DEMO_USER_ID,
-    alert_type: "cognitive_drop",
-    severity: "warning",
-    message: "Sequence Recall response time increased slightly yesterday. Recommend gentle music rhythm exercise.",
-    timestamp: new Date(Date.now() - 86400000 * 1).toISOString(),
-    is_resolved: false
-  }
-];
 
 // Helper: Local Storage Sync
 function getLocal(key, defaultVal) {
@@ -338,54 +92,61 @@ function saveDifficulty(userId, gameType, difficulty) {
 // Helper: Purge legacy records, demo data, and all saved logins/sessions across devices
 export function cleanupDemoData() {
   try {
-    const WIPE_VERSION_KEY = 'ns_login_wipe_v2026_09_12_v3';
+    const WIPE_VERSION_KEY = 'ns_clean_slate_v2026_09_15_nodefaults';
 
     if (!localStorage.getItem(WIPE_VERSION_KEY)) {
-      // 1. Completely remove all saved logins and session states
-      localStorage.removeItem('ns_caregiver_session');
-      localStorage.removeItem('ns_active_patient_id');
-      localStorage.removeItem('ns_profile');
-      localStorage.removeItem('neurosathi_profile');
-      localStorage.removeItem('ns_all_patients');
-      localStorage.removeItem('ns_appMode');
+      const demoIds = ['demo-user-123', 'patient-lakshmi-demo'];
+      const storedActive = localStorage.getItem('ns_active_patient_id');
+      if (demoIds.includes(storedActive)) {
+        localStorage.removeItem('ns_active_patient_id');
+      }
+      const storedProf = localStorage.getItem('ns_profile');
+      if (storedProf) {
+        try {
+          const p = JSON.parse(storedProf);
+          if (demoIds.includes(p?.id) || p?.name === 'Bhaben Kalita' || p?.name === 'Lakshmi Devi') {
+            localStorage.removeItem('ns_profile');
+          }
+        } catch (e) {}
+      }
+      const storedSession = localStorage.getItem('ns_caregiver_session');
+      if (storedSession) {
+        try {
+          const s = JSON.parse(storedSession);
+          if (demoIds.includes(s?.activePatient?.id)) {
+            localStorage.removeItem('ns_caregiver_session');
+          }
+        } catch (e) {}
+      }
+
+      // Filter all patients list to remove demo patients
+      const storedPatients = localStorage.getItem('ns_all_patients');
+      if (storedPatients) {
+        try {
+          const pts = JSON.parse(storedPatients);
+          if (Array.isArray(pts)) {
+            const filtered = pts.filter(p => !demoIds.includes(p?.id) && p?.name !== 'Bhaben Kalita' && p?.name !== 'Lakshmi Devi');
+            localStorage.setItem('ns_all_patients', JSON.stringify(filtered));
+          }
+        } catch (e) {}
+      }
+
       localStorage.removeItem('neurosathi_reminders');
       localStorage.removeItem('neurosathi_game_results');
       localStorage.removeItem('neurosathi_alerts');
 
-      // 2. Clear any session storage
-      try {
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.clear();
-        }
-      } catch (e) {}
-
-      // 3. Remove all per-patient and dynamic data storage keys while preserving language/accessibility
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (
-          k &&
-          (k.startsWith('neurosathi_') ||
-           (k.startsWith('ns_') && !['ns_language', 'ns_fontSize', 'ns_theme', 'ns_largeButtons', 'ns_autoVoiceRead', 'ns_reducedMotion', WIPE_VERSION_KEY].includes(k)))
-        ) {
-          keysToRemove.push(k);
-        }
-      }
-      keysToRemove.forEach(k => localStorage.removeItem(k));
+      demoIds.forEach(demoId => {
+        localStorage.removeItem(`neurosathi_profile_${demoId}`);
+        localStorage.removeItem(`neurosathi_reminders_${demoId}`);
+        localStorage.removeItem(`neurosathi_game_results_${demoId}`);
+        localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_memory_match`);
+        localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_sequence_recall`);
+        localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_object_recognition`);
+        localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_daily_life_sequence`);
+      });
 
       localStorage.setItem(WIPE_VERSION_KEY, 'true');
     }
-
-    const DEMO_IDS = ['demo-user-123', 'patient-lakshmi-demo'];
-    DEMO_IDS.forEach(demoId => {
-      localStorage.removeItem(`neurosathi_profile_${demoId}`);
-      localStorage.removeItem(`neurosathi_reminders_${demoId}`);
-      localStorage.removeItem(`neurosathi_game_results_${demoId}`);
-      localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_memory_match`);
-      localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_sequence_recall`);
-      localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_object_recognition`);
-      localStorage.removeItem(`neurosathi_game_difficulty_${demoId}_daily_life_sequence`);
-    });
   } catch (err) {
     console.warn('cleanupDemoData notice:', err);
   }
@@ -432,42 +193,38 @@ export const api = {
     return { online: false, database: 'offline_local', data: { status: 'offline-mode', message: 'Running on local offline store' } };
   },
 
-  // Resolve active patient ID with fallback to DEMO_USER_ID if null or unselected
+  // Resolve active patient ID without demo fallback
   resolveEffectiveUserId(userId) {
-    if (userId && typeof userId === 'string' && userId.trim() && userId !== 'null' && userId !== 'undefined') {
+    if (userId && typeof userId === 'string' && userId.trim() && userId !== 'null' && userId !== 'undefined' && !['demo-user-123', 'patient-lakshmi-demo'].includes(userId.trim())) {
       return userId.trim();
     }
     try {
       const stored = localStorage.getItem('ns_active_patient_id');
-      if (stored && typeof stored === 'string' && stored.trim() && stored !== 'null' && stored !== 'undefined') {
+      if (stored && typeof stored === 'string' && stored.trim() && stored !== 'null' && stored !== 'undefined' && !['demo-user-123', 'patient-lakshmi-demo'].includes(stored.trim())) {
         return stored.trim();
       }
       const session = localStorage.getItem('ns_caregiver_session');
       if (session) {
         const parsed = JSON.parse(session);
-        if (parsed?.activePatient?.id) return parsed.activePatient.id;
+        if (parsed?.activePatient?.id && !['demo-user-123', 'patient-lakshmi-demo'].includes(parsed.activePatient.id)) return parsed.activePatient.id;
       }
       const profile = localStorage.getItem('ns_profile');
       if (profile) {
         const parsed = JSON.parse(profile);
-        if (parsed?.id) return parsed.id;
+        if (parsed?.id && !['demo-user-123', 'patient-lakshmi-demo'].includes(parsed.id)) return parsed.id;
       }
     } catch (e) {}
-    return DEMO_USER_ID;
+    return null;
   },
 
   // Reminders — per-patient namespaced with live Supabase & offline-first sync
   async getReminders(userId) {
     const uid = this.resolveEffectiveUserId(userId);
+    if (!uid) return [];
     const key = patientKey(STORAGE_KEYS.REMINDERS, uid);
-    let localReminders = getLocal(key, null);    // Initial populate only if storage key was never initialized (null)
+    let localReminders = getLocal(key, null);
     if (localReminders === null || !Array.isArray(localReminders)) {
-      const today = new Date().toISOString().slice(0, 10);
-      if (uid === LAKSHMI_USER_ID) {
-        localReminders = LAKSHMI_REMINDERS.map(r => ({ ...r, date: r.date || today }));
-      } else {
-        localReminders = DEFAULT_REMINDERS.map(r => ({ ...r, date: r.date || today }));
-      }
+      localReminders = [];
       setLocal(key, localReminders);
     }
 
@@ -1094,27 +851,27 @@ export const api = {
             patientMap.set(uid, {
               id: uid,
               name: sp.name || 'Patient',
-              email: sp.emergency_contact_email || `${uid}@neurosathi.in`,
+              email: sp.emergency_contact_email || '',
               role: 'elder',
-              age: sp.age || 70,
-              gender: sp.gender || 'Female',
-              blood_group: sp.blood_group || 'O+',
-              location: sp.location || 'Guwahati, Assam',
+              age: sp.age || null,
+              gender: sp.gender || '',
+              blood_group: sp.blood_group || '',
+              location: sp.location || '',
               language_preference: sp.preferred_language || 'en',
-              medical_stage: sp.medical_stage || 'Early-stage Dementia / MCI',
-              allergies: sp.allergies || 'None reported',
+              medical_stage: sp.medical_stage || '',
+              allergies: sp.allergies || '',
               doctor_name: sp.doctor_name || '',
               doctor_phone: sp.doctor_phone || '',
               doctor_hospital: sp.doctor_hospital || '',
-              emergency_contact_name: sp.emergency_contact_name || 'Primary Caregiver',
-              emergency_contact_relation: sp.emergency_contact_relation || 'Family',
+              emergency_contact_name: sp.emergency_contact_name || '',
+              emergency_contact_relation: sp.emergency_contact_relation || '',
               emergency_contact_phone: sp.emergency_contact_phone || '',
               emergency_contact_email: sp.emergency_contact_email || '',
               emergency_contact_address: cleanAddress,
-              current_streak: sp.streak_count || 1,
-              total_stars: sp.total_stars || 10,
+              current_streak: sp.streak_count ?? 0,
+              total_stars: sp.total_stars ?? 0,
               caregiver_pin: caregiverPin,
-              avatar_url: sp.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+              avatar_url: sp.avatar_url || null
             });
           });
         }
@@ -1222,28 +979,28 @@ export const api = {
             return {
               id: uid,
               name: p.name || localP.name || 'Patient',
-              email: p.emergency_contact_email || localP.email || `${uid}@neurosathi.in`,
+              email: p.emergency_contact_email || localP.email || '',
               role: p.role || 'elder',
-              age: p.age || localP.age || 74,
-              gender: p.gender || localP.gender || 'Female',
-              blood_group: p.blood_group || localP.blood_group || 'O+',
-              location: p.location || localP.location || 'Guwahati, Assam',
+              age: p.age || localP.age || null,
+              gender: p.gender || localP.gender || '',
+              blood_group: p.blood_group || localP.blood_group || '',
+              location: p.location || localP.location || '',
               language_preference: p.preferred_language || localP.language_preference || 'en',
-              medical_stage: p.medical_stage || localP.medical_stage || 'Early-stage Dementia / MCI',
-              allergies: p.allergies || localP.allergies || 'None reported',
-              doctor_name: p.doctor_name || localP.doctor_name || 'Dr. Anupam Sarma (Neurologist)',
-              doctor_phone: p.doctor_phone || localP.doctor_phone || '+91 98640 12345',
-              doctor_hospital: p.doctor_hospital || localP.doctor_hospital || 'Guwahati Neurological Center, Assam',
-              emergency_contact_name: p.emergency_contact_name || localP.emergency_contact_name || 'Primary Caregiver',
-              emergency_contact_relation: p.emergency_contact_relation || localP.emergency_contact_relation || 'Family',
-              emergency_contact_phone: p.emergency_contact_phone || localP.emergency_contact_phone || '+91 98765 43210',
-              emergency_contact_email: p.emergency_contact_email || localP.emergency_contact_email || 'caregiver@neurosathi.in',
+              medical_stage: p.medical_stage || localP.medical_stage || '',
+              allergies: p.allergies || localP.allergies || '',
+              doctor_name: p.doctor_name || localP.doctor_name || '',
+              doctor_phone: p.doctor_phone || localP.doctor_phone || '',
+              doctor_hospital: p.doctor_hospital || localP.doctor_hospital || '',
+              emergency_contact_name: p.emergency_contact_name || localP.emergency_contact_name || '',
+              emergency_contact_relation: p.emergency_contact_relation || localP.emergency_contact_relation || '',
+              emergency_contact_phone: p.emergency_contact_phone || localP.emergency_contact_phone || '',
+              emergency_contact_email: p.emergency_contact_email || localP.emergency_contact_email || '',
               emergency_contact_address: cleanAddress,
-              current_streak: p.streak_count || localP.current_streak || 4,
-              total_stars: p.total_stars || localP.total_stars || 56,
+              current_streak: p.streak_count ?? localP.current_streak ?? 0,
+              total_stars: p.total_stars ?? localP.total_stars ?? 0,
               caregiver_pin: caregiverPin,
               caregiver_notes: localP.caregiver_notes || '',
-              avatar_url: p.avatar_url || localP.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+              avatar_url: p.avatar_url || localP.avatar_url || null
             };
           });
           setLocal(STORAGE_KEYS.PATIENTS, mapped);
@@ -1479,28 +1236,28 @@ export const api = {
           const profile = {
             id: uid,
             name: data.name || localProf.name || 'Patient',
-            email: data.emergency_contact_email || localProf.email || `${uid}@neurosathi.in`,
+            email: data.emergency_contact_email || localProf.email || '',
             role: data.role || 'elder',
-            age: data.age || localProf.age || 70,
-            gender: data.gender || localProf.gender || 'Female',
-            blood_group: data.blood_group || localProf.blood_group || 'O+',
-            location: data.location || localProf.location || 'Guwahati, Assam',
+            age: data.age || localProf.age || null,
+            gender: data.gender || localProf.gender || '',
+            blood_group: data.blood_group || localProf.blood_group || '',
+            location: data.location || localProf.location || '',
             language_preference: data.preferred_language || localProf.language_preference || 'en',
-            medical_stage: data.medical_stage || localProf.medical_stage || 'Early-stage Dementia / MCI',
-            allergies: data.allergies || localProf.allergies || 'None reported',
+            medical_stage: data.medical_stage || localProf.medical_stage || '',
+            allergies: data.allergies || localProf.allergies || '',
             doctor_name: data.doctor_name || localProf.doctor_name || '',
             doctor_phone: data.doctor_phone || localProf.doctor_phone || '',
             doctor_hospital: data.doctor_hospital || localProf.doctor_hospital || '',
-            emergency_contact_name: data.emergency_contact_name || localProf.emergency_contact_name || 'Primary Caregiver',
-            emergency_contact_relation: data.emergency_contact_relation || localProf.emergency_contact_relation || 'Family',
+            emergency_contact_name: data.emergency_contact_name || localProf.emergency_contact_name || '',
+            emergency_contact_relation: data.emergency_contact_relation || localProf.emergency_contact_relation || '',
             emergency_contact_phone: data.emergency_contact_phone || localProf.emergency_contact_phone || '',
             emergency_contact_email: data.emergency_contact_email || localProf.emergency_contact_email || '',
             emergency_contact_address: cleanAddress,
-            current_streak: data.streak_count || localProf.current_streak || 1,
-            total_stars: data.total_stars || localProf.total_stars || 10,
+            current_streak: data.streak_count ?? localProf.current_streak ?? 0,
+            total_stars: data.total_stars ?? localProf.total_stars ?? 0,
             caregiver_pin: caregiverPin,
             caregiver_notes: localProf.caregiver_notes || '',
-            avatar_url: data.avatar_url || localProf.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80'
+            avatar_url: data.avatar_url || localProf.avatar_url || null
           };
           setLocal(key, profile);
           return profile;

@@ -44,16 +44,16 @@ export default function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-8 pt-10 sm:pt-16 pb-12 text-center">
+      <section className="max-w-7xl mx-auto px-3 sm:px-8 pt-6 sm:pt-16 pb-10 sm:pb-12 text-center">
         {/* Cultural Motto Pills */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-100/80 border border-teal-300 text-teal-900 font-bold text-xs sm:text-sm mb-6 shadow-sm">
-          <Sparkles className="w-4 h-4 text-amber-600" />
+        <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-teal-100/80 border border-teal-300 text-teal-900 font-bold text-xs sm:text-sm mb-4 sm:mb-6 shadow-sm">
+          <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
           <span>{t.landingMotto || "PLAY • REMEMBER • CONNECT • CARE"}</span>
         </div>
 
         {/* Main Title with Voice Read Button */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-5xl mx-auto mb-6">
-          <h1 className="text-4xl sm:text-6xl font-extrabold text-teal-950 font-sans tracking-tight leading-tight">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 max-w-5xl mx-auto mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-4xl md:text-6xl font-extrabold text-teal-950 font-sans tracking-tight leading-tight">
             {t.landingHeroTitle1 || "AI-Powered Cognitive & Memory Assistance for "}{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-600">
               {t.landingHeroTitleHighlight || "Elderly Dementia Care"}
@@ -62,32 +62,32 @@ export default function LandingPage() {
           </h1>
           <AudioButton
             textToRead={`${t.landingHeroTitle1 || 'AI-Powered Cognitive & Memory Assistance for'} ${t.landingHeroTitleHighlight || 'Elderly Dementia Care'}. ${t.landingHeroSubtitle || t.tagline}`}
-            size="lg"
+            size="md"
             className="bg-teal-600 hover:bg-teal-700 text-white shadow-md shrink-0"
             title={t.listenOverview || "Listen to Overview"}
           />
         </div>
 
-        <p className="text-lg sm:text-2xl text-slate-700 max-w-3xl mx-auto mb-10 leading-relaxed font-medium">
+        <p className="text-sm sm:text-lg md:text-xl text-slate-700 max-w-3xl mx-auto mb-6 sm:mb-10 leading-relaxed font-medium">
           {t.landingHeroSubtitle || t.tagline || 'A culturally familiar, ultra-accessible cognitive gaming and daily routine companion specially tailored for elders in Assam, Manipur, Mizoram, Meghalaya, and across the North Eastern Region.'}
         </p>
 
         {/* Primary Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-5 max-w-xl mx-auto mb-16">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5 max-w-xl mx-auto mb-10 sm:mb-16">
           <button
             onClick={handleStartElder}
-            className="w-full sm:w-auto px-8 py-5 rounded-3xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xl sm:text-2xl shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition flex items-center justify-center gap-3 border-2 border-teal-500 group"
+            className="w-full sm:w-auto px-6 py-4 sm:px-8 sm:py-5 rounded-2xl sm:rounded-3xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-lg sm:text-2xl shadow-tactile-btn active:shadow-tactile-btn-pressed transform active:translate-y-1 transition flex items-center justify-center gap-3 border-2 border-teal-500 group"
           >
-            <Heart className="w-7 h-7 text-rose-300 fill-rose-300 group-hover:scale-110 transition" />
+            <Heart className="w-5 h-5 sm:w-7 sm:h-7 text-rose-300 fill-rose-300 group-hover:scale-110 transition shrink-0" />
             <span>{t.elderMode || 'Open Elder Mode'}</span>
-            <ArrowRight className="w-6 h-6 text-teal-200" />
+            <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 text-teal-200" />
           </button>
 
           <button
             onClick={handleStartCaregiver}
-            className="w-full sm:w-auto px-8 py-5 rounded-3xl bg-slate-900 hover:bg-slate-800 text-cyan-300 font-extrabold text-xl sm:text-2xl border-2 border-slate-700 hover:border-cyan-400 transition flex items-center justify-center gap-3 shadow-lg"
+            className="w-full sm:w-auto px-6 py-4 sm:px-8 sm:py-5 rounded-2xl sm:rounded-3xl bg-slate-900 hover:bg-slate-800 text-cyan-300 font-extrabold text-lg sm:text-2xl border-2 border-slate-700 hover:border-cyan-400 transition flex items-center justify-center gap-3 shadow-lg"
           >
-            <ShieldCheck className="w-7 h-7 text-cyan-400" />
+            <ShieldCheck className="w-5 h-5 sm:w-7 sm:h-7 text-cyan-400 shrink-0" />
             <span>{t.caregiverMode || 'Caregiver Portal'}</span>
           </button>
         </div>

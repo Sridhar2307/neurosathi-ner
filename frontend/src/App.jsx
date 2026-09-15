@@ -26,6 +26,8 @@ import CaregiverReminders from './pages/caregiver/CaregiverReminders';
 import CaregiverAnalytics from './pages/caregiver/CaregiverAnalytics';
 import AIRecommendationView from './pages/caregiver/AIRecommendationView';
 
+import MobileBottomNav from './components/MobileBottomNav';
+
 export default function App() {
   const { appMode, currentView, setCurrentView, caregiverSession, toastMessage } = useApp();
 
@@ -92,15 +94,15 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col font-sans">
-      {/* Top Accessibility Quick Bar */}
-      <AccessibilityBar />
+    <div className="min-h-screen flex flex-col font-sans w-full max-w-full overflow-x-hidden">
+      {/* Sticky Header Group: AccessibilityBar + Navbar */}
+      <div className="sticky top-0 z-40 w-full shadow-sm">
+        <AccessibilityBar />
+        <Navbar />
+      </div>
 
-      {/* Adaptive Header Navbar */}
-      <Navbar />
-
-      {/* Main Content Area */}
-      <main className="flex-1">
+      {/* Main Content Area (padded at bottom on mobile to accommodate MobileBottomNav) */}
+      <main className="flex-1 w-full max-w-full pb-20 sm:pb-0 overflow-x-hidden">
         {renderCurrentView()}
       </main>
 
@@ -110,26 +112,29 @@ export default function App() {
       {/* High Alert Reminder Modal Popup */}
       <ReminderAlertModal />
 
-      {/* Notification Pop-up (Vivid Red for Reminders & Alerts) */}
+      {/* Mobile Ergonomic Bottom Navigation Bar */}
+      <MobileBottomNav />
+
+      {/* Notification Pop-up (Vivid Red for Reminders & Alerts, offset above bottom nav on mobile) */}
       {toastMessage && (
         <div
-          className={`fixed bottom-6 right-6 z-50 px-6 py-4 rounded-3xl shadow-2xl text-base font-black animate-fadeIn flex items-center gap-3 border-2 ${
+          className={`fixed bottom-20 sm:bottom-6 right-3 sm:right-6 left-3 sm:left-auto z-50 px-4 sm:px-6 py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl shadow-2xl text-sm sm:text-base font-black animate-fadeIn flex items-center gap-3 border-2 ${
             (typeof toastMessage === 'object' && (toastMessage.type === 'reminder' || toastMessage.type === 'alert'))
               ? 'bg-red-600 text-white border-red-400 ring-4 ring-red-400/40 shadow-red-600/50'
               : 'bg-slate-900 text-white border-slate-700'
           }`}
         >
           {(typeof toastMessage === 'object' && (toastMessage.type === 'reminder' || toastMessage.type === 'alert')) && (
-            <span className="w-8 h-8 rounded-full bg-white text-red-600 flex items-center justify-center text-base shrink-0 animate-bounce">
+            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-red-600 flex items-center justify-center text-sm sm:text-base shrink-0 animate-bounce">
               🔔
             </span>
           )}
-          <span>{typeof toastMessage === 'object' ? toastMessage.message : toastMessage}</span>
+          <span className="truncate">{typeof toastMessage === 'object' ? toastMessage.message : toastMessage}</span>
         </div>
       )}
 
       {/* Footer */}
-      <footer className="bg-slate-950 text-slate-400 text-xs py-6 px-4 border-t border-slate-800 text-center space-y-1">
+      <footer className="bg-slate-950 text-slate-400 text-xs py-5 px-4 border-t border-slate-800 text-center space-y-1 mb-14 sm:mb-0">
         <p className="font-bold text-slate-300">
           NeuroSathi NER • SIH 2026 Problem Statement ID: SIH26003 • Team Mavericks
         </p>

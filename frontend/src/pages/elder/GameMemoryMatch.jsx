@@ -240,7 +240,7 @@ export default function GameMemoryMatch() {
       </div>
 
       {/* Main Game Grid */}
-      <div className={`grid gap-4 sm:gap-6 ${
+      <div className={`grid gap-2 sm:gap-6 ${
         pairCount === 4 ? 'grid-cols-2 sm:grid-cols-4' : (pairCount === 6 ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-4')
       }`}>
         {cards.map((card, idx) => {
@@ -253,7 +253,7 @@ export default function GameMemoryMatch() {
               key={card.uniqueKey}
               onClick={() => handleCardClick(idx)}
               disabled={isMatched || isGameOver}
-              className={`min-h-[140px] sm:min-h-[170px] rounded-3xl p-4 flex flex-col items-center justify-center text-center transition-all transform active:scale-95 shadow-md border-4 ${
+              className={`min-h-[88px] sm:min-h-[170px] rounded-2xl sm:rounded-3xl p-1.5 sm:p-4 flex flex-col items-center justify-center text-center transition-all transform active:scale-95 shadow-md border-2 sm:border-4 ${
                 isMatched
                   ? 'bg-emerald-100 border-emerald-400 opacity-90'
                   : showFront
@@ -263,22 +263,22 @@ export default function GameMemoryMatch() {
               aria-label={showFront ? card.name : "Face down card"}
             >
               {showFront ? (
-                <div className="space-y-1.5 animate-fadeIn">
-                  <span className="text-4xl sm:text-5xl block filter drop-shadow-sm">{card.icon}</span>
-                  <span className="text-base sm:text-lg font-black text-slate-900 block leading-tight">
+                <div className="space-y-0.5 sm:space-y-1.5 animate-fadeIn">
+                  <span className="text-2xl sm:text-5xl block filter drop-shadow-sm">{card.icon}</span>
+                  <span className="text-xs sm:text-lg font-black text-slate-900 block leading-tight">
                     {card.name}
                   </span>
-                  <span className="text-xs font-bold text-teal-800 uppercase tracking-wider block">
+                  <span className="text-[10px] sm:text-xs font-bold text-teal-800 uppercase tracking-wider hidden sm:block">
                     {card.state}
                   </span>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="w-12 h-12 rounded-full bg-teal-600 flex items-center justify-center mx-auto shadow-inner text-2xl">
+                <div className="space-y-1 sm:space-y-2">
+                  <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-teal-600 flex items-center justify-center mx-auto shadow-inner text-base sm:text-2xl">
                     🌿
                   </div>
-                  <span className="text-xs font-extrabold text-teal-100 uppercase tracking-wider block">
-                    {t.tapToPlay || "TAP CARD"}
+                  <span className="text-[9px] sm:text-xs font-extrabold text-teal-100 uppercase tracking-wider block">
+                    {t.tapToPlay || "TAP"}
                   </span>
                 </div>
               )}
@@ -289,44 +289,44 @@ export default function GameMemoryMatch() {
 
       {/* Game Over Celebration Modal */}
       {isGameOver && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-4xl max-w-lg w-full p-6 sm:p-8 text-center border-4 border-emerald-400 shadow-2xl animate-gentle-float">
-            <div className="w-20 h-20 rounded-3xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-4xl mx-auto mb-4 shadow-md">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl sm:rounded-4xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 sm:p-8 text-center border-4 border-emerald-400 shadow-2xl">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-3xl sm:text-4xl mx-auto mb-3 sm:mb-4 shadow-md">
               🏆
             </div>
 
-            <h2 className="text-3xl sm:text-4xl font-black text-teal-950 font-sans">
+            <h2 className="text-2xl sm:text-4xl font-black text-teal-950 font-sans">
               {t.congratsMatch || "Wonderful Memory Recall!"}
             </h2>
 
-            <p className="text-lg text-slate-700 font-medium mt-2">
+            <p className="text-sm sm:text-lg text-slate-700 font-medium mt-1.5">
               {gameResult?.encouraging_message || (t.congratsMatchSub || "You matched all North East cultural cards with great focus.")}
             </p>
 
             {/* Score Breakdown Box */}
-            <div className="bg-emerald-50 rounded-2xl p-5 border-2 border-emerald-200 my-6 text-left space-y-2.5">
-              <div className="flex items-center justify-between text-lg font-bold text-emerald-950">
+            <div className="bg-emerald-50 rounded-2xl p-4 sm:p-5 border-2 border-emerald-200 my-4 sm:my-6 text-left space-y-2">
+              <div className="flex items-center justify-between text-base sm:text-lg font-bold text-emerald-950">
                 <span>{t.score || "Score"}:</span>
-                <span className="text-2xl font-black text-emerald-700">{gameResult?.score || 95} / 100</span>
+                <span className="text-xl sm:text-2xl font-black text-emerald-700">{gameResult?.score || 95} / 100</span>
               </div>
-              <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
+              <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-700">
                 <span>{t.time || "Time"}:</span>
                 <span>{seconds}s</span>
               </div>
-              <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
+              <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-700">
                 <span>{t.stars || "Stars Earned"}:</span>
                 <span className="text-amber-600 font-bold">+5 Stars ⭐</span>
               </div>
-              <div className="flex items-center justify-between text-sm font-semibold text-slate-700">
+              <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-700">
                 <span>{t.difficulty || "Level"}:</span>
                 <span className="capitalize font-bold text-teal-800">{gameResult?.adaptive_next_difficulty || difficulty}</span>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
               <button
                 onClick={initializeGame}
-                className="flex-1 py-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow-tactile-btn transition"
+                className="flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-base sm:text-lg flex items-center justify-center gap-2 shadow-tactile-btn transition"
               >
                 <RotateCcw className="w-5 h-5" />
                 <span>{t.playAgain || "Play Again"}</span>
@@ -334,7 +334,7 @@ export default function GameMemoryMatch() {
 
               <button
                 onClick={() => navigateTo('elder', 'games_hub')}
-                className="flex-1 py-4 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-lg transition"
+                className="flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-base sm:text-lg transition"
               >
                 <span>{t.mindGames || "Other Games"}</span>
               </button>

@@ -186,7 +186,7 @@ export default function MemoryAssistance() {
     return (
       <div
         key={rem.id}
-        className={`elder-card p-5 sm:p-7 transition-all border-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+        className={`elder-card p-3.5 sm:p-7 transition-all border-2 sm:border-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 ${
           isDone
             ? 'bg-emerald-50/70 border-emerald-300 opacity-85'
             : isUpcoming
@@ -307,21 +307,21 @@ export default function MemoryAssistance() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
+    <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-10 space-y-4 sm:space-y-6">
       {/* Top Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
         <button
           onClick={() => {
             speakText(t.navToHome || t.home);
             navigateTo('elder', 'dashboard');
           }}
-          className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-base shadow-sm transition"
+          className="flex items-center justify-center sm:justify-start gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-teal-900 font-bold text-sm sm:text-base shadow-sm transition"
         >
-          <ArrowLeft className="w-5 h-5 text-teal-700" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-teal-700" />
           <span>{t.backToHome || "Back to Home"}</span>
         </button>
 
-        <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
           {/* Test High Alert Sound & In-App Pop-up */}
           <button
             onClick={() => {
@@ -335,18 +335,18 @@ export default function MemoryAssistance() {
               triggerReminderAlert(targetRem);
               showToast("🚨 Testing High Alert Sound & Notification Bar Pop-up", 3500, 'reminder');
             }}
-            className="px-5 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-base flex items-center gap-2 shadow-md active:scale-95 transition"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 sm:px-5 sm:py-3 rounded-xl sm:rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs sm:text-base flex items-center justify-center gap-1.5 sm:gap-2 shadow-md active:scale-95 transition"
             title="Test High Alert Sound and Red Notification Pop-up"
           >
-            <Bell className="w-5 h-5 animate-bounce" />
+            <Bell className="w-4 h-4 animate-bounce" />
             <span>{t.testHighAlertBtn || "Test High Alert"}</span>
           </button>
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-6 py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-base sm:text-lg flex items-center gap-2 shadow-tactile-btn transition"
+            className="flex-1 sm:flex-none px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-xl sm:rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs sm:text-lg flex items-center justify-center gap-1.5 sm:gap-2 shadow-tactile-btn transition"
           >
-            <Plus className="w-6 h-6" />
+            <Plus className="w-4 h-4 sm:w-6 sm:h-6" />
             <span>{t.addReminder || "Add Reminder"}</span>
           </button>
         </div>

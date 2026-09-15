@@ -16,11 +16,7 @@ from models import (
     GameResult, GameResultCreate, CaregiverAlert,
     CaregiverDashboardSummary, DifficultyLevel, GameType
 )
-from seed_data import (
-    get_initial_user, get_initial_lakshmi, get_initial_reminders,
-    get_initial_game_results, get_initial_caregiver_alerts,
-    DEMO_USER_ID, LAKSHMI_USER_ID
-)
+from seed_data import DEMO_USER_ID, LAKSHMI_USER_ID
 from ai_engine import calculate_adaptive_difficulty, generate_encouraging_message, generate_ai_recommendation
 
 # Supabase configuration (optional for live cloud sync)
@@ -95,29 +91,29 @@ class HybridDatabase:
                     clean_addr, c_pin = extract_pin_and_address(row.get("emergency_contact_address"), "1234")
                     self.users[app_uid] = UserProfile(
                         id=app_uid,
-                        name=row.get("name", "Patient"),
-                        email=row.get("emergency_contact_email") or f"{app_uid}@neurosathi.in",
-                        role=row.get("role", "elder"),
-                        age=row.get("age", 74),
-                        gender=row.get("gender", "Female"),
-                        blood_group=row.get("blood_group", "O+"),
-                        location=row.get("location", "Guwahati, Assam"),
-                        language_preference=row.get("preferred_language", "en"),
-                        medical_stage=row.get("medical_stage", "Early-stage Dementia / MCI"),
-                        allergies=row.get("allergies", "None reported"),
-                        doctor_name=row.get("doctor_name", "Dr. Anupam Sarma (Neurologist)"),
-                        doctor_phone=row.get("doctor_phone", "+91 98640 12345"),
-                        doctor_hospital=row.get("doctor_hospital", "Guwahati Neurological Center, Assam"),
-                        emergency_contact_name=row.get("emergency_contact_name", "Primary Caregiver"),
-                        emergency_contact_relation=row.get("emergency_contact_relation", "Family"),
-                        emergency_contact_phone=row.get("emergency_contact_phone", "+91 98765 43210"),
-                        emergency_contact_email=row.get("emergency_contact_email", "caregiver@neurosathi.in"),
+                        name=row.get("name") or "Patient",
+                        email=row.get("emergency_contact_email"),
+                        role=row.get("role") or "elder",
+                        age=row.get("age"),
+                        gender=row.get("gender"),
+                        blood_group=row.get("blood_group"),
+                        location=row.get("location"),
+                        language_preference=row.get("preferred_language") or "en",
+                        medical_stage=row.get("medical_stage"),
+                        allergies=row.get("allergies"),
+                        doctor_name=row.get("doctor_name"),
+                        doctor_phone=row.get("doctor_phone"),
+                        doctor_hospital=row.get("doctor_hospital"),
+                        emergency_contact_name=row.get("emergency_contact_name"),
+                        emergency_contact_relation=row.get("emergency_contact_relation"),
+                        emergency_contact_phone=row.get("emergency_contact_phone"),
+                        emergency_contact_email=row.get("emergency_contact_email"),
                         emergency_contact_address=clean_addr,
-                        current_streak=row.get("streak_count", 4),
-                        total_stars=row.get("total_stars", 56),
+                        current_streak=row.get("streak_count") or 0,
+                        total_stars=row.get("total_stars") or 0,
                         caregiver_pin=c_pin,
-                        created_at=row.get("created_at", datetime.now().isoformat()),
-                        avatar_url=row.get("avatar_url", "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80")
+                        created_at=row.get("created_at") or datetime.now().isoformat(),
+                        avatar_url=row.get("avatar_url")
                     )
 
                 # 2. Sync reminders
@@ -149,13 +145,9 @@ class HybridDatabase:
 
     # --- User & Patient Profile Methods ---
     def get_user(self, user_id: str) -> Optional[UserProfile]:
-        if user_id not in self.users and user_id == DEMO_USER_ID:
-            self.users[DEMO_USER_ID] = get_initial_user()
         return self.users.get(user_id)
 
     def get_all_users(self) -> List[UserProfile]:
-        if DEMO_USER_ID not in self.users:
-            self.users[DEMO_USER_ID] = get_initial_user()
         return list(self.users.values())
 
     def create_user(self, profile_in: UserProfileCreate) -> UserProfile:
@@ -187,27 +179,11 @@ class HybridDatabase:
             caregiver_notes=profile_in.caregiver_notes,
             caregiver_pin=profile_in.caregiver_pin or "1234",
             created_at=datetime.now().isoformat(),
-            current_streak=1,
-            total_stars=10,
-            avatar_url="https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80"
+            current_streak=0,
+            total_stars=0,
+            avatar_url=None
         )
         self.users[new_id] = new_user
-
-        # Create starter default reminder for new patient
-        starter_reminder = Reminder(
-            id=f"rem-{str(uuid.uuid4())[:8]}",
-            user_id=new_id,
-            title="Drink Fresh Water",
-            category="water",
-            time="10:00 AM",
-            date=datetime.now().strftime("%Y-%m-%d"),
-            dosage_or_detail="1 glass of water to stay hydrated",
-            audio_prompt="Time to drink a refreshing glass of water.",
-            is_completed=False,
-            icon_name="Droplet",
-            created_at=datetime.now().isoformat()
-        )
-        self.reminders[starter_reminder.id] = starter_reminder
 
         # Sync to Supabase
         if supabase:
@@ -281,7 +257,14 @@ class HybridDatabase:
     def pair_device(self, req: DevicePairRequest) -> DevicePairResponse:
         patient = self.get_user(req.patient_id)
         if not patient:
-            patient = self.get_user(LAKSHMI_USER_ID) or get_initial_lakshmi()
+            return DevicePairResponse(
+                success=False,
+                message="Patient profile not found for pairing.",
+                patient=None,
+                device_identifier=req.device_identifier,
+                paired_at="",
+                pin_enabled=False
+            )
         
         hashed_pin = hashlib.sha256(req.pin.encode()).hexdigest() if req.pin else None
         device_entry = {
@@ -336,17 +319,7 @@ class HybridDatabase:
         return False
 
     def reset_demo_pairing(self) -> bool:
-        self.devices = {
-            "NS-DEV-LAKSHMI-01": {
-                "device_identifier": "NS-DEV-LAKSHMI-01",
-                "patient_id": LAKSHMI_USER_ID,
-                "device_name": "Lakshmi Living Room Tablet",
-                "paired_at": datetime.now().isoformat(),
-                "active": True,
-                "pin_enabled": False,
-                "hashed_pin": hashlib.sha256("1234".encode()).hexdigest()
-            }
-        }
+        self.devices = {}
         return True
 
     def authenticate_caregiver(self, req: CaregiverLoginRequest) -> CaregiverLoginResponse:
@@ -359,29 +332,29 @@ class HybridDatabase:
                     clean_addr, c_pin = extract_pin_and_address(row.get("emergency_contact_address"), "1234")
                     self.users[app_uid] = UserProfile(
                         id=app_uid,
-                        name=row.get("name", "Patient"),
-                        email=row.get("emergency_contact_email") or f"{app_uid}@neurosathi.in",
-                        role=row.get("role", "elder"),
-                        age=row.get("age", 74),
-                        gender=row.get("gender", "Female"),
-                        blood_group=row.get("blood_group", "O+"),
-                        location=row.get("location", "Guwahati, Assam"),
-                        language_preference=row.get("preferred_language", "en"),
-                        medical_stage=row.get("medical_stage", "Early-stage Dementia / MCI"),
-                        allergies=row.get("allergies", "None reported"),
-                        doctor_name=row.get("doctor_name", "Dr. Anupam Sarma (Neurologist)"),
-                        doctor_phone=row.get("doctor_phone", "+91 98640 12345"),
-                        doctor_hospital=row.get("doctor_hospital", "Guwahati Neurological Center, Assam"),
-                        emergency_contact_name=row.get("emergency_contact_name", "Primary Caregiver"),
-                        emergency_contact_relation=row.get("emergency_contact_relation", "Family"),
-                        emergency_contact_phone=row.get("emergency_contact_phone", "+91 98765 43210"),
-                        emergency_contact_email=row.get("emergency_contact_email", "caregiver@neurosathi.in"),
+                        name=row.get("name") or "Patient",
+                        email=row.get("emergency_contact_email"),
+                        role=row.get("role") or "elder",
+                        age=row.get("age"),
+                        gender=row.get("gender"),
+                        blood_group=row.get("blood_group"),
+                        location=row.get("location"),
+                        language_preference=row.get("preferred_language") or "en",
+                        medical_stage=row.get("medical_stage"),
+                        allergies=row.get("allergies"),
+                        doctor_name=row.get("doctor_name"),
+                        doctor_phone=row.get("doctor_phone"),
+                        doctor_hospital=row.get("doctor_hospital"),
+                        emergency_contact_name=row.get("emergency_contact_name"),
+                        emergency_contact_relation=row.get("emergency_contact_relation"),
+                        emergency_contact_phone=row.get("emergency_contact_phone"),
+                        emergency_contact_email=row.get("emergency_contact_email"),
                         emergency_contact_address=clean_addr,
-                        current_streak=row.get("streak_count", 4),
-                        total_stars=row.get("total_stars", 56),
+                        current_streak=row.get("streak_count") or 0,
+                        total_stars=row.get("total_stars") or 0,
                         caregiver_pin=c_pin,
-                        created_at=row.get("created_at", datetime.now().isoformat()),
-                        avatar_url=row.get("avatar_url", "https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&auto=format&fit=crop&q=80")
+                        created_at=row.get("created_at") or datetime.now().isoformat(),
+                        avatar_url=row.get("avatar_url")
                     )
             except Exception as e:
                 print(f"Supabase caregiver auth sync notice: {e}")
@@ -453,9 +426,9 @@ class HybridDatabase:
                 )
 
         caregiver_info = {
-            "name": active_patient.emergency_contact_name or "Dr. Priya Sharma",
+            "name": active_patient.emergency_contact_name or "Caregiver",
             "relation": active_patient.emergency_contact_relation or "Primary Caregiver",
-            "phone": active_patient.emergency_contact_phone or "+91 98765 43210",
+            "phone": active_patient.emergency_contact_phone or "",
             "email": active_patient.emergency_contact_email or email_or_contact,
             "role": "caregiver"
         }
@@ -664,22 +637,22 @@ class HybridDatabase:
         return [a for a in self.alerts if a.user_id == user_id]
 
     def get_caregiver_dashboard(self, user_id: str) -> CaregiverDashboardSummary:
-        user = self.get_user(user_id) or get_initial_user()
+        user = self.get_user(user_id)
         user_reminders = self.get_reminders(user_id)
         user_games = self.get_game_results(user_id)
         user_alerts = self.get_alerts(user_id)
 
         completed_reminders = [r for r in user_reminders if r.is_completed]
-        adherence = int((len(completed_reminders) / max(len(user_reminders), 1)) * 100)
+        adherence = int((len(completed_reminders) / max(len(user_reminders), 1)) * 100) if user_reminders else 100
         missed = len([r for r in user_reminders if not r.is_completed])
 
-        avg_score = int(sum([g.score for g in user_games]) / max(len(user_games), 1)) if user_games else 85
-        trend = "Improving" if avg_score >= 88 else ("Stable" if avg_score >= 70 else "Needs Attention")
+        avg_score = int(sum([g.score for g in user_games]) / max(len(user_games), 1)) if user_games else 0
+        trend = "Improving" if avg_score >= 88 else ("Stable" if avg_score >= 70 else ("Needs Attention" if avg_score > 0 else "No Data"))
 
         score_history_by_game = {
-            "Memory Match": [g.score for g in user_games if g.game_type == GameType.MEMORY_MATCH][:6] or [90, 92, 95],
-            "Sequence Recall": [g.score for g in user_games if g.game_type == GameType.SEQUENCE_RECALL][:6] or [82, 85, 88],
-            "Object Recognition": [g.score for g in user_games if g.game_type == GameType.OBJECT_RECOGNITION][:6] or [90, 94, 92],
+            "Memory Match": [g.score for g in user_games if g.game_type == GameType.MEMORY_MATCH][:6],
+            "Sequence Recall": [g.score for g in user_games if g.game_type == GameType.SEQUENCE_RECALL][:6],
+            "Object Recognition": [g.score for g in user_games if g.game_type == GameType.OBJECT_RECOGNITION][:6],
         }
 
         return CaregiverDashboardSummary(

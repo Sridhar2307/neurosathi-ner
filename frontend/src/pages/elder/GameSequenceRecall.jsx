@@ -222,7 +222,7 @@ export default function GameSequenceRecall() {
       </div>
 
       {/* 4 Large Instrument Pads */}
-      <div className="grid grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 max-w-2xl mx-auto">
         {NER_SEQUENCE_ITEMS.map((item) => {
           const isActive = activeItem === item.id;
           return (
@@ -230,17 +230,17 @@ export default function GameSequenceRecall() {
               key={item.id}
               onClick={() => handleItemTap(item)}
               disabled={isPlayingSequence || isGameOver}
-              className={`min-h-[160px] sm:min-h-[200px] rounded-3xl p-6 flex flex-col items-center justify-center text-center transition-all transform active:scale-95 border-4 shadow-lg ${
+              className={`min-h-[125px] sm:min-h-[200px] rounded-2xl sm:rounded-3xl p-3 sm:p-6 flex flex-col items-center justify-center text-center transition-all transform active:scale-95 border-3 sm:border-4 shadow-lg ${
                 isActive
-                  ? 'bg-amber-400 border-white text-white ring-8 ring-amber-300 scale-105 shadow-2xl'
+                  ? 'bg-amber-400 border-white text-white ring-6 sm:ring-8 ring-amber-300 scale-105 shadow-2xl'
                   : 'bg-white hover:bg-amber-50 border-amber-300 text-slate-900 hover:border-amber-500 shadow-md'
               }`}
             >
-              <span className="text-5xl sm:text-6xl mb-3 filter drop-shadow-sm">{item.icon}</span>
-              <span className="text-lg sm:text-xl font-black text-slate-900 leading-tight">
+              <span className="text-4xl sm:text-6xl mb-1.5 sm:mb-3 filter drop-shadow-sm">{item.icon}</span>
+              <span className="text-base sm:text-xl font-black text-slate-900 leading-tight">
                 {item.label}
               </span>
-              <span className="text-xs font-bold text-slate-500 mt-1">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-500 mt-0.5 sm:mt-1">
                 {item.name}
               </span>
             </button>
@@ -250,15 +250,15 @@ export default function GameSequenceRecall() {
 
       {/* Sequence Playing Overlay State */}
       {isPlayingSequence && (
-        <div className="text-center font-bold text-amber-800 animate-pulse text-base">
+        <div className="text-center font-bold text-amber-800 animate-pulse text-sm sm:text-base">
           🎵 {t.listenPattern || "Listening to rhythm pattern..."}
         </div>
       )}
 
       {/* Game Win Modal */}
       {isGameOver && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-4xl max-w-lg w-full p-6 sm:p-8 text-center border-4 border-amber-400 shadow-2xl animate-gentle-float">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl sm:rounded-4xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 sm:p-8 text-center border-4 border-amber-400 shadow-2xl">
             <div className="w-20 h-20 rounded-3xl bg-amber-100 text-amber-900 flex items-center justify-center text-4xl mx-auto mb-4 shadow-md">
               🎉
             </div>

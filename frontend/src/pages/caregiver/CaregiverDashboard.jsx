@@ -934,54 +934,54 @@ export default function CaregiverDashboard() {
           </div>
         </div>
 
-        {/* ── 4 Clinical KPI Cards ─────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-2">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>Cognitive Score</span>
-              <Brain className="w-5 h-5 text-purple-400" />
+        {/* ── 4 Clinical KPI Cards (2x2 on mobile, 4 columns on desktop) ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+          <div className="bg-slate-800 p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-700 space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+              <span>Cognitive</span>
+              <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
             </div>
-            <div className="text-3xl sm:text-4xl font-black text-purple-300">{data.average_cognitive_score}%</div>
-            <p className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" /> Stable &amp; Resilient
+            <div className="text-2xl sm:text-4xl font-black text-purple-300">{data.average_cognitive_score}%</div>
+            <p className="text-[10px] sm:text-xs text-emerald-400 font-semibold flex items-center gap-1">
+              <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Stable
             </p>
           </div>
 
-          <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-2">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>Med Adherence</span>
-              <Bell className="w-5 h-5 text-emerald-400" />
+          <div className="bg-slate-800 p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-700 space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+              <span>Adherence</span>
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
             </div>
-            <div className="text-3xl sm:text-4xl font-black text-emerald-300">{data.adherence_percentage}%</div>
-            <p className="text-xs text-slate-400 font-semibold">{data.missed_reminders_count} pending / missed</p>
+            <div className="text-2xl sm:text-4xl font-black text-emerald-300">{data.adherence_percentage}%</div>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-semibold">{data.missed_reminders_count} missed</p>
           </div>
 
-          <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-2">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>Daily Interactions</span>
-              <Activity className="w-5 h-5 text-cyan-400" />
+          <div className="bg-slate-800 p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-700 space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+              <span>Interactions</span>
+              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
             </div>
-            <div className="text-3xl sm:text-4xl font-black text-cyan-300">{data.today_activity_count} Logs</div>
-            <p className="text-xs text-cyan-400 font-semibold">Active stimulation ongoing</p>
+            <div className="text-2xl sm:text-4xl font-black text-cyan-300">{data.today_activity_count} Logs</div>
+            <p className="text-[10px] sm:text-xs text-cyan-400 font-semibold">Active telemetry</p>
           </div>
 
-          <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-2">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-              <span>Streak &amp; Stars</span>
-              <Sparkles className="w-5 h-5 text-amber-400" />
+          <div className="bg-slate-800 p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-700 space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+              <span>Stars &amp; Streak</span>
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
             </div>
-            <div className="text-3xl sm:text-4xl font-black text-amber-300">
-              {patient?.total_stars || data.patient_profile?.total_stars || 56} ⭐
+            <div className="text-2xl sm:text-4xl font-black text-amber-300">
+              {patient?.total_stars || data.patient_profile?.total_stars || 0} ⭐
             </div>
-            <p className="text-xs text-amber-400 font-semibold">
-              {patient?.current_streak || data.patient_profile?.current_streak || 4} consecutive days
+            <p className="text-[10px] sm:text-xs text-amber-400 font-semibold">
+              {patient?.current_streak || data.patient_profile?.current_streak || 0} days streak
             </p>
           </div>
         </div>
 
         {/* ── Analytics Charts ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-slate-800 p-6 rounded-3xl border border-slate-700 space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2 bg-slate-800 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-700 space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-white">Cognitive Performance Progression</h3>

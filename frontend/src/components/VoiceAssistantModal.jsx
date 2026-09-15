@@ -464,8 +464,8 @@ export default function VoiceAssistantModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl border-4 border-amber-400 max-w-2xl w-full p-6 sm:p-8 relative animate-gentle-float text-slate-900">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-3xl shadow-2xl border-4 border-amber-400 max-w-2xl w-full max-h-[92vh] flex flex-col p-4 sm:p-7 relative text-slate-900 overflow-hidden">
         {/* Close Button */}
         <button
           onClick={() => {
@@ -473,172 +473,175 @@ export default function VoiceAssistantModal() {
             speechService.stopListening();
             setIsVoiceAssistantOpen(false);
           }}
-          className="absolute top-5 right-5 p-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+          className="absolute top-3.5 right-3.5 sm:top-5 sm:right-5 p-2 sm:p-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition z-10"
           aria-label="Close Voice Assistant"
         >
-          <X className="w-7 h-7" />
+          <X className="w-5 h-5 sm:w-7 sm:h-7" />
         </button>
 
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg">
-            <Sparkles className="w-8 h-8" />
+        {/* Scrollable Modal Body */}
+        <div className="overflow-y-auto pr-1 space-y-4">
+          {/* Header */}
+          <div className="flex items-center gap-2.5 sm:gap-3 pr-10">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shrink-0">
+              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-3xl font-extrabold text-teal-950 font-sans leading-tight">
+                {dict.headerTitle}
+              </h2>
+              <p className="text-xs sm:text-base text-slate-600 font-medium">
+                {dict.headerSub}
+              </p>
+            </div>
           </div>
+
+          {/* In-Modal Native Language Selector Bar */}
+          <div className="bg-slate-100/90 p-2 sm:p-2.5 rounded-2xl border border-slate-200">
+            <div className="flex items-center justify-between gap-2 mb-1.5 px-1">
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                🌐 {dict.voiceLanguagePrompt || t.voiceLanguagePrompt || "Voice Language"}:
+              </span>
+              <span className="text-[11px] sm:text-xs font-bold text-teal-900 bg-teal-100 px-2 py-0.5 rounded-full border border-teal-300">
+                {availableLanguages?.find(l => l.code === language)?.native || 'English'}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 sm:gap-1.5">
+              {availableLanguages && availableLanguages.map((langItem) => {
+                const isActive = language === langItem.code;
+                return (
+                  <button
+                    key={langItem.code}
+                    type="button"
+                    onClick={() => {
+                      changeLanguage(langItem.code);
+                      const newDict = VOICE_I18N[langItem.code] || VOICE_I18N.en;
+                      setResponseMessage(newDict.greeting);
+                      speakText(newDict.greeting, { lang: langItem.code });
+                    }}
+                    className={`px-1.5 py-1.5 rounded-xl text-xs font-bold transition flex flex-col items-center justify-center cursor-pointer ${
+                      isActive
+                        ? 'bg-teal-700 text-white shadow-md ring-2 ring-teal-400'
+                        : 'bg-white hover:bg-slate-200 text-slate-800 border border-slate-300'
+                    }`}
+                    aria-label={`Switch voice assistant to ${langItem.name}`}
+                  >
+                    <span className="font-black text-xs leading-tight">{langItem.native}</span>
+                    <span className={`text-[9px] mt-0.5 ${isActive ? 'text-teal-200' : 'text-slate-500'}`}>
+                      {langItem.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dynamic Voice Wave / Status Display */}
+          <div className="bg-teal-50 rounded-2xl p-4 sm:p-6 border-2 border-teal-200 text-center shadow-inner">
+            <div className="flex justify-center mb-3">
+              <button
+                onClick={toggleListening}
+                className={`w-18 h-18 sm:w-24 sm:h-24 p-4 rounded-full flex items-center justify-center text-white transition-all transform active:scale-95 shadow-xl ${
+                  isListening
+                    ? 'bg-rose-500 animate-audio-pulse ring-6 sm:ring-8 ring-rose-200'
+                    : 'bg-amber-500 hover:bg-amber-600 ring-6 sm:ring-8 ring-amber-100 shadow-tactile-amber'
+                }`}
+                title={isListening ? "Listening... Tap to Stop" : "Tap to Speak"}
+              >
+                <Mic className="w-8 h-8 sm:w-12 sm:h-12" />
+              </button>
+            </div>
+
+            <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-teal-800 mb-1">
+              {isListening ? dict.listening : dict.tapToSpeak}
+            </p>
+
+            {transcript && (
+              <p className="text-xs sm:text-base text-slate-700 font-medium italic mt-1.5">
+                "{transcript}"
+              </p>
+            )}
+
+            <div className="mt-3 p-2.5 sm:p-3 bg-white rounded-xl border border-teal-200 text-left flex items-start gap-2 shadow-sm">
+              <Volume2 className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" />
+              <p className="text-sm sm:text-lg text-teal-950 font-semibold leading-relaxed">
+                {responseMessage}
+              </p>
+            </div>
+          </div>
+
+          {/* Fallback Command Chips */}
           <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-teal-950 font-sans">
-              {dict.headerTitle}
-            </h2>
-            <p className="text-sm sm:text-base text-slate-600 font-medium">
-              {dict.headerSub}
+            <p className="text-xs sm:text-sm font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <HelpCircle className="w-4 h-4 text-amber-500" />
+              <span>{dict.orTapCommand}</span>
             </p>
-          </div>
-        </div>
 
-        {/* In-Modal Native Language Selector Bar */}
-        <div className="mb-5 bg-slate-100/90 p-2.5 rounded-2xl border border-slate-200">
-          <div className="flex items-center justify-between gap-2 mb-2 px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-              🌐 {dict.voiceLanguagePrompt || t.voiceLanguagePrompt || "Voice Language"}:
-            </span>
-            <span className="text-xs font-bold text-teal-900 bg-teal-100 px-2.5 py-0.5 rounded-full border border-teal-300">
-              {availableLanguages?.find(l => l.code === language)?.native || 'English'}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-            {availableLanguages && availableLanguages.map((langItem) => {
-              const isActive = language === langItem.code;
-              return (
-                <button
-                  key={langItem.code}
-                  type="button"
-                  onClick={() => {
-                    changeLanguage(langItem.code);
-                    const newDict = VOICE_I18N[langItem.code] || VOICE_I18N.en;
-                    setResponseMessage(newDict.greeting);
-                    speakText(newDict.greeting, { lang: langItem.code });
-                  }}
-                  className={`px-2 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex flex-col items-center justify-center cursor-pointer ${
-                    isActive
-                      ? 'bg-teal-700 text-white shadow-md ring-2 ring-teal-400'
-                      : 'bg-white hover:bg-slate-200 text-slate-800 border border-slate-300'
-                  }`}
-                  aria-label={`Switch voice assistant to ${langItem.name}`}
-                >
-                  <span className="font-black text-xs sm:text-sm leading-tight">{langItem.native}</span>
-                  <span className={`text-[10px] mt-0.5 ${isActive ? 'text-teal-200' : 'text-slate-500'}`}>
-                    {langItem.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <button
+                onClick={() => processCommand("reminder")}
+                className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-left font-bold text-teal-900 transition hover:border-teal-400 shadow-sm text-xs sm:text-sm"
+              >
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 shrink-0" />
+                <span className="truncate">{dict.chipReminders}</span>
+              </button>
 
-        {/* Dynamic Voice Wave / Status Display */}
-        <div className="bg-teal-50 rounded-2xl p-6 border-2 border-teal-200 text-center mb-6 shadow-inner">
-          <div className="flex justify-center mb-4">
-            <button
-              onClick={toggleListening}
-              className={`w-24 h-24 rounded-full flex items-center justify-center text-white transition-all transform active:scale-95 shadow-xl ${
-                isListening
-                  ? 'bg-rose-500 animate-audio-pulse ring-8 ring-rose-200'
-                  : 'bg-amber-500 hover:bg-amber-600 ring-8 ring-amber-100 shadow-tactile-amber'
-              }`}
-              title={isListening ? "Listening... Tap to Stop" : "Tap to Speak"}
-            >
-              <Mic className="w-12 h-12" />
-            </button>
-          </div>
+              <button
+                onClick={() => processCommand("match")}
+                className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-white hover:bg-amber-50 border-2 border-amber-200 text-left font-bold text-amber-950 transition hover:border-amber-400 shadow-sm text-xs sm:text-sm"
+              >
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0" />
+                <span className="truncate">{dict.chipGame}</span>
+              </button>
 
-          <p className="text-sm font-bold uppercase tracking-wider text-teal-800 mb-1">
-            {isListening ? dict.listening : dict.tapToSpeak}
-          </p>
+              <button
+                onClick={() => processCommand("daily life")}
+                className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-white hover:bg-green-50 border-2 border-green-200 text-left font-bold text-green-950 transition hover:border-green-400 shadow-sm text-xs sm:text-sm"
+              >
+                <Sunrise className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 shrink-0" />
+                <span className="truncate">{dict.chipDailyLife}</span>
+              </button>
 
-          {transcript && (
-            <p className="text-base text-slate-700 font-medium italic mt-2">
-              "{transcript}"
-            </p>
-          )}
+              <button
+                onClick={() => processCommand("progress")}
+                className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-white hover:bg-purple-50 border-2 border-purple-200 text-left font-bold text-purple-950 transition hover:border-purple-400 shadow-sm text-xs sm:text-sm"
+              >
+                <Award className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 shrink-0" />
+                <span className="truncate">{dict.chipProgress}</span>
+              </button>
 
-          <div className="mt-4 p-3 bg-white rounded-xl border border-teal-200 text-left flex items-start gap-2.5 shadow-sm">
-            <Volume2 className="w-6 h-6 text-teal-600 shrink-0 mt-0.5" />
-            <p className="text-base sm:text-lg text-teal-950 font-semibold leading-relaxed">
-              {responseMessage}
-            </p>
-          </div>
-        </div>
+              <button
+                onClick={() => processCommand("caregiver")}
+                className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-white hover:bg-rose-50 border-2 border-rose-200 text-left font-bold text-rose-950 transition hover:border-rose-400 shadow-sm text-xs sm:text-sm"
+              >
+                <PhoneCall className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600 shrink-0" />
+                <span className="truncate">{dict.chipCaregiver}</span>
+              </button>
 
-        {/* Fallback Command Chips */}
-        <div>
-          <p className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <HelpCircle className="w-4 h-4 text-amber-500" />
-            <span>{dict.orTapCommand}</span>
-          </p>
+              <button
+                onClick={() => processCommand("home")}
+                className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-white hover:bg-slate-50 border-2 border-slate-200 text-left font-bold text-slate-950 transition hover:border-slate-400 shadow-sm text-xs sm:text-sm"
+              >
+                <Home className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 shrink-0" />
+                <span className="truncate">{dict.chipHome}</span>
+              </button>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            <button
-              onClick={() => processCommand("reminder")}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-left font-bold text-teal-900 transition hover:border-teal-400 shadow-sm"
-            >
-              <Bell className="w-6 h-6 text-teal-600 shrink-0" />
-              <span className="text-base">{dict.chipReminders}</span>
-            </button>
+              <button
+                onClick={() => processCommand("games")}
+                className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-left font-bold text-teal-950 transition hover:border-teal-400 shadow-sm text-xs sm:text-sm"
+              >
+                <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 shrink-0" />
+                <span className="truncate">{dict.chipGames}</span>
+              </button>
 
-            <button
-              onClick={() => processCommand("match")}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-amber-50 border-2 border-amber-200 text-left font-bold text-amber-950 transition hover:border-amber-400 shadow-sm"
-            >
-              <Play className="w-6 h-6 text-amber-500 shrink-0" />
-              <span className="text-base">{dict.chipGame}</span>
-            </button>
-
-            <button
-              onClick={() => processCommand("daily life")}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-green-50 border-2 border-green-200 text-left font-bold text-green-950 transition hover:border-green-400 shadow-sm"
-            >
-              <Sunrise className="w-6 h-6 text-green-600 shrink-0" />
-              <span className="text-base">{dict.chipDailyLife}</span>
-            </button>
-
-            <button
-              onClick={() => processCommand("progress")}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-purple-50 border-2 border-purple-200 text-left font-bold text-purple-950 transition hover:border-purple-400 shadow-sm"
-            >
-              <Award className="w-6 h-6 text-purple-600 shrink-0" />
-              <span className="text-base">{dict.chipProgress}</span>
-            </button>
-
-            <button
-              onClick={() => processCommand("caregiver")}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-rose-50 border-2 border-rose-200 text-left font-bold text-rose-950 transition hover:border-rose-400 shadow-sm"
-            >
-              <PhoneCall className="w-6 h-6 text-rose-600 shrink-0" />
-              <span className="text-base">{dict.chipCaregiver}</span>
-            </button>
-
-            <button
-              onClick={() => processCommand("home")}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 text-left font-bold text-slate-950 transition hover:border-slate-400 shadow-sm"
-            >
-              <Home className="w-6 h-6 text-slate-600 shrink-0" />
-              <span className="text-base">{dict.chipHome}</span>
-            </button>
-
-            <button
-              onClick={() => processCommand("games")}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-teal-50 border-2 border-teal-200 text-left font-bold text-teal-950 transition hover:border-teal-400 shadow-sm"
-            >
-              <Brain className="w-6 h-6 text-teal-600 shrink-0" />
-              <span className="text-base">{dict.chipGames}</span>
-            </button>
-
-            <button
-              onClick={() => processCommand("settings")}
-              className="flex items-center gap-3 p-3.5 rounded-2xl bg-white hover:bg-amber-50 border-2 border-amber-200 text-left font-bold text-amber-950 transition hover:border-amber-400 shadow-sm"
-            >
-              <Settings className="w-6 h-6 text-amber-600 shrink-0" />
-              <span className="text-base">{dict.chipSettings}</span>
-            </button>
+              <button
+                onClick={() => processCommand("settings")}
+                className="flex items-center gap-2 p-2.5 sm:p-3 rounded-xl bg-white hover:bg-amber-50 border-2 border-amber-200 text-left font-bold text-amber-950 transition hover:border-amber-400 shadow-sm text-xs sm:text-sm"
+              >
+                <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 shrink-0" />
+                <span className="truncate">{dict.chipSettings}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

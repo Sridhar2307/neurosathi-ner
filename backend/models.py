@@ -31,41 +31,41 @@ class UserBase(BaseModel):
     name: str
     email: Optional[str] = None
     role: UserRole = UserRole.ELDER
-    age: Optional[int] = 74
-    gender: Optional[str] = "Male"
-    blood_group: Optional[str] = "B+"
-    location: Optional[str] = "Guwahati, Assam"
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    blood_group: Optional[str] = None
+    location: Optional[str] = None
     language_preference: Optional[str] = "en"
-    medical_stage: Optional[str] = "Early-stage Dementia / MCI"
-    allergies: Optional[str] = "None known"
-    doctor_name: Optional[str] = "Dr. Anupam Sarma (Neurologist)"
-    doctor_phone: Optional[str] = "+91 98640 12345"
-    doctor_hospital: Optional[str] = "Guwahati Neurological Center, Assam"
+    medical_stage: Optional[str] = None
+    allergies: Optional[str] = None
+    doctor_name: Optional[str] = None
+    doctor_phone: Optional[str] = None
+    doctor_hospital: Optional[str] = None
     
     # Caregiver Details
-    emergency_contact_name: Optional[str] = "Priya Sharma"
-    emergency_contact_relation: Optional[str] = "Daughter"
-    emergency_contact_phone: Optional[str] = "+91 98765 43210"
-    emergency_contact_email: Optional[str] = "priya.sharma@care.in"
-    emergency_contact_address: Optional[str] = "Beltola, Guwahati, Assam"
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    emergency_contact_email: Optional[str] = None
+    emergency_contact_address: Optional[str] = None
     caregiver_pin: Optional[str] = "1234"
 
 class UserProfileCreate(BaseModel):
     name: str
     email: Optional[str] = None
     role: UserRole = UserRole.ELDER
-    age: Optional[int] = 74
-    gender: Optional[str] = "Male"
-    blood_group: Optional[str] = "B+"
-    location: Optional[str] = "Guwahati, Assam"
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    blood_group: Optional[str] = None
+    location: Optional[str] = None
     language_preference: Optional[str] = "en"
-    medical_stage: Optional[str] = "Early-stage Dementia / MCI"
-    allergies: Optional[str] = "None known"
+    medical_stage: Optional[str] = None
+    allergies: Optional[str] = None
     doctor_name: Optional[str] = None
     doctor_phone: Optional[str] = None
     doctor_hospital: Optional[str] = None
-    emergency_contact_name: Optional[str] = "Primary Caregiver"
-    emergency_contact_relation: Optional[str] = "Family"
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
     emergency_contact_email: Optional[str] = None
     emergency_contact_address: Optional[str] = None
@@ -95,8 +95,8 @@ class UserProfileUpdate(BaseModel):
 
 class UserProfile(UserBase):
     created_at: Optional[str] = None
-    current_streak: int = 4
-    total_stars: int = 48
+    current_streak: int = 0
+    total_stars: int = 0
     avatar_url: Optional[str] = None
 
 # --- Device Pairing & Auth Models ---
@@ -109,7 +109,7 @@ class DevicePairRequest(BaseModel):
 class DevicePairResponse(BaseModel):
     success: bool
     message: str
-    patient: UserProfile
+    patient: Optional[UserProfile] = None
     device_identifier: str
     paired_at: str
     pin_enabled: bool
@@ -201,7 +201,7 @@ class CaregiverAlert(BaseModel):
     is_resolved: bool = False
 
 class CaregiverDashboardSummary(BaseModel):
-    patient_profile: UserProfile
+    patient_profile: Optional[UserProfile] = None
     today_activity_count: int
     adherence_percentage: int
     average_cognitive_score: int

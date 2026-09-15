@@ -59,7 +59,7 @@ def unpair_patient_device(identifier: str = Path(..., description="Device Identi
 
 @router.post("/devices/reset-demo")
 def reset_demo_device():
-    """Reset device pairing back to demo Lakshmi pairing."""
+    """Clear all device pairings."""
     db.reset_demo_pairing()
-    return {"success": True, "message": "Demo device pairing reset to Lakshmi Devi"}
+    return {"success": True, "message": "All device pairings cleared"}
 

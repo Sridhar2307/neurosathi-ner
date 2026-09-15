@@ -8,22 +8,47 @@
     --touch-min-height: 48px;
   }
 
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #root {
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
   /* Font Scaling Classes */
   html.font-scale-sm {
     --font-scale: 0.9;
-    font-size: 15px;
+    font-size: 14px;
   }
   html.font-scale-md {
     --font-scale: 1;
-    font-size: 17px;
+    font-size: 16px;
   }
   html.font-scale-lg {
-    --font-scale: 1.25;
-    font-size: 21px;
+    --font-scale: 1.15;
+    font-size: 18px;
   }
   html.font-scale-xl {
-    --font-scale: 1.5;
-    font-size: 25px;
+    --font-scale: 1.3;
+    font-size: 21px;
+  }
+
+  @media (min-width: 641px) {
+    html.font-scale-sm { font-size: 15px; }
+    html.font-scale-md { font-size: 17px; }
+    html.font-scale-lg { font-size: 21px; }
+    html.font-scale-xl { font-size: 25px; }
+  }
+
+  /* Safe Area for Mobile Bottom Bars */
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
   }
 
   /* Warm Brown / Sepia Theme */

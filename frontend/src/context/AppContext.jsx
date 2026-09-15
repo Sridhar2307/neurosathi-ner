@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAccessibility } from './AccessibilityContext';
-import { api, cleanupDemoData, DEMO_USER_ID, DEFAULT_PROFILE } from '../services/api';
+import { api, cleanupDemoData } from '../services/api';
 import { isReminderDueNow } from '../services/reminderScheduler';
 import { notificationService } from '../services/notificationService';
 
@@ -22,10 +22,10 @@ export const AppProvider = ({ children }) => {
       const stored = localStorage.getItem('ns_profile');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed?.id) return parsed;
+        if (parsed?.id && !['demo-user-123', 'patient-lakshmi-demo'].includes(parsed.id)) return parsed;
       }
-      return DEFAULT_PROFILE;
-    } catch { return DEFAULT_PROFILE; }
+      return null;
+    } catch { return null; }
   });
   const [isOnline, setIsOnline] = useState(true);
   const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
@@ -55,17 +55,17 @@ export const AppProvider = ({ children }) => {
       const storedSession = localStorage.getItem('ns_caregiver_session');
       if (storedSession) {
         const parsed = JSON.parse(storedSession);
-        if (parsed?.activePatient?.id) {
+        if (parsed?.activePatient?.id && !['demo-user-123', 'patient-lakshmi-demo'].includes(parsed.activePatient.id)) {
           return parsed.activePatient.id;
         }
       }
       const rawActive = localStorage.getItem('ns_active_patient_id');
-      if (rawActive) {
+      if (rawActive && !['demo-user-123', 'patient-lakshmi-demo'].includes(rawActive)) {
         return rawActive;
       }
-      return DEMO_USER_ID;
+      return null;
     } catch {
-      return DEMO_USER_ID;
+      return null;
     }
   });
 
@@ -91,10 +91,9 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // In Caregiver mode, active patient strictly derives from the authenticated session
-  // In Elder mode, fallback to userProfile or DEFAULT_PROFILE
-  const activePatient = caregiverSession?.activePatient || userProfile || DEFAULT_PROFILE;
-  const allPatients = caregiverSession?.allPatients || (activePatient ? [activePatient] : [DEFAULT_PROFILE]);
+  // Active patient strictly derives from session or loaded user profile
+  const activePatient = caregiverSession?.activePatient || userProfile || null;
+  const allPatients = caregiverSession?.allPatients || (activePatient ? [activePatient] : []);
 
   const switchPatient = (patient) => {
     if (!patient) return;
