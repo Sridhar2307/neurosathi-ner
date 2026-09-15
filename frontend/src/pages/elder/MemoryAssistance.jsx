@@ -144,16 +144,18 @@ export default function MemoryAssistance() {
     showToast(`✓ Scheduled for ${formatDateDisplay(newDate)} at ${newTime}. High alert & notification will pop up!`, 4500, 'reminder');
   };
 
-  // Filter based on category filter
-  const categoryFiltered = reminders.filter(r => {
-    if (filter === 'medicine') return r.category === 'medicine';
+  // Filter based on active filter pill
+  const filteredReminders = reminders.filter(r => {
+    if (filter === 'pending') return !r.is_completed;
+    if (filter === 'completed') return r.is_completed;
+    if (filter === 'medicine') return (r.category || 'medicine') === 'medicine';
     if (filter === 'water') return r.category === 'water';
     return true;
   });
 
   // Segregate into Upcoming vs. Previous
-  const upcomingReminders = categoryFiltered.filter(isReminderUpcoming);
-  const previousReminders = categoryFiltered.filter(isReminderPast);
+  const upcomingReminders = filteredReminders.filter(isReminderUpcoming);
+  const previousReminders = filteredReminders.filter(isReminderPast);
 
   // Helper to render an individual reminder card
   const renderReminderCard = (rem, isUpcoming) => {
@@ -186,10 +188,10 @@ export default function MemoryAssistance() {
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-black uppercase tracking-wider bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full border border-slate-300">
-                {rem.category.replace('_', ' ')}
+                {(rem.category || 'medicine').replace('_', ' ')}
               </span>
 
-              {/* Scheduled Date Badge */}
+              {/* Scheduled Date & Day Badge */}
               <span className="text-xs font-bold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-amber-700" />
                 {dateLabel}
@@ -407,9 +409,11 @@ export default function MemoryAssistance() {
         {/* Filter Pills */}
         <div className="flex items-center gap-2 flex-wrap pt-2">
           {[
-            { id: 'all', label: t.filterAll || 'All Items' },
+            { id: 'all', label: t.filterAll || 'All Tasks' },
+            { id: 'pending', label: t.filterPending || 'Pending' },
+            { id: 'completed', label: t.filterCompleted || 'Completed' },
             { id: 'medicine', label: t.filterMedicine || 'Medicines 💊' },
-            { id: 'water', label: 'Water / Hydration 💧' }
+            { id: 'water', label: 'Water 💧' }
           ].map(tab => (
             <button
               key={tab.id}

@@ -108,7 +108,7 @@ export default function CaregiverReminders() {
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-700 text-cyan-300 px-2 py-0.5 rounded">
-              {r.category}
+              {r.category || 'medicine'}
             </span>
 
             {/* Date Tag */}

@@ -1,7 +1,7 @@
 // Service Worker for NeuroSathi NER
 // Handles system notification bar pop-ups even when browser tabs are in background or closed
 
-const CACHE_NAME = 'neurosathi-sw-v2';
+const CACHE_NAME = 'neurosathi-sw-v3';
 
 // In-memory list of scheduled reminder alarms
 let scheduledAlarms = [];
@@ -11,7 +11,17 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
 // Periodic check function for any due alarms

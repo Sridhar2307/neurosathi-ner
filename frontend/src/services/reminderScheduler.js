@@ -20,34 +20,39 @@ export function getTodayDateStr(dayOffset = 0) {
 }
 
 /**
- * Format a YYYY-MM-DD date string into a friendly label (e.g. "Today", "Tomorrow", "Sep 15, 2026")
+ * Format a YYYY-MM-DD date string into a friendly label with Date and Day (e.g. "Today (Tue, Sep 15)", "Tomorrow (Wed, Sep 16)")
  * @param {string} dateStr - e.g. "2026-09-15"
- * @returns {string} Friendly display date
+ * @returns {string} Friendly display date with weekday
  */
 export function formatDateDisplay(dateStr) {
-  if (!dateStr) return "Today";
+  if (!dateStr) dateStr = getTodayDateStr(0);
   const today = getTodayDateStr(0);
   const tomorrow = getTodayDateStr(1);
   const yesterday = getTodayDateStr(-1);
 
-  if (dateStr === today) return "Today";
-  if (dateStr === tomorrow) return "Tomorrow";
-  if (dateStr === yesterday) return "Yesterday";
-
   try {
-    const parts = dateStr.split('-');
+    const cleanStr = String(dateStr).slice(0, 10);
+    const parts = cleanStr.split('-');
     if (parts.length === 3) {
       const year = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10) - 1;
       const day = parseInt(parts[2], 10);
       const d = new Date(year, month, day);
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const weekday = d.toLocaleDateString('en-US', { weekday: 'short' }); // "Tue"
+      const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); // "Sep 15"
+
+      if (cleanStr === today) return `Today (${weekday}, ${monthDay})`;
+      if (cleanStr === tomorrow) return `Tomorrow (${weekday}, ${monthDay})`;
+      if (cleanStr === yesterday) return `Yesterday (${weekday}, ${monthDay})`;
+      return `${weekday}, ${monthDay}, ${year}`;
     }
   } catch (e) {
     // fallback
   }
   return dateStr;
 }
+
+export const formatDateAndDay = formatDateDisplay;
 
 /**
  * Parse any valid time string (12-hour AM/PM or 24-hour) into minutes from midnight (0 - 1439)
@@ -158,28 +163,20 @@ export function isReminderUpcoming(rem) {
   // Completed reminders always go to Previous
   if (rem.is_completed) return false;
 
-  const todayStr = getTodayDateStr(0);
-  const remDateStr = String(rem.date || todayStr).slice(0, 10);
-
-  // If scheduled for today or any future date, it's upcoming/pending
-  if (remDateStr >= todayStr) {
-    return true;
-  }
-
-  // Strictly past calendar dates (< today) go to previous
-  return false;
+  // All uncompleted/pending reminders remain in Upcoming so elders and caregivers never lose track of scheduled tasks
+  return true;
 }
 
 /**
  * Determine if a reminder is "Previous"
  * Criteria:
- * - Completed (regardless of date)
- * - OR Scheduled date was in the past (before today)
+ * - Completed (marked done by elder or caregiver)
  * @param {Object} rem
  * @returns {boolean}
  */
 export function isReminderPast(rem) {
-  return !isReminderUpcoming(rem);
+  if (!rem) return false;
+  return Boolean(rem.is_completed);
 }
 
 /**

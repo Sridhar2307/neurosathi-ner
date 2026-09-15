@@ -503,27 +503,54 @@ export const api = {
           .order('created_at', { ascending: false });
 
         if (!error && Array.isArray(data) && data.length > 0) {
-          const mapped = data.map(r => ({
-            id: r.id,
-            user_id: uid,
-            title: r.title,
-            category: r.category || 'medicine',
-            time: r.time_schedule || r.time || '08:30 AM',
-            date: r.date || (r.created_at || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
-            dosage_or_detail: r.dosage_or_detail || '',
-            audio_prompt: r.audio_prompt || '',
-            is_completed: Boolean(r.is_completed),
-            icon_name: r.icon_name || 'Pill',
-            created_at: r.created_at || new Date().toISOString()
-          }));
-
-          // Merge with local items so local newly created reminders are not lost
-          const mergedMap = new Map();
-          mapped.forEach(item => mergedMap.set(item.id, item));
-          (localReminders || []).forEach(item => {
-            if (!mergedMap.has(item.id)) mergedMap.set(item.id, item);
+          const localMap = new Map((localReminders || []).map(lr => [lr.id, lr]));
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const mapped = data.map(r => {
+            const existingLocal = localMap.get(r.id) || localMap.get(fromSupabaseUuid(r.id));
+            return {
+              id: r.id,
+              user_id: uid,
+              title: r.title,
+              category: r.category || existingLocal?.category || 'medicine',
+              time: r.time_schedule || r.time || existingLocal?.time || '08:30 AM',
+              date: r.date || existingLocal?.date || todayStr,
+              dosage_or_detail: r.dosage_or_detail || existingLocal?.dosage_or_detail || '',
+              audio_prompt: r.audio_prompt || existingLocal?.audio_prompt || '',
+              is_completed: Boolean(r.is_completed !== undefined ? r.is_completed : existingLocal?.is_completed),
+              icon_name: r.icon_name || existingLocal?.icon_name || 'Pill',
+              created_at: r.created_at || existingLocal?.created_at || new Date().toISOString()
+            };
           });
-          const mergedList = Array.from(mergedMap.values());
+
+          // Merge: ensure any locally created reminders that haven't synced yet are preserved
+          const mergedMap = new Map();
+          (localReminders || []).forEach(item => {
+            mergedMap.set(item.id, item);
+            mergedMap.set(toSupabaseUuid(item.id), item);
+          });
+          mapped.forEach(item => {
+            const existing = mergedMap.get(item.id) || mergedMap.get(fromSupabaseUuid(item.id));
+            if (existing) {
+              mergedMap.set(item.id, {
+                ...item,
+                date: item.date || existing.date || todayStr
+              });
+            } else {
+              mergedMap.set(item.id, item);
+            }
+          });
+
+          // Deduplicate by title + time + date
+          const seenKeys = new Set();
+          const mergedList = [];
+          for (const item of mergedMap.values()) {
+            const dedupeKey = `${item.title}_${item.time}_${item.date || todayStr}`;
+            if (!seenKeys.has(dedupeKey)) {
+              seenKeys.add(dedupeKey);
+              mergedList.push(item);
+            }
+          }
+
           setLocal(key, mergedList);
           return mergedList;
         }
@@ -541,8 +568,10 @@ export const api = {
     const localReminders = getLocal(key, []);
     const today = new Date().toISOString().slice(0, 10);
     
-    // Ensure valid id format (UUID if possible or string with fallback)
-    const newId = `rem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    // Ensure valid UUID format for seamless local + Supabase consistency
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `f0000000-0000-4000-8000-${Math.random().toString(16).slice(2, 14).padEnd(12, '0')}`;
     const isRecurring = reminderData.recurrence && reminderData.recurrence !== 'none';
     
     const baseReminder = {
@@ -589,7 +618,7 @@ export const api = {
         const validCategory = ['medicine', 'water', 'appointment', 'daily_task', 'meal'].includes(baseReminder.category)
           ? baseReminder.category
           : 'medicine';
-        await supabase.from('reminders').insert({
+        const supabaseRow = {
           id: toSupabaseUuid(baseReminder.id),
           user_id: targetUuid,
           title: baseReminder.title,
@@ -599,7 +628,16 @@ export const api = {
           audio_prompt: baseReminder.audio_prompt || null,
           is_completed: false,
           icon_name: baseReminder.icon_name || 'Pill'
-        });
+        };
+
+        try {
+          const { error: insErr } = await supabase.from('reminders').insert({ ...supabaseRow, date: baseReminder.date });
+          if (insErr) {
+            await supabase.from('reminders').insert(supabaseRow);
+          }
+        } catch (e) {
+          await supabase.from('reminders').insert(supabaseRow);
+        }
       } catch (sbErr) {
         console.warn('Supabase createReminder notice:', sbErr);
       }

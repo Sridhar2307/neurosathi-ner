@@ -1,18 +1,13 @@
-# Netlify Configuration for NeuroSathi NER
-# Problem Statement: SIH26003 (Smart India Hackathon 2026)
-
+# Netlify Configuration inside frontend/
 [build]
-  base = "frontend"
   publish = "dist"
   command = "npm run build"
 
-# Single Page App (SPA) redirect rule
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Cache-Control headers to ensure instant updates on all user devices
 [[headers]]
   for = "/index.html"
   [headers.values]
@@ -31,6 +26,3 @@
   for = "/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
-
-[build.environment]
-  NODE_VERSION = "20"
