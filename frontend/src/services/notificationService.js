@@ -119,6 +119,74 @@ class NotificationService {
   }
 
   /**
+   * Schedule upcoming reminders into the Service Worker so alerts fire even if the tab is closed
+   * @param {Array} reminders - Array of reminder objects
+   */
+  async syncScheduledReminders(reminders = []) {
+    if (!this.isSupported || !Array.isArray(reminders)) return;
+
+    try {
+      const now = Date.now();
+      const payload = [];
+
+      for (const rem of reminders) {
+        if (!rem || rem.is_completed || !rem.time) continue;
+
+        // Parse date and time
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const dateStr = String(rem.date || todayStr).slice(0, 10);
+        
+        // Parse time to hours and minutes
+        const timeMatch = rem.time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+        if (!timeMatch) continue;
+
+        let hours = parseInt(timeMatch[1], 10);
+        const minutes = parseInt(timeMatch[2], 10);
+        const meridian = timeMatch[3] ? timeMatch[3].toUpperCase() : null;
+
+        if (meridian === 'PM' && hours < 12) hours += 12;
+        if (meridian === 'AM' && hours === 12) hours = 0;
+
+        const [y, m, d] = dateStr.split('-').map(num => parseInt(num, 10));
+        const targetDate = new Date(y, (m || 1) - 1, d || 1, hours, minutes, 0, 0);
+        const targetTimeMs = targetDate.getTime();
+
+        // Only schedule future items
+        if (targetTimeMs > now) {
+          payload.push({
+            id: rem.id,
+            title: rem.title,
+            time: rem.time,
+            date: dateStr,
+            dosage_or_detail: rem.dosage_or_detail || '',
+            targetTimeMs
+          });
+        }
+      }
+
+      if (payload.length === 0) return;
+
+      // 1. Post to active Service Worker controller
+      if (navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'SCHEDULE_REMINDERS',
+          reminders: payload
+        });
+      } else if (navigator.serviceWorker) {
+        const readyReg = await navigator.serviceWorker.ready;
+        if (readyReg?.active) {
+          readyReg.active.postMessage({
+            type: 'SCHEDULE_REMINDERS',
+            reminders: payload
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[NotificationService] syncScheduledReminders warning:', err);
+    }
+  }
+
+  /**
    * Send a test notification to verify system notification bar display
    */
   async testNotification() {

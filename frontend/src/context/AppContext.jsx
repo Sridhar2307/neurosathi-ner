@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAccessibility } from './AccessibilityContext';
-import { api, cleanupDemoData } from '../services/api';
+import { api, cleanupDemoData, DEMO_USER_ID, DEFAULT_PROFILE } from '../services/api';
 import { isReminderDueNow } from '../services/reminderScheduler';
 import { notificationService } from '../services/notificationService';
 
@@ -22,12 +22,10 @@ export const AppProvider = ({ children }) => {
       const stored = localStorage.getItem('ns_profile');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed && !['demo-user-123', 'patient-lakshmi-demo'].includes(parsed.id) && !['Bhaben Kalita', 'Lakshmi Devi'].includes(parsed.name)) {
-          return parsed;
-        }
+        if (parsed?.id) return parsed;
       }
-      return null;
-    } catch { return null; }
+      return DEFAULT_PROFILE;
+    } catch { return DEFAULT_PROFILE; }
   });
   const [isOnline, setIsOnline] = useState(true);
   const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
@@ -57,17 +55,17 @@ export const AppProvider = ({ children }) => {
       const storedSession = localStorage.getItem('ns_caregiver_session');
       if (storedSession) {
         const parsed = JSON.parse(storedSession);
-        if (parsed?.activePatient?.id && !['demo-user-123', 'patient-lakshmi-demo'].includes(parsed.activePatient.id)) {
+        if (parsed?.activePatient?.id) {
           return parsed.activePatient.id;
         }
       }
       const rawActive = localStorage.getItem('ns_active_patient_id');
-      if (rawActive && !['demo-user-123', 'patient-lakshmi-demo'].includes(rawActive)) {
+      if (rawActive) {
         return rawActive;
       }
-      return null;
+      return DEMO_USER_ID;
     } catch {
-      return null;
+      return DEMO_USER_ID;
     }
   });
 
@@ -94,9 +92,9 @@ export const AppProvider = ({ children }) => {
   };
 
   // In Caregiver mode, active patient strictly derives from the authenticated session
-  // In Elder mode, fallback to userProfile if logged in
-  const activePatient = caregiverSession?.activePatient || (appMode === 'elder' ? (userProfile || null) : null);
-  const allPatients = caregiverSession?.allPatients || [];
+  // In Elder mode, fallback to userProfile or DEFAULT_PROFILE
+  const activePatient = caregiverSession?.activePatient || userProfile || DEFAULT_PROFILE;
+  const allPatients = caregiverSession?.allPatients || (activePatient ? [activePatient] : [DEFAULT_PROFILE]);
 
   const switchPatient = (patient) => {
     if (!patient) return;
@@ -164,6 +162,8 @@ export const AppProvider = ({ children }) => {
 
       try {
         const reminders = await api.getReminders(activePatientId);
+        // Sync upcoming reminders to background service worker for closed-platform alerts
+        notificationService.syncScheduledReminders(reminders);
         const pending = (reminders || []).filter(r => !r.is_completed);
         const todayStr = new Date().toDateString();
 

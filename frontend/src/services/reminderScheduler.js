@@ -149,24 +149,32 @@ export function getReminderDateObject(rem) {
  * Determine if a reminder is "Upcoming"
  * Criteria:
  * - NOT completed
- * - Scheduled date is in the future, OR scheduled for today and scheduled time has not passed (or within recent 15 min buffer)
+ * - Scheduled for today or a future date
  * @param {Object} rem
  * @returns {boolean}
  */
 export function isReminderUpcoming(rem) {
+  if (!rem) return false;
+  // Completed reminders always go to Previous
   if (rem.is_completed) return false;
-  const remDate = getReminderDateObject(rem);
-  const now = new Date();
-  // Allow a 10-minute grace window for currently active/due today items
-  const graceNow = new Date(now.getTime() - 10 * 60 * 1000);
-  return remDate >= graceNow;
+
+  const todayStr = getTodayDateStr(0);
+  const remDateStr = String(rem.date || todayStr).slice(0, 10);
+
+  // If scheduled for today or any future date, it's upcoming/pending
+  if (remDateStr >= todayStr) {
+    return true;
+  }
+
+  // Strictly past calendar dates (< today) go to previous
+  return false;
 }
 
 /**
  * Determine if a reminder is "Previous"
  * Criteria:
  * - Completed (regardless of date)
- * - OR Scheduled date/time has already passed in the past
+ * - OR Scheduled date was in the past (before today)
  * @param {Object} rem
  * @returns {boolean}
  */
@@ -185,7 +193,8 @@ export function isReminderDueNow(reminderTimeStr, reminderDateStr = null, tolera
   // If reminder specifies a date, ensure it matches today's date
   if (reminderDateStr) {
     const today = getTodayDateStr(0);
-    if (reminderDateStr !== today) return false;
+    const cleanDate = String(reminderDateStr).slice(0, 10);
+    if (cleanDate !== today) return false;
   }
 
   const reminderMins = parseTimeToMinutes(reminderTimeStr);

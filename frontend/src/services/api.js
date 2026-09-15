@@ -432,19 +432,63 @@ export const api = {
     return { online: false, database: 'offline_local', data: { status: 'offline-mode', message: 'Running on local offline store' } };
   },
 
+  // Resolve active patient ID with fallback to DEMO_USER_ID if null or unselected
+  resolveEffectiveUserId(userId) {
+    if (userId && typeof userId === 'string' && userId.trim() && userId !== 'null' && userId !== 'undefined') {
+      return userId.trim();
+    }
+    try {
+      const stored = localStorage.getItem('ns_active_patient_id');
+      if (stored && typeof stored === 'string' && stored.trim() && stored !== 'null' && stored !== 'undefined') {
+        return stored.trim();
+      }
+      const session = localStorage.getItem('ns_caregiver_session');
+      if (session) {
+        const parsed = JSON.parse(session);
+        if (parsed?.activePatient?.id) return parsed.activePatient.id;
+      }
+      const profile = localStorage.getItem('ns_profile');
+      if (profile) {
+        const parsed = JSON.parse(profile);
+        if (parsed?.id) return parsed.id;
+      }
+    } catch (e) {}
+    return DEMO_USER_ID;
+  },
+
   // Reminders — per-patient namespaced with live Supabase & offline-first sync
   async getReminders(userId) {
-    if (!userId) return [];
-    const uid = userId;
+    const uid = this.resolveEffectiveUserId(userId);
     const key = patientKey(STORAGE_KEYS.REMINDERS, uid);
+    let localReminders = getLocal(key, null);
+
+    // Initial populate if this user has no local reminders yet
+    if (!localReminders || !Array.isArray(localReminders) || localReminders.length === 0) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (uid === LAKSHMI_USER_ID) {
+        localReminders = LAKSHMI_REMINDERS.map(r => ({ ...r, date: r.date || today }));
+      } else {
+        localReminders = DEFAULT_REMINDERS.map(r => ({ ...r, date: r.date || today }));
+      }
+      setLocal(key, localReminders);
+    }
 
     // Try live FastAPI endpoint
     try {
       const res = await fetch(`${API_BASE}/reminders/${uid}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
-        setLocal(key, data);
-        return data;
+        if (Array.isArray(data) && data.length > 0) {
+          // Merge with local items by id so newly added local reminders are preserved
+          const mergedMap = new Map();
+          data.forEach(item => mergedMap.set(item.id, item));
+          (localReminders || []).forEach(item => {
+            if (!mergedMap.has(item.id)) mergedMap.set(item.id, item);
+          });
+          const mergedList = Array.from(mergedMap.values());
+          setLocal(key, mergedList);
+          return mergedList;
+        }
       }
     } catch (e) {}
 
@@ -458,43 +502,61 @@ export const api = {
           .eq('user_id', targetUuid)
           .order('created_at', { ascending: false });
 
-        if (!error && data) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           const mapped = data.map(r => ({
             id: r.id,
             user_id: uid,
             title: r.title,
             category: r.category || 'medicine',
             time: r.time_schedule || r.time || '08:30 AM',
+            date: r.date || (r.created_at || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
             dosage_or_detail: r.dosage_or_detail || '',
             audio_prompt: r.audio_prompt || '',
             is_completed: Boolean(r.is_completed),
             icon_name: r.icon_name || 'Pill',
             created_at: r.created_at || new Date().toISOString()
           }));
-          setLocal(key, mapped);
-          return mapped;
+
+          // Merge with local items so local newly created reminders are not lost
+          const mergedMap = new Map();
+          mapped.forEach(item => mergedMap.set(item.id, item));
+          (localReminders || []).forEach(item => {
+            if (!mergedMap.has(item.id)) mergedMap.set(item.id, item);
+          });
+          const mergedList = Array.from(mergedMap.values());
+          setLocal(key, mergedList);
+          return mergedList;
         }
       } catch (sbErr) {
         console.warn('Supabase direct reminder fetch notice:', sbErr);
       }
     }
 
-    return getLocal(key, []);
+    return localReminders || [];
   },
 
   async createReminder(reminderData) {
-    const uid = reminderData.user_id;
-    if (!uid) return { success: false, message: 'No patient selected' };
+    const uid = this.resolveEffectiveUserId(reminderData.user_id);
     const key = patientKey(STORAGE_KEYS.REMINDERS, uid);
     const localReminders = getLocal(key, []);
+    const today = new Date().toISOString().slice(0, 10);
     
-    // Handle recurring reminders
+    // Ensure valid id format (UUID if possible or string with fallback)
+    const newId = `rem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
     const isRecurring = reminderData.recurrence && reminderData.recurrence !== 'none';
+    
     const baseReminder = {
       ...reminderData,
-      id: `rem-${Date.now().toString(36)}`,
+      id: reminderData.id || newId,
       user_id: uid,
-      is_completed: false,
+      title: reminderData.title || 'Scheduled Reminder',
+      category: reminderData.category || 'medicine',
+      date: reminderData.date || today,
+      time: reminderData.time || '10:00 AM',
+      dosage_or_detail: reminderData.dosage_or_detail || '',
+      audio_prompt: reminderData.audio_prompt || `Reminder for ${reminderData.title}`,
+      is_completed: Boolean(reminderData.is_completed),
+      icon_name: reminderData.icon_name || (reminderData.category === 'medicine' ? 'Pill' : 'Bell'),
       created_at: new Date().toISOString(),
       recurrence: reminderData.recurrence || 'none',
       recurrence_days: reminderData.recurrence_days || [],
@@ -503,12 +565,19 @@ export const api = {
       taken_later: false
     };
     
-    localReminders.push(baseReminder);
+    // Prepend to local storage immediately
+    localReminders.unshift(baseReminder);
     
     // If recurring, create future instances
     if (isRecurring) {
-      const futureReminders = generateRecurringReminders(baseReminder);
-      localReminders.push(...futureReminders);
+      try {
+        const futureReminders = this.generateRecurringReminders(baseReminder);
+        if (Array.isArray(futureReminders)) {
+          localReminders.push(...futureReminders);
+        }
+      } catch (recErr) {
+        console.warn('generateRecurringReminders error:', recErr);
+      }
     }
     
     setLocal(key, localReminders);
@@ -521,7 +590,7 @@ export const api = {
           ? baseReminder.category
           : 'medicine';
         await supabase.from('reminders').insert({
-          id: baseReminder.id,
+          id: toSupabaseUuid(baseReminder.id),
           user_id: targetUuid,
           title: baseReminder.title,
           category: validCategory,
@@ -540,10 +609,13 @@ export const api = {
       const res = await fetch(`${API_BASE}/reminders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reminderData),
+        body: JSON.stringify({ ...reminderData, user_id: uid }),
         signal: AbortSignal.timeout(2500)
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const backendCreated = await res.json();
+        return backendCreated;
+      }
     } catch (e) {}
     return baseReminder;
   },
