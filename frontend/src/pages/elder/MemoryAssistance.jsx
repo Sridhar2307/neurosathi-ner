@@ -84,6 +84,9 @@ export default function MemoryAssistance() {
 
   const handleToggleComplete = async (rem) => {
     const nextStatus = !rem.is_completed;
+    // Optimistic UI update immediately
+    setReminders(prev => prev.map(r => r.id === rem.id ? { ...r, is_completed: nextStatus } : r));
+
     await api.updateReminder(rem.id, { is_completed: nextStatus }, activePatientId);
     await loadReminders();
     refreshUserData();
@@ -96,6 +99,9 @@ export default function MemoryAssistance() {
   };
 
   const handleDelete = async (id, title) => {
+    // Optimistic UI update immediately
+    setReminders(prev => prev.filter(r => r.id !== id));
+
     await api.deleteReminder(id, activePatientId);
     await loadReminders();
     speakText(`Deleted reminder ${title}`);
@@ -103,6 +109,9 @@ export default function MemoryAssistance() {
 
   const handleSnoozeReminder = async (rem, minutes) => {
     const updated = await api.snoozeReminder(rem.id, minutes, activePatientId);
+    if (updated) {
+      setReminders(prev => prev.map(r => r.id === rem.id ? updated : r));
+    }
     await loadReminders();
     refreshUserData();
     const newTimeDisplay = updated?.time || `${minutes}m later`;
@@ -112,6 +121,9 @@ export default function MemoryAssistance() {
 
   const handleTakeLaterReminder = async (rem) => {
     const updated = await api.takeLaterReminder(rem.id, activePatientId);
+    if (updated) {
+      setReminders(prev => prev.map(r => r.id === rem.id ? updated : r));
+    }
     await loadReminders();
     refreshUserData();
     const newTimeDisplay = updated?.time || "08:00 PM";
@@ -121,18 +133,26 @@ export default function MemoryAssistance() {
 
   const handleCreateReminder = async (e) => {
     e.preventDefault();
-    if (!newTitle) return;
+    if (!newTitle.trim()) return;
 
-    await api.createReminder({
+    const scheduledDate = newDate || getTodayDateStr(0);
+    const scheduledTime = newTime || "10:00 AM";
+
+    const created = await api.createReminder({
       user_id: activePatientId,
-      title: newTitle,
+      title: newTitle.trim(),
       category: newCategory,
-      date: newDate,
-      time: newTime,
-      dosage_or_detail: newDetail || "Daily routine reminder",
-      audio_prompt: `Reminder for ${newTitle} scheduled for ${formatDateDisplay(newDate)} at ${newTime}`,
+      date: scheduledDate,
+      time: scheduledTime,
+      dosage_or_detail: newDetail.trim() || "Daily routine reminder",
+      audio_prompt: `Reminder for ${newTitle.trim()} scheduled for ${formatDateDisplay(scheduledDate)} at ${scheduledTime}`,
       icon_name: newCategory === 'medicine' ? 'Pill' : (newCategory === 'water' ? 'Droplet' : 'Bell')
     });
+
+    // Optimistically prepend newly created reminder to state immediately
+    if (created) {
+      setReminders(prev => [created, ...prev.filter(r => r.id !== created.id)]);
+    }
 
     setShowAddModal(false);
     setNewTitle('');
@@ -140,8 +160,8 @@ export default function MemoryAssistance() {
     setNewDate(getTodayDateStr(0));
     await loadReminders();
     refreshUserData();
-    speakText(`New reminder for ${newTitle} scheduled for ${formatDateDisplay(newDate)} at ${newTime}.`);
-    showToast(`✓ Scheduled for ${formatDateDisplay(newDate)} at ${newTime}. High alert & notification will pop up!`, 4500, 'reminder');
+    speakText(`New reminder for ${newTitle} scheduled for ${formatDateDisplay(scheduledDate)} at ${scheduledTime}.`);
+    showToast(`✓ Scheduled for ${formatDateDisplay(scheduledDate)} at ${scheduledTime}. High alert & notification will pop up!`, 4500, 'reminder');
   };
 
   // Filter based on active filter pill

@@ -56,34 +56,47 @@ export default function CaregiverReminders() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!title) return;
+    if (!title.trim()) return;
 
-    await api.createReminder({
+    const scheduledDate = date || getTodayDateStr(0);
+    const scheduledTime = time || "10:00 AM";
+
+    const created = await api.createReminder({
       user_id: activePatientId,
-      title,
+      title: title.trim(),
       category,
-      date,
-      time,
-      dosage_or_detail: detail,
-      audio_prompt: `Reminder for ${title} scheduled on ${formatDateDisplay(date)} at ${time}`,
+      date: scheduledDate,
+      time: scheduledTime,
+      dosage_or_detail: detail.trim(),
+      audio_prompt: `Reminder for ${title.trim()} scheduled on ${formatDateDisplay(scheduledDate)} at ${scheduledTime}`,
       icon_name: category === 'medicine' ? 'Pill' : 'Bell'
     });
+
+    if (created) {
+      setReminders(prev => [created, ...prev.filter(r => r.id !== created.id)]);
+    }
 
     setTitle('');
     setDetail('');
     setDate(getTodayDateStr(0));
     setShowModal(false);
     await loadData();
-    showToast(`✓ Scheduled for ${formatDateDisplay(date)} at ${time}. High alert & notification will trigger!`, 4500, 'reminder');
+    showToast(`✓ Scheduled for ${formatDateDisplay(scheduledDate)} at ${scheduledTime}. High alert & notification will trigger!`, 4500, 'reminder');
   };
 
   const handleToggle = async (r) => {
     const nextStatus = !r.is_completed;
+    // Optimistic UI update immediately
+    setReminders(prev => prev.map(item => item.id === r.id ? { ...item, is_completed: nextStatus } : item));
+
     await api.updateReminder(r.id, { is_completed: nextStatus }, activePatientId);
     await loadData();
   };
 
   const handleDelete = async (id) => {
+    // Optimistic UI update immediately
+    setReminders(prev => prev.filter(item => item.id !== id));
+
     await api.deleteReminder(id, activePatientId);
     await loadData();
   };

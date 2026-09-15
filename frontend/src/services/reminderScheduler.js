@@ -127,11 +127,12 @@ export function convert12To24Hour(time12) {
  */
 export function getCurrentTime12Hour(offsetMinutes = 0) {
   const date = new Date(Date.now() + offsetMinutes * 60000);
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
+  let h = date.getHours();
+  const m = date.getMinutes();
+  const meridian = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${meridian}`;
 }
 
 /**

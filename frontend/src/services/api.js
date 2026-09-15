@@ -460,10 +460,8 @@ export const api = {
   async getReminders(userId) {
     const uid = this.resolveEffectiveUserId(userId);
     const key = patientKey(STORAGE_KEYS.REMINDERS, uid);
-    let localReminders = getLocal(key, null);
-
-    // Initial populate if this user has no local reminders yet
-    if (!localReminders || !Array.isArray(localReminders) || localReminders.length === 0) {
+    let localReminders = getLocal(key, null);    // Initial populate only if storage key was never initialized (null)
+    if (localReminders === null || !Array.isArray(localReminders)) {
       const today = new Date().toISOString().slice(0, 10);
       if (uid === LAKSHMI_USER_ID) {
         localReminders = LAKSHMI_REMINDERS.map(r => ({ ...r, date: r.date || today }));
@@ -479,7 +477,6 @@ export const api = {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          // Merge with local items by id so newly added local reminders are preserved
           const mergedMap = new Map();
           data.forEach(item => mergedMap.set(item.id, item));
           (localReminders || []).forEach(item => {
@@ -503,56 +500,38 @@ export const api = {
           .order('created_at', { ascending: false });
 
         if (!error && Array.isArray(data) && data.length > 0) {
-          const localMap = new Map((localReminders || []).map(lr => [lr.id, lr]));
           const todayStr = new Date().toISOString().slice(0, 10);
-          const mapped = data.map(r => {
-            const existingLocal = localMap.get(r.id) || localMap.get(fromSupabaseUuid(r.id));
+          const localList = Array.isArray(localReminders) ? [...localReminders] : [];
+          const localMap = new Map();
+          localList.forEach(lr => {
+            localMap.set(lr.id, lr);
+            localMap.set(toSupabaseUuid(lr.id), lr);
+          });
+
+          const remoteMapped = data.map(r => {
+            const local = localMap.get(r.id) || localMap.get(fromSupabaseUuid(r.id));
             return {
-              id: r.id,
+              id: local?.id || r.id,
               user_id: uid,
-              title: r.title,
-              category: r.category || existingLocal?.category || 'medicine',
-              time: r.time_schedule || r.time || existingLocal?.time || '08:30 AM',
-              date: r.date || existingLocal?.date || todayStr,
-              dosage_or_detail: r.dosage_or_detail || existingLocal?.dosage_or_detail || '',
-              audio_prompt: r.audio_prompt || existingLocal?.audio_prompt || '',
-              is_completed: Boolean(r.is_completed !== undefined ? r.is_completed : existingLocal?.is_completed),
-              icon_name: r.icon_name || existingLocal?.icon_name || 'Pill',
-              created_at: r.created_at || existingLocal?.created_at || new Date().toISOString()
+              title: r.title || local?.title || 'Reminder',
+              category: r.category || local?.category || 'medicine',
+              time: r.time_schedule || r.time || local?.time || '08:30 AM',
+              date: r.date || local?.date || todayStr,
+              dosage_or_detail: r.dosage_or_detail || local?.dosage_or_detail || '',
+              audio_prompt: r.audio_prompt || local?.audio_prompt || '',
+              is_completed: Boolean(r.is_completed !== undefined ? r.is_completed : local?.is_completed),
+              icon_name: r.icon_name || local?.icon_name || 'Pill',
+              created_at: r.created_at || local?.created_at || new Date().toISOString()
             };
           });
 
-          // Merge: ensure any locally created reminders that haven't synced yet are preserved
-          const mergedMap = new Map();
-          (localReminders || []).forEach(item => {
-            mergedMap.set(item.id, item);
-            mergedMap.set(toSupabaseUuid(item.id), item);
-          });
-          mapped.forEach(item => {
-            const existing = mergedMap.get(item.id) || mergedMap.get(fromSupabaseUuid(item.id));
-            if (existing) {
-              mergedMap.set(item.id, {
-                ...item,
-                date: item.date || existing.date || todayStr
-              });
-            } else {
-              mergedMap.set(item.id, item);
-            }
-          });
+          // Any locally added reminders not yet in Supabase stay at the top
+          const remoteIdSet = new Set(data.map(r => r.id).concat(data.map(r => fromSupabaseUuid(r.id))));
+          const unSyncedLocal = localList.filter(lr => !remoteIdSet.has(lr.id) && !remoteIdSet.has(toSupabaseUuid(lr.id)));
 
-          // Deduplicate by title + time + date
-          const seenKeys = new Set();
-          const mergedList = [];
-          for (const item of mergedMap.values()) {
-            const dedupeKey = `${item.title}_${item.time}_${item.date || todayStr}`;
-            if (!seenKeys.has(dedupeKey)) {
-              seenKeys.add(dedupeKey);
-              mergedList.push(item);
-            }
-          }
-
-          setLocal(key, mergedList);
-          return mergedList;
+          const combined = [...unSyncedLocal, ...remoteMapped];
+          setLocal(key, combined);
+          return combined;
         }
       } catch (sbErr) {
         console.warn('Supabase direct reminder fetch notice:', sbErr);
@@ -703,11 +682,11 @@ export const api = {
   },
 
   async updateReminder(id, updates, userId) {
-    const effectiveUserId = userId || updates?.user_id || localStorage.getItem('ns_active_patient_id');
+    const effectiveUserId = this.resolveEffectiveUserId(userId || updates?.user_id);
     if (!effectiveUserId) return null;
     const key = patientKey(STORAGE_KEYS.REMINDERS, effectiveUserId);
     const localReminders = getLocal(key, []);
-    const index = localReminders.findIndex(r => r.id === id);
+    const index = localReminders.findIndex(r => r.id === id || toSupabaseUuid(r.id) === toSupabaseUuid(id));
     if (index !== -1) {
       localReminders[index] = { ...localReminders[index], ...updates };
       if (updates.is_completed) {
@@ -740,6 +719,7 @@ export const api = {
         if (updates.title !== undefined) sbPayload.title = updates.title;
         if (updates.category !== undefined) sbPayload.category = updates.category;
         if (updates.time !== undefined) sbPayload.time_schedule = updates.time;
+        if (updates.date !== undefined) sbPayload.date = updates.date;
         if (updates.dosage_or_detail !== undefined) sbPayload.dosage_or_detail = updates.dosage_or_detail;
         if (updates.audio_prompt !== undefined) sbPayload.audio_prompt = updates.audio_prompt;
         if (updates.is_completed !== undefined) sbPayload.is_completed = Boolean(updates.is_completed);
@@ -747,7 +727,7 @@ export const api = {
         if (updates.is_completed) sbPayload.completed_at = new Date().toISOString();
 
         if (Object.keys(sbPayload).length > 0) {
-          await supabase.from('reminders').update(sbPayload).eq('id', id);
+          await supabase.from('reminders').update(sbPayload).in('id', [id, toSupabaseUuid(id)]);
         }
       } catch (sbErr) {
         console.warn('Supabase updateReminder notice:', sbErr);
@@ -763,26 +743,27 @@ export const api = {
       });
       if (res.ok) return await res.json();
     } catch (e) {}
-    return localReminders[index];
+    return index !== -1 ? localReminders[index] : null;
   },
 
   // Snooze reminder - updates time to now + specified minutes
   async snoozeReminder(id, minutes, userId) {
-    const effectiveUserId = userId || localStorage.getItem('ns_active_patient_id');
+    const effectiveUserId = this.resolveEffectiveUserId(userId);
     if (!effectiveUserId) return null;
     const key = patientKey(STORAGE_KEYS.REMINDERS, effectiveUserId);
     const localReminders = getLocal(key, []);
-    const index = localReminders.findIndex(r => r.id === id);
+    const index = localReminders.findIndex(r => r.id === id || toSupabaseUuid(r.id) === toSupabaseUuid(id));
     if (index !== -1) {
       const reminder = localReminders[index];
       const snoozeTime = new Date();
       snoozeTime.setMinutes(snoozeTime.getMinutes() + minutes);
 
-      const updatedTime = snoozeTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
+      let h = snoozeTime.getHours();
+      const m = snoozeTime.getMinutes();
+      const meridian = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      if (h === 0) h = 12;
+      const updatedTime = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${meridian}`;
 
       const updatedReminder = {
         ...reminder,
@@ -801,11 +782,11 @@ export const api = {
 
   // Mark as "take later" - updates time to 08:00 PM tonight
   async takeLaterReminder(id, userId) {
-    const effectiveUserId = userId || localStorage.getItem('ns_active_patient_id');
+    const effectiveUserId = this.resolveEffectiveUserId(userId);
     if (!effectiveUserId) return null;
     const key = patientKey(STORAGE_KEYS.REMINDERS, effectiveUserId);
     const localReminders = getLocal(key, []);
-    const index = localReminders.findIndex(r => r.id === id);
+    const index = localReminders.findIndex(r => r.id === id || toSupabaseUuid(r.id) === toSupabaseUuid(id));
     if (index !== -1) {
       const reminder = localReminders[index];
       const laterTime = new Date();
@@ -868,16 +849,16 @@ export const api = {
   },
 
   async deleteReminder(id, userId) {
-    const effectiveUserId = userId || localStorage.getItem('ns_active_patient_id');
+    const effectiveUserId = this.resolveEffectiveUserId(userId);
     if (!effectiveUserId) return { success: false };
     const key = patientKey(STORAGE_KEYS.REMINDERS, effectiveUserId);
     const localReminders = getLocal(key, []);
-    const filtered = localReminders.filter(r => r.id !== id);
+    const filtered = localReminders.filter(r => r.id !== id && toSupabaseUuid(r.id) !== toSupabaseUuid(id));
     setLocal(key, filtered);
 
     if (supabase) {
       try {
-        await supabase.from('reminders').delete().eq('id', id);
+        await supabase.from('reminders').delete().in('id', [id, toSupabaseUuid(id)]);
       } catch (sbErr) {
         console.warn('Supabase deleteReminder notice:', sbErr);
       }

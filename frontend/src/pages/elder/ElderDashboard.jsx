@@ -4,6 +4,7 @@ import { useAccessibility } from '../../context/AccessibilityContext';
 import { api } from '../../services/api';
 import AudioButton from '../../components/AudioButton';
 import { speechService } from '../../services/speechService';
+import { formatDateDisplay } from '../../services/reminderScheduler';
 import {
   Brain,
   Bell,
@@ -238,6 +239,10 @@ export default function ElderDashboard() {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-black uppercase tracking-wider bg-red-600 text-white px-3 py-0.5 rounded-full shadow-sm animate-pulse flex items-center gap-1">
                   🚨 {t.highAlertReminder || "HIGH ALERT REMINDER"}
+                </span>
+                <span className="text-xs font-bold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                  {formatDateDisplay(pendingReminders[0].date)}
                 </span>
                 <span className="text-sm font-black text-red-950 flex items-center gap-1">
                   <Clock className="w-4 h-4 text-red-700" /> {pendingReminders[0].time}

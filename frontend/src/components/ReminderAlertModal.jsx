@@ -12,8 +12,10 @@ import {
   RotateCcw,
   AlertTriangle,
   Pill,
-  Droplet
+  Droplet,
+  Calendar
 } from 'lucide-react';
+import { formatDateDisplay } from '../services/reminderScheduler';
 
 export default function ReminderAlertModal() {
   const {
@@ -148,6 +150,10 @@ export default function ReminderAlertModal() {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-300">
                   {activeReminderAlert.category ? activeReminderAlert.category.replace('_', ' ') : 'Reminder'}
+                </span>
+                <span className="text-xs font-bold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                  {formatDateDisplay(activeReminderAlert.date)}
                 </span>
                 <span className="text-sm font-extrabold text-red-700 flex items-center gap-1">
                   <Clock className="w-4 h-4" /> {activeReminderAlert.time}
